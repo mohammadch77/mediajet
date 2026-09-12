@@ -1,0 +1,111 @@
+// اسکیمای دیتابیس مدیاجت.
+// اصول ارشامان: کیف پول double-entry، audit trail، پول به ریال (BigInt).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  mobile    String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+
+  wallet Wallet?
+  orders Order[]
+}
+
+model Wallet {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  balanceRial BigInt  @default(0) // موجودی به ریال؛ هرگز مستقیم دستکاری نشود
+  user        User    @relation(fields: [userId], references: [id])
+
+  transactions WalletTransaction[]
+}
+
+// هر تراکنش یک طرفِ ثبت‌شده از یک رویداد مالی است (double-entry ساده‌شده).
+// balanceAfter برای auditability ذخیره می‌شود.
+// immutable: فقط insert می‌شود؛ هیچ update/delete در منطق سرویس مجاز نیست.
+model WalletTransaction {
+  id              String   @id @default(cuid())
+  walletId        String
+  type            TxType
+  amountRial      BigInt // همیشه مثبت؛ جهت با type مشخص می‌شود
+  balanceAfter    BigInt
+  ref             String? // مرجع: شناسه‌ی سفارش، شناسه‌ی درگاه و...
+  idempotencyKey  String?  @unique // کلید یکتای درخواست پرداخت؛ از ساخت تراکنش تکراری جلوگیری می‌کند
+  note            String?
+  createdAt       DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+}
+
+enum TxType {
+  credit // شارژ / بازگشت وجه
+  debit // پرداخت سفارش
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  userId         String
+  sourceSite     String
+  category       String
+  productUrl     String
+  priceRial      BigInt
+  status         OrderStatus @default(draft)
+  idempotencyKey String?     @unique // کلید یکتای درخواست ثبت سفارش؛ از ساخت سفارش تکراری جلوگیری می‌کند
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id])
+  events   OrderEvent[]
+  delivery Delivery?
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum OrderStatus {
+  draft
+  awaiting_payment
+  queued
+  processing
+  ready
+  delivered
+  cancelled
+  failed
+  refunded
+}
+
+// audit trail: هر تغییر وضعیت سفارش این‌جا ثبت می‌شود.
+// immutable: فقط insert می‌شود؛ هیچ update/delete در منطق سرویس مجاز نیست.
+model OrderEvent {
+  id         String   @id @default(cuid())
+  orderId    String
+  fromStatus String?
+  toStatus   String
+  actor      String // "user:<id>" یا "operator:<id>" یا "system"
+  note       String?
+  createdAt  DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+}
+
+model Delivery {
+  id          String   @id @default(cuid())
+  orderId     String   @unique
+  fileUrl     String
+  deliveredAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+}
