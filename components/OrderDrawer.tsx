@@ -2,15 +2,19 @@
 import { useEffect, useState, useCallback } from "react";
 import { CATEGORIES, categoryById, type Category } from "@/data/categories";
 import { detectSite } from "@/lib/detectSite";
+import type { LinkEntry } from "@/lib/linkDetect";
 import { useAuth } from "@/lib/AuthContext";
 
 interface Props {
   open: boolean;
+  /** حالت قدیمی: کاربر روی کارت یک دسته کلیک کرده و باید سایت را انتخاب کند. */
   category: Category | null;
+  /** حالت جدید: کاربر لینک را زودتر (مثلاً در صفحه‌ی اصلی) وارد کرده و سایت/دسته از رویش تشخیص داده شده. */
+  linkEntry?: LinkEntry | null;
   onClose: () => void;
 }
 
-type Stage = "sites" | "form";
+type Stage = "sites" | "pick-category" | "form";
 type SubmitStatus = "idle" | "submitting" | "success" | "error";
 
 function newIdempotencyKey(): string {
@@ -20,11 +24,12 @@ function newIdempotencyKey(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export default function OrderDrawer({ open, category, onClose }: Props) {
+export default function OrderDrawer({ open, category, linkEntry, onClose }: Props) {
   const { requireAuth, setWalletBalance } = useAuth();
   const [stage, setStage] = useState<Stage>("sites");
   const [selectedCatId, setSelectedCatId] = useState<string>("");
   const [selectedSite, setSelectedSite] = useState<string>("");
+  const [candidates, setCandidates] = useState<Category[]>([]);
   const [link, setLink] = useState("");
   const [detected, setDetected] = useState("");
   const [priceLabel, setPriceLabel] = useState("—");
@@ -33,12 +38,30 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [orderResult, setOrderResult] = useState<{ orderId: string; priceLabel: string; walletBalanceRial: string | null } | null>(null);
 
-  // با باز شدن دراور، مرحله را ریست کن
+  // دریافت قیمت از سرور (قیمت هرگز سمت کلاینت محاسبه نمی‌شود)
+  const fetchQuote = useCallback(async (catId: string, site: string) => {
+    if (!catId || !site) { setPriceLabel("—"); return; }
+    try {
+      const res = await fetch("/api/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categoryId: catId, site }),
+      });
+      if (!res.ok) { setPriceLabel("—"); return; }
+      const data = await res.json();
+      setPriceLabel(data.label ?? "—");
+    } catch {
+      setPriceLabel("—");
+    }
+  }, []);
+
+  // با باز شدن دراور از روی کارتِ یک دسته (جریان قدیمی): مرحله‌ی انتخاب سایت را نشان بده.
   useEffect(() => {
-    if (open && category) {
+    if (open && category && !linkEntry) {
       setStage("sites");
       setSelectedCatId(category.id);
       setSelectedSite("");
+      setCandidates([]);
       setLink("");
       setDetected("");
       setPriceLabel("—");
@@ -47,7 +70,31 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
       setSubmitError(null);
       setOrderResult(null);
     }
-  }, [open, category]);
+  }, [open, category, linkEntry]);
+
+  // با باز شدن دراور از روی لینکِ از‌پیش‌تشخیص‌داده‌شده (فیلد صفحه‌ی اصلی یا لینک داخل خودِ دراور):
+  // اگر دسته هم مشخص باشد مستقیم برو سراغ فرم و قیمت را بگیر، وگرنه اول از کاربر دسته را بپرس.
+  useEffect(() => {
+    if (open && linkEntry) {
+      setSelectedSite(linkEntry.site);
+      setLink(linkEntry.link);
+      setDetected(linkEntry.site);
+      setCandidates(linkEntry.candidates);
+      setSubmitStatus("idle");
+      setSubmitError(null);
+      setOrderResult(null);
+      setIdempotencyKey(newIdempotencyKey());
+      if (linkEntry.categoryId) {
+        setSelectedCatId(linkEntry.categoryId);
+        setStage("form");
+        fetchQuote(linkEntry.categoryId, linkEntry.site);
+      } else {
+        setSelectedCatId("");
+        setPriceLabel("—");
+        setStage("pick-category");
+      }
+    }
+  }, [open, linkEntry, fetchQuote]);
 
   // اگر پارامترهای سفارش تغییر کند، کلید یکتای درخواست هم عوض شود تا با درخواست قبلی تداخل نکند.
   useEffect(() => {
@@ -69,24 +116,13 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
     };
   }, [open, onClose]);
 
-  const activeCat = categoryById(selectedCatId) ?? category;
+  const activeCat = categoryById(selectedCatId) ?? category ?? candidates[0] ?? null;
 
-  // دریافت قیمت از سرور (قیمت هرگز سمت کلاینت محاسبه نمی‌شود)
-  const fetchQuote = useCallback(async (catId: string, site: string) => {
-    if (!catId || !site) { setPriceLabel("—"); return; }
-    try {
-      const res = await fetch("/api/quote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categoryId: catId, site }),
-      });
-      if (!res.ok) { setPriceLabel("—"); return; }
-      const data = await res.json();
-      setPriceLabel(data.label ?? "—");
-    } catch {
-      setPriceLabel("—");
-    }
-  }, []);
+  const pickCategory = (id: string) => {
+    setSelectedCatId(id);
+    setStage("form");
+    fetchQuote(id, selectedSite);
+  };
 
   const selectSite = (site: string) => {
     setSelectedSite(site);
@@ -103,6 +139,7 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
       fetchQuote(selectedCatId, d);
     }
   };
+
 
   const onCategoryChange = (id: string) => {
     setSelectedCatId(id);
@@ -169,7 +206,7 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
     }
   };
 
-  if (!category) return null;
+  if (!category && !linkEntry) return null;
 
   return (
     <>
@@ -195,7 +232,7 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
         {/* head */}
         <div className="flex items-start justify-between gap-3 p-[26px_26px_18px] border-b border-[rgba(138,124,255,.14)] shrink-0">
           <div className="flex items-start gap-3 min-w-0">
-            {stage === "form" && (
+            {stage === "form" && !linkEntry && (
               <button
                 onClick={() => setStage("sites")}
                 aria-label="بازگشت به لیست سایت‌ها"
@@ -204,13 +241,22 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
                 →
               </button>
             )}
-            <div className="min-w-0">
-              <div className="text-3xl">{activeCat?.icon}</div>
-              <h3 className="font-display text-[1.4rem] mb-1">{activeCat?.title}</h3>
-              <div className="text-dim text-[.82rem] leading-[1.7]">
-                سایت‌ها: {activeCat?.sites.join(" · ")}
+            {stage === "pick-category" ? (
+              <div className="min-w-0">
+                <h3 className="font-display text-[1.4rem] mb-1">دسته‌ی محصول را انتخاب کن</h3>
+                <div className="text-dim text-[.82rem] leading-[1.7]">
+                  سایت شناسایی شد: <b className="text-cyan">{detected}</b>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="min-w-0">
+                <div className="text-3xl">{activeCat?.icon}</div>
+                <h3 className="font-display text-[1.4rem] mb-1">{activeCat?.title}</h3>
+                <div className="text-dim text-[.82rem] leading-[1.7]">
+                  سایت‌ها: {activeCat?.sites.join(" · ")}
+                </div>
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -223,7 +269,25 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
 
         {/* body */}
         <div className="p-[24px_26px] overflow-y-auto flex-1">
-          {stage === "sites" ? (
+          {stage === "pick-category" ? (
+            <>
+              <div className="text-dim text-[.9rem] mb-4">
+                از روی لینک نتوانستیم نوع محصول را تشخیص بدهیم — دسته‌ی درست را انتخاب کن.
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {candidates.map((c) => (
+                  <div
+                    key={c.id}
+                    onClick={() => pickCategory(c.id)}
+                    className="flex items-center gap-2.5 bg-surface border border-[rgba(138,124,255,.14)] rounded-xl p-3 cursor-pointer transition hover:border-[rgba(56,225,255,.5)] hover:-translate-y-0.5"
+                  >
+                    <div className="text-xl shrink-0">{c.icon}</div>
+                    <div className="text-[.88rem] font-bold">{c.title}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : stage === "sites" ? (
             <>
               <div className="text-dim text-[.9rem] mb-4">فایلت را از کدام سایت می‌خواهی؟</div>
               <div className="grid grid-cols-2 gap-3">

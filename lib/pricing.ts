@@ -4,7 +4,6 @@ import { categoryById } from "@/data/categories";
 const SITE_MULTIPLIER: Record<string, number> = {
   Shutterstock: 1.3,
   "Adobe Stock": 1.25,
-  Adobe: 1.25,
   iStock: 1.2,
   Storyblocks: 1.15,
 };

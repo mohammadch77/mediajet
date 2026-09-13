@@ -11,16 +11,16 @@ export interface Category {
 
 export const CATEGORIES: Category[] = [
   { id: "psd", title: "فایل لایه‌باز", icon: "🖼️", basePriceRial: 900000, sites: ["Adobe Stock", "Freepik", "Envato", "Pikbest", "Lovepik"] },
-  { id: "mockup", title: "موکاپ", icon: "🎨", basePriceRial: 900000, sites: ["Freepik", "Envato", "Adobe", "UI8", "Rawpixel"] },
-  { id: "vector", title: "وکتور", icon: "✏️", basePriceRial: 700000, sites: ["Freepik", "Vecteezy", "Adobe", "Shutterstock", "123RF"] },
-  { id: "photo", title: "عکس باکیفیت", icon: "📷", basePriceRial: 700000, sites: ["Freepik", "Adobe", "Shutterstock", "iStock", "Dreamstime"] },
+  { id: "mockup", title: "موکاپ", icon: "🎨", basePriceRial: 900000, sites: ["Freepik", "Envato", "Adobe Stock", "UI8", "Rawpixel"] },
+  { id: "vector", title: "وکتور", icon: "✏️", basePriceRial: 700000, sites: ["Freepik", "Vecteezy", "Adobe Stock", "Shutterstock", "123RF"] },
+  { id: "photo", title: "عکس باکیفیت", icon: "📷", basePriceRial: 700000, sites: ["Freepik", "Adobe Stock", "Shutterstock", "iStock", "Dreamstime"] },
   { id: "png", title: "PNG بدون بک‌گراند", icon: "🌟", basePriceRial: 700000, sites: ["Vecteezy", "PNGTree", "CreativeFabrica", "Iconscout"] },
-  { id: "premiere", title: "پریمیر و افترافکت", icon: "🎞️", basePriceRial: 2500000, sites: ["Envato", "Motion Array", "Adobe"] },
+  { id: "premiere", title: "پریمیر و افترافکت", icon: "🎞️", basePriceRial: 2500000, sites: ["Envato", "Motion Array", "Adobe Stock"] },
   { id: "audio", title: "موزیک و افکت صوتی", icon: "🔊", basePriceRial: 2200000, sites: ["Envato", "Artlist", "Motion Array", "Freepik"] },
-  { id: "video", title: "ویدیو و فوتیج", icon: "🎬", basePriceRial: 2500000, sites: ["Freepik", "Vecteezy", "Envato", "Adobe", "Storyblocks"] },
+  { id: "video", title: "ویدیو و فوتیج", icon: "🎬", basePriceRial: 2500000, sites: ["Freepik", "Vecteezy", "Envato", "Adobe Stock", "Storyblocks"] },
   { id: "icon", title: "آیکون و پک آیکون", icon: "⭐", basePriceRial: 1200000, sites: ["Flaticon", "Freepik", "Iconscout", "UI8"] },
   { id: "ppt", title: "قالب پاورپوینت", icon: "📊", basePriceRial: 1800000, sites: ["Envato", "UI8", "Pikbest"] },
-  { id: "3d", title: "مدل و آیکون سه‌بعدی", icon: "🧊", basePriceRial: 2000000, sites: ["Adobe", "Envato", "UI8", "Iconscout"] },
+  { id: "3d", title: "مدل و آیکون سه‌بعدی", icon: "🧊", basePriceRial: 2000000, sites: ["Adobe Stock", "Envato", "UI8", "Iconscout"] },
   { id: "font", title: "فونت انگلیسی", icon: "🔤", basePriceRial: 1200000, sites: ["Envato", "UI8", "CreativeFabrica"] },
   { id: "ui", title: "UI و فیگما", icon: "💠", basePriceRial: 1800000, sites: ["UI8"] },
   { id: "wp", title: "تم وردپرس", icon: "🌐", basePriceRial: 1800000, sites: ["Envato Elements"] },
@@ -40,3 +40,24 @@ export const SITE_KEYS: Record<string, string> = {
   dreamstime: "Dreamstime", artlist: "Artlist", storyblocks: "Storyblocks", lovepik: "Lovepik",
   rawpixel: "Rawpixel", creativefabrica: "CreativeFabrica",
 };
+
+// نگاشت الگوی مسیر URL به دسته‌ی محصول. بعضی سایت‌ها نوع محصول را در مسیر لینک می‌گذارند
+// (مثلاً adobe stock: `/photo/...`, freepik: `/free-vector/...`)، پس می‌شود از روی همان حدس زد.
+// این تشخیص برای همه‌ی سایت‌ها یا همه‌ی لینک‌ها کار نمی‌کند (لینک کوتاه‌شده، صفحه‌ی دسته‌بندی‌نشده و
+// غیره) — در آن حالت‌ها کاربر باید دسته را خودش از بین گزینه‌های همان سایت انتخاب کند.
+export const CATEGORY_URL_PATTERNS: { pattern: RegExp; categoryId: string }[] = [
+  { pattern: /\/(free-)?photos?\//, categoryId: "photo" },
+  { pattern: /\/(free-)?vectors?\//, categoryId: "vector" },
+  { pattern: /\/(free-)?psd\//, categoryId: "psd" },
+  { pattern: /\/mockups?\//, categoryId: "mockup" },
+  { pattern: /\/png-?images?\/|\/free-png\//, categoryId: "png" },
+  { pattern: /\/video(s)?\/|\/stock-footage\//, categoryId: "video" },
+  { pattern: /\/premiere-pro-templates?\/|\/after-effects-templates?\//, categoryId: "premiere" },
+  { pattern: /\/music\/|\/sound-effects?\/|\/audio\//, categoryId: "audio" },
+  { pattern: /\/icons?\//, categoryId: "icon" },
+  { pattern: /\/presentation-templates?\/|\/powerpoint\//, categoryId: "ppt" },
+  { pattern: /\/3d\//, categoryId: "3d" },
+  { pattern: /\/fonts?\//, categoryId: "font" },
+  { pattern: /\/ui-kits?\/|\/figma\//, categoryId: "ui" },
+  { pattern: /\/wordpress-themes?\//, categoryId: "wp" },
+];

@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { CATEGORIES, type Category } from "@/data/categories";
+import { CATEGORIES, ALL_SITES, type Category } from "@/data/categories";
 import { toPersianDigits } from "@/lib/money";
+import { useLinkDetect } from "@/lib/useLinkDetect";
+import { unsupportedSiteMessage, type LinkEntry } from "@/lib/linkDetect";
 import OrderDrawer from "@/components/OrderDrawer";
 import AuthModal from "@/components/AuthModal";
 import { useAuth } from "@/lib/AuthContext";
@@ -30,12 +32,32 @@ function useReveal() {
 
 export default function Home() {
   const [drawerCat, setDrawerCat] = useState<Category | null>(null);
+  const [linkEntry, setLinkEntry] = useState<LinkEntry | null>(null);
   const [open, setOpen] = useState(false);
+  const [heroLink, setHeroLink] = useState("");
+  const [heroError, setHeroError] = useState<string | null>(null);
   const { user, loading, logout, authModalOpen, openAuthModal, closeAuthModal } = useAuth();
+  const heroDetection = useLinkDetect(heroLink);
   useReveal();
 
-  const openCat = (c: Category) => { setDrawerCat(c); setOpen(true); };
+  const openCat = (c: Category) => { setDrawerCat(c); setLinkEntry(null); setOpen(true); };
   const close = () => setOpen(false);
+
+  // فیلد اصلی: کاربر فقط لینک را می‌دهد؛ سایت و در صورت امکان دسته از رویش تشخیص داده می‌شود
+  // (تشخیص دسته صرفاً بر اساس الگوی مسیر URL است و همیشه ممکن نیست — در آن صورت در دراور
+  // از کاربر پرسیده می‌شود). اگر سایت پشتیبانی نشود، پیام روشن همراه با لیست سایت‌های پشتیبانی‌شده نشان داده می‌شود.
+  const handleHeroLink = () => {
+    const url = heroLink.trim();
+    if (!url) { setHeroError("لینک محصول را وارد کن."); return; }
+    if (!heroDetection.supported) {
+      setHeroError(unsupportedSiteMessage());
+      return;
+    }
+    setHeroError(null);
+    setLinkEntry({ link: url, site: heroDetection.site, categoryId: heroDetection.categoryId, candidates: heroDetection.candidates });
+    setDrawerCat(null);
+    setOpen(true);
+  };
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -111,13 +133,51 @@ export default function Home() {
           <p className="text-dim text-[clamp(1rem,2.5vw,1.25rem)] max-w-[46ch] mx-auto mb-9">
             لینکش را بفرست، ما دانلود می‌کنیم و تحویلت می‌دهیم — با هزینه‌ای جزئی به ریال، سریع و بی‌دردسر.
           </p>
-          <div className="flex gap-3.5 flex-wrap justify-center">
+          <div className="flex gap-3.5 flex-wrap justify-center mb-5">
             <a href="#cats" className="font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] px-8 py-4 bg-gradient-to-br from-accent to-accent2 text-white shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px]">
               مرور دسته‌ها
             </a>
             <a href="#how" className="font-body cursor-pointer font-bold rounded-[14px] transition text-[1.05rem] px-8 py-4 bg-[rgba(255,255,255,.06)] text-text border border-[rgba(138,124,255,.14)] backdrop-blur-[10px] hover:bg-[rgba(255,255,255,.1)] hover:-translate-y-[3px]">
               چطور کار می‌کند؟
             </a>
+          </div>
+
+          {/* فیلد اصلی لینک: کاربر فقط لینک را می‌دهد، سایت/دسته خودکار تشخیص داده می‌شود */}
+          <div className="max-w-[560px] mx-auto text-right">
+            <div className="flex gap-2.5 max-[520px]:flex-col">
+              <input
+                dir="ltr"
+                value={heroLink}
+                onChange={(e) => { setHeroLink(e.target.value); setHeroError(null); }}
+                onKeyDown={(e) => e.key === "Enter" && handleHeroLink()}
+                type="text"
+                placeholder="لینک محصول را اینجا بگذار…"
+                className="flex-1 latin text-[.95rem] text-text bg-[rgba(10,12,26,.6)] border border-[rgba(138,124,255,.24)] rounded-xl p-[14px_16px] backdrop-blur-[10px] transition focus:border-primary focus:shadow-[0_0_0_3px_rgba(107,91,255,.15)] outline-none"
+              />
+              <button
+                onClick={handleHeroLink}
+                className="font-body cursor-pointer border-none font-bold rounded-xl transition text-[.95rem] px-6 py-[14px] bg-gradient-to-br from-primary to-primary2 text-white shadow-[0_12px_30px_-10px_#6B5BFF] hover:-translate-y-0.5 shrink-0"
+              >
+                بررسی لینک
+              </button>
+            </div>
+            <div className="text-[.82rem] mt-2.5 min-h-[20px]">
+              {heroError ? (
+                <span className="text-accent2">{heroError}</span>
+              ) : heroLink && heroDetection.supported ? (
+                <span className="text-dim">
+                  سایت شناسایی شد: <b className="text-cyan">{heroDetection.site}</b>
+                  {heroDetection.categoryId && (
+                    <>
+                      {" "}— تشخیص داده شد: دسته‌ی{" "}
+                      <b className="text-cyan">{CATEGORIES.find((c) => c.id === heroDetection.categoryId)?.title}</b>
+                    </>
+                  )}
+                </span>
+              ) : (
+                <span className="text-dim">سایت‌های پشتیبانی‌شده: {ALL_SITES.join(" · ")}</span>
+              )}
+            </div>
           </div>
         </div>
         <div className="absolute bottom-[26px] left-1/2 -translate-x-1/2 z-[3] text-dim text-[.8rem] flex flex-col items-center gap-1.5" style={{ animation: "mj-bob 2.2s ease-in-out infinite" }}>
@@ -211,7 +271,7 @@ export default function Home() {
         </p>
       </footer>
 
-      <OrderDrawer open={open} category={drawerCat} onClose={close} />
+      <OrderDrawer open={open} category={drawerCat} linkEntry={linkEntry} onClose={close} />
       <AuthModal open={authModalOpen} onClose={closeAuthModal} />
     </div>
   );
