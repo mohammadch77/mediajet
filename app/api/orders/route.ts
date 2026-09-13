@@ -7,6 +7,7 @@ import { validateInput, createOrderInput, ValidationError } from "@/lib/validati
 import { debitWalletInTx, WalletError } from "@/lib/wallet";
 import { assertTransition, type OrderStatus } from "@/lib/orderState";
 import { getCurrentUser } from "@/lib/session";
+import { notifyOrderCreated } from "@/lib/telegram";
 
 const FOREIGN_KEY_VIOLATION = "P2003";
 
@@ -132,6 +133,15 @@ export async function POST(req: NextRequest) {
   if (!order) {
     return NextResponse.json({ error: "خطای پردازش سفارش" }, { status: 500 });
   }
+
+  if (order.status === "queued") {
+    notifyOrderCreated({
+      orderId: order.id,
+      priceLabel: rialToTomanLabel(Number(order.priceRial)),
+      productUrl: order.productUrl,
+    });
+  }
+
   return buildResponse(order, idempotencyKey);
 }
 
