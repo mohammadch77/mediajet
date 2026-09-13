@@ -31,7 +31,6 @@ export const chargeInput = z.object({
 export type ChargeInput = z.infer<typeof chargeInput>;
 
 export const createOrderInput = z.object({
-  userId: z.string({ required_error: "شناسه‌ی کاربر الزامی است." }).min(1, "شناسه‌ی کاربر الزامی است."),
   categoryId: z.string({ required_error: "دسته‌بندی الزامی است." }).min(1, "دسته‌بندی الزامی است."),
   site: z.string({ required_error: "سایت الزامی است." }).min(1, "سایت الزامی است."),
   productUrl: z
@@ -47,3 +46,22 @@ export const createOrderInput = z.object({
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderInput>;
+
+const mobileField = z
+  .string({ required_error: "شماره موبایل الزامی است." })
+  .regex(/^09\d{9}$/, "شماره موبایل معتبر نیست.");
+
+export const requestOtpInput = z.object({
+  mobile: mobileField,
+});
+
+export type RequestOtpInput = z.infer<typeof requestOtpInput>;
+
+export const verifyOtpInput = z.object({
+  mobile: mobileField,
+  code: z
+    .string({ required_error: "کد تأیید الزامی است." })
+    .regex(/^\d{6}$/, "کد تأیید باید ۶ رقم باشد."),
+});
+
+export type VerifyOtpInput = z.infer<typeof verifyOtpInput>;

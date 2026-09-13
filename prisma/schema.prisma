@@ -16,8 +16,35 @@ model User {
   name      String?
   createdAt DateTime @default(now())
 
-  wallet Wallet?
-  orders Order[]
+  wallet   Wallet?
+  orders   Order[]
+  sessions Session[]
+}
+
+// کد یک‌بارمصرف احراز هویت با موبایل. کد هرگز خام ذخیره نمی‌شود، فقط هش آن.
+model OtpCode {
+  id        String    @id @default(cuid())
+  mobile    String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([mobile])
+}
+
+// نشست ورود کاربر. توکن خام فقط در کوکی کلاینت است؛ در دیتابیس فقط هش آن ذخیره می‌شود.
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model Wallet {

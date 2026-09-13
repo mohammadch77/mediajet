@@ -6,6 +6,7 @@ import { rialToTomanLabel } from "@/lib/money";
 import { validateInput, createOrderInput, ValidationError } from "@/lib/validation";
 import { debitWalletInTx, WalletError } from "@/lib/wallet";
 import { assertTransition, type OrderStatus } from "@/lib/orderState";
+import { getCurrentUser } from "@/lib/session";
 
 const FOREIGN_KEY_VIOLATION = "P2003";
 
@@ -13,6 +14,11 @@ const FOREIGN_KEY_VIOLATION = "P2003";
 // ثبت سفارش: اعتبارسنجی ورودی، محاسبه‌ی قیمت فقط سمت سرور، و انتقال اتمیک
 // سفارش از draft تا queued (شامل کسر کیف پول و ثبت رویدادها).
 export async function POST(req: NextRequest) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "برای ثبت سفارش باید وارد شوید." }, { status: 401 });
+  }
+
   let input;
   try {
     const body = await req.json();
@@ -24,7 +30,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "بدنه‌ی درخواست نامعتبر است." }, { status: 400 });
   }
 
-  const { userId, categoryId, site, productUrl, paymentMethod, idempotencyKey } = input;
+  const userId = currentUser.id;
+  const { categoryId, site, productUrl, paymentMethod, idempotencyKey } = input;
 
   // درخواست تکراری: همان سفارش قبلی برگردانده می‌شود، سفارش/کسر جدید ساخته نمی‌شود.
   const existingOrder = await prisma.order.findUnique({ where: { idempotencyKey } });
