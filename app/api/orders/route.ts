@@ -10,6 +10,38 @@ import { getCurrentUser } from "@/lib/session";
 
 const FOREIGN_KEY_VIOLATION = "P2003";
 
+// GET /api/orders
+// لیست سفارش‌های کاربر جاری (فقط سفارش‌های خودش) به‌همراه اطلاعات دانلود در صورت آماده بودن.
+export async function GET() {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "برای مشاهده‌ی سفارش‌ها باید وارد شوید." }, { status: 401 });
+  }
+
+  const orders = await prisma.order.findMany({
+    where: { userId: currentUser.id },
+    orderBy: { createdAt: "desc" },
+    include: { delivery: true },
+  });
+
+  return NextResponse.json({
+    orders: orders.map((order) => ({
+      id: order.id,
+      category: order.category,
+      sourceSite: order.sourceSite,
+      productUrl: order.productUrl,
+      priceRial: order.priceRial.toString(),
+      priceLabel: rialToTomanLabel(Number(order.priceRial)),
+      status: order.status,
+      createdAt: order.createdAt.toISOString(),
+      downloadUrl:
+        (order.status === "ready" || order.status === "delivered") && order.delivery
+          ? order.delivery.fileUrl
+          : null,
+    })),
+  });
+}
+
 // POST /api/orders
 // ثبت سفارش: اعتبارسنجی ورودی، محاسبه‌ی قیمت فقط سمت سرور، و انتقال اتمیک
 // سفارش از draft تا queued (شامل کسر کیف پول و ثبت رویدادها).

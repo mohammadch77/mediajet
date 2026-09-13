@@ -6,6 +6,7 @@ import { toPersianDigits } from "@/lib/money";
 import OrderDrawer from "@/components/OrderDrawer";
 import AuthModal from "@/components/AuthModal";
 import { useAuth } from "@/lib/AuthContext";
+import Link from "next/link";
 
 // صحنه‌ی سه‌بعدی فقط سمت کلاینت لود شود
 const HeroScene = dynamic(() => import("@/components/HeroScene"), { ssr: false });
@@ -66,6 +67,12 @@ export default function Home() {
         </div>
         {!loading && user ? (
           <div className="flex items-center gap-1.5 shrink-0">
+            <Link
+              href="/dashboard"
+              className="text-text text-[.85rem] font-semibold px-3.5 py-2 rounded-full whitespace-nowrap transition hover:bg-[rgba(255,255,255,.05)]"
+            >
+              پنل کاربری
+            </Link>
             <span dir="ltr" className="text-text text-[.85rem] font-semibold px-3.5 py-2 whitespace-nowrap">
               {user.mobile}
             </span>
