@@ -59,6 +59,35 @@ export default function DashboardPage() {
   const [messageText, setMessageText] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messageError, setMessageError] = useState<string | null>(null);
+  const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
+
+  async function handleDownload(order: Order) {
+    if (!order.downloadUrl || downloadingOrderId) return;
+    setDownloadingOrderId(order.id);
+    try {
+      const res = await fetch(order.downloadUrl);
+      if (!res.ok) {
+        throw new Error("دانلود فایل ناموفق بود.");
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+      const fileName = match ? decodeURIComponent(match[1]) : "file";
+
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      setError("دانلود فایل با خطا مواجه شد؛ دوباره تلاش کنید.");
+    } finally {
+      setDownloadingOrderId(null);
+    }
+  }
 
   async function loadDashboard() {
     try {
@@ -338,14 +367,14 @@ export default function DashboardPage() {
                     {STATUS_LABELS[o.status]}
                   </span>
                   {o.downloadUrl && (
-                    <a
-                      href={o.downloadUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-body cursor-pointer border-none font-bold text-[.85rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-2.5 rounded-full whitespace-nowrap transition hover:-translate-y-px"
+                    <button
+                      type="button"
+                      onClick={() => handleDownload(o)}
+                      disabled={downloadingOrderId === o.id}
+                      className="font-body cursor-pointer border-none font-bold text-[.85rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-2.5 rounded-full whitespace-nowrap transition hover:-translate-y-px disabled:opacity-70 disabled:cursor-wait"
                     >
-                      دانلود
-                    </a>
+                      {downloadingOrderId === o.id ? "در حال آماده‌سازی فایل شما..." : "دانلود"}
+                    </button>
                   )}
                 </div>
               </div>

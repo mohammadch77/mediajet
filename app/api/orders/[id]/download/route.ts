@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { fileStorage } from "@/lib/storage";
+import { ensureFileOnDisk } from "@/lib/fileCleanup";
 
 // GET /api/orders/[id]/download
 // دانلود فایل تحویلی سفارش؛ فقط مالک سفارش و فقط برای فایل‌های کوچک (غیر «بزرگ») مجاز است.
@@ -21,6 +22,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const delivery = order.delivery;
   if (!delivery || !delivery.storageKey || delivery.isLarge) {
     return NextResponse.json({ error: "فایل این سفارش برای دانلود مستقیم در دسترس نیست." }, { status: 404 });
+  }
+
+  try {
+    await ensureFileOnDisk(delivery);
+  } catch (error) {
+    console.error(`[دانلود خطا] بازیابی فایل تحویل سفارش ${id} با خطا مواجه شد:`, error);
+    return NextResponse.json({ error: "فایل روی سرور یافت نشد." }, { status: 404 });
   }
 
   let data: Buffer;

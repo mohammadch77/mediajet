@@ -175,6 +175,9 @@ model Delivery {
   mimeType       String?
   fileSizeBytes  Int?
   isLarge        Boolean  @default(false)
+  telegramFileId String?
+  isOnDisk       Boolean  @default(false)
+  lastAccessedAt DateTime?
   deliveredAt    DateTime @default(now())
 
   order Order @relation(fields: [orderId], references: [id])

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { fileStorage } from "@/lib/storage";
-import { sendMessage } from "@/lib/telegram";
+import { sendMessage, downloadTelegramFile } from "@/lib/telegram";
 import { assertTransition, type OrderStatus } from "@/lib/orderState";
 import { validateInput, telegramUpdateInput, ValidationError, type TelegramUpdateInput } from "@/lib/validation";
 
@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
           fileName: message.document.file_name ?? "file",
           mimeType: message.document.mime_type ?? "application/octet-stream",
           fileSizeBytes: buffer.length,
+          telegramFileId: message.document.file_id,
         },
       );
       await sendMessage(operatorChatId, `✅ فایل سفارش ${orderId} ذخیره شد و سفارش آماده‌ی دانلود شد.`);
@@ -149,31 +150,6 @@ function buildStorageKey(orderId: string, fileName?: string): string {
   return `deliveries/${orderId}/${crypto.randomUUID()}${ext}`;
 }
 
-/** فایل را از تلگرام دانلود می‌کند. بدون TELEGRAM_BOT_TOKEN (حالت شبیه‌سازی)، محتوای جعلی تولید می‌شود. */
-async function downloadTelegramFile(fileId: string, fileName?: string): Promise<Buffer> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) {
-    console.log(`[تلگرام شبیه‌سازی] دانلود فایل ${fileName ?? fileId} به‌صورت شبیه‌سازی انجام شد.`);
-    return Buffer.from(`simulated-file-content:${fileId}:${fileName ?? ""}`);
-  }
-
-  const infoRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
-  if (!infoRes.ok) {
-    throw new Error("دریافت اطلاعات فایل از تلگرام ناموفق بود.");
-  }
-  const info = await infoRes.json();
-  const filePath = info?.result?.file_path;
-  if (!filePath) {
-    throw new Error("مسیر فایل در پاسخ تلگرام یافت نشد.");
-  }
-
-  const fileRes = await fetch(`https://api.telegram.org/file/bot${token}/${filePath}`);
-  if (!fileRes.ok) {
-    throw new Error("دانلود فایل از تلگرام ناموفق بود.");
-  }
-  return Buffer.from(await fileRes.arrayBuffer());
-}
-
 /** سفارش را (در صورت نیاز از queued عبور از processing) به ready می‌برد؛ اگر از قبل ready/delivered باشد بی‌اثر است. */
 async function advanceToReady(
   tx: Prisma.TransactionClient,
@@ -213,10 +189,17 @@ async function deliverSmall(
   orderId: string,
   fromStatus: OrderStatus,
   actor: string,
-  file: { storageKey: string; fileName: string; mimeType: string; fileSizeBytes: number },
+  file: {
+    storageKey: string;
+    fileName: string;
+    mimeType: string;
+    fileSizeBytes: number;
+    telegramFileId: string;
+  },
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await advanceToReady(tx, orderId, fromStatus, actor);
+    const now = new Date();
     await tx.delivery.upsert({
       where: { orderId },
       create: {
@@ -226,6 +209,9 @@ async function deliverSmall(
         mimeType: file.mimeType,
         fileSizeBytes: file.fileSizeBytes,
         isLarge: false,
+        telegramFileId: file.telegramFileId,
+        isOnDisk: true,
+        lastAccessedAt: now,
       },
       update: {
         storageKey: file.storageKey,
@@ -233,7 +219,10 @@ async function deliverSmall(
         mimeType: file.mimeType,
         fileSizeBytes: file.fileSizeBytes,
         isLarge: false,
-        deliveredAt: new Date(),
+        telegramFileId: file.telegramFileId,
+        isOnDisk: true,
+        lastAccessedAt: now,
+        deliveredAt: now,
       },
     });
   });
