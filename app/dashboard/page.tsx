@@ -40,6 +40,28 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [chargeNotice, setChargeNotice] = useState<"success" | "failed" | null>(null);
+  const [chargeAmountToman, setChargeAmountToman] = useState("");
+  const [charging, setCharging] = useState(false);
+  const [chargeError, setChargeError] = useState<string | null>(null);
+
+  async function loadDashboard() {
+    try {
+      const [ordersRes, walletRes] = await Promise.all([
+        fetch("/api/orders"),
+        fetch("/api/wallet"),
+      ]);
+      if (!ordersRes.ok || !walletRes.ok) {
+        throw new Error("خطا در دریافت اطلاعات پنل.");
+      }
+      const ordersData = await ordersRes.json();
+      const walletData = await walletRes.json();
+      setOrders(ordersData.orders);
+      setWallet(walletData);
+    } catch {
+      setError("دریافت اطلاعات با خطا مواجه شد. دوباره تلاش کن.");
+    }
+  }
 
   useEffect(() => {
     if (loading) return;
@@ -49,24 +71,42 @@ export default function DashboardPage() {
       return;
     }
 
-    (async () => {
-      try {
-        const [ordersRes, walletRes] = await Promise.all([
-          fetch("/api/orders"),
-          fetch("/api/wallet"),
-        ]);
-        if (!ordersRes.ok || !walletRes.ok) {
-          throw new Error("خطا در دریافت اطلاعات پنل.");
-        }
-        const ordersData = await ordersRes.json();
-        const walletData = await walletRes.json();
-        setOrders(ordersData.orders);
-        setWallet(walletData);
-      } catch {
-        setError("دریافت اطلاعات با خطا مواجه شد. دوباره تلاش کن.");
-      }
-    })();
+    const params = new URLSearchParams(window.location.search);
+    const charge = params.get("charge");
+    if (charge === "success" || charge === "failed") {
+      setChargeNotice(charge);
+      router.replace("/dashboard");
+    }
+
+    loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user, router, openAuthModal]);
+
+  async function handleCharge() {
+    setChargeError(null);
+    const toman = Number(chargeAmountToman);
+    if (!Number.isInteger(toman) || toman <= 0) {
+      setChargeError("مبلغ را به تومان و به‌صورت عدد صحیح وارد کن.");
+      return;
+    }
+
+    setCharging(true);
+    try {
+      const res = await fetch("/api/wallet/charge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amountRial: toman * 10 }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "خطا در شروع شارژ کیف پول.");
+      }
+      window.location.href = data.redirectUrl;
+    } catch (e) {
+      setChargeError(e instanceof Error ? e.message : "خطا در شروع شارژ کیف پول.");
+      setCharging(false);
+    }
+  }
 
   if (loading || !user) {
     return (
@@ -94,6 +134,17 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {chargeNotice === "success" && (
+        <div className="bg-[rgba(56,225,255,.1)] border border-[rgba(56,225,255,.3)] text-cyan rounded-2xl p-4 mb-8">
+          شارژ کیف پول با موفقیت انجام شد.
+        </div>
+      )}
+      {chargeNotice === "failed" && (
+        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-8">
+          شارژ کیف پول ناموفق بود یا لغو شد.
+        </div>
+      )}
+
       {/* WALLET */}
       <section className="mb-14">
         <h2 className="font-display text-[1.3rem] font-bold mb-4">کیف پول</h2>
@@ -110,6 +161,27 @@ export default function DashboardPage() {
                 {wallet.balanceLabel}
               </div>
             </div>
+
+            <div className="flex items-center gap-3 flex-wrap mb-2">
+              <input
+                type="number"
+                min={1}
+                placeholder="مبلغ به تومان"
+                value={chargeAmountToman}
+                onChange={(e) => setChargeAmountToman(e.target.value)}
+                className="bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2.5 text-[.9rem] w-[180px] outline-none focus:border-cyan"
+              />
+              <button
+                onClick={handleCharge}
+                disabled={charging}
+                className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-5 py-2.5 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {charging ? "در حال انتقال..." : "شارژ کیف پول"}
+              </button>
+            </div>
+            {chargeError && (
+              <div className="text-accent2 text-[.82rem] mb-6">{chargeError}</div>
+            )}
 
             {wallet.transactions.length === 0 ? (
               <div className="text-dim text-[.9rem]">هنوز تراکنشی ثبت نشده است.</div>

@@ -37,6 +37,16 @@ export const chargeInput = z.object({
 
 export type ChargeInput = z.infer<typeof chargeInput>;
 
+// برخلاف chargeInput، شناسه‌ی کاربر از session خوانده می‌شود، نه از بدنه‌ی درخواست.
+export const walletChargeInput = z.object({
+  amountRial: z
+    .number({ error: requiredOrInvalidType("مبلغ الزامی است.", "مبلغ باید عدد باشد.") })
+    .int("مبلغ باید عدد صحیح باشد.")
+    .positive("مبلغ باید بزرگ‌تر از صفر باشد."),
+});
+
+export type WalletChargeInput = z.infer<typeof walletChargeInput>;
+
 export const createOrderInput = z.object({
   categoryId: z
     .string({ error: "دسته‌بندی الزامی است." })

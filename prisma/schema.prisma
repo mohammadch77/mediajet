@@ -19,6 +19,7 @@ model User {
   wallet   Wallet?
   orders   Order[]
   sessions Session[]
+  payments Payment[]
 }
 
 // کد یک‌بارمصرف احراز هویت با موبایل. کد هرگز خام ذخیره نمی‌شود، فقط هش آن.
@@ -78,6 +79,32 @@ model WalletTransaction {
 enum TxType {
   credit // شارژ / بازگشت وجه
   debit // پرداخت سفارش
+}
+
+// یک تلاش برای شارژ کیف پول از طریق درگاه پرداخت (فعلاً MockGateway، بعداً زرین‌پال).
+// authority شناسه‌ی یکتای درگاه برای این تلاش پرداخت است.
+// idempotencyKey برای جلوگیری از شارژ تکراری در صورت فراخوانی مکرر callback به creditWallet داده می‌شود.
+model Payment {
+  id             String        @id @default(cuid())
+  userId         String
+  amountRial     BigInt
+  status         PaymentStatus @default(initiated)
+  authority      String        @unique
+  refId          String?
+  idempotencyKey String        @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+enum PaymentStatus {
+  initiated
+  paid
+  failed
+  verified
 }
 
 model Order {

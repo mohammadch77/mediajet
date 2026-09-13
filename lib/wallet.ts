@@ -85,8 +85,12 @@ export async function debitWalletInTx(
   return transaction;
 }
 
-/** کیف پول کاربر را شارژ می‌کند. اگر idempotencyKey تکراری باشد، تراکنش قبلی برگردانده می‌شود. */
-export async function creditWallet(
+/**
+ * شارژ کیف پول در دل یک تراکنش موجود (مثلاً تأیید بازگشت از درگاه پرداخت).
+ * برخلاف creditWallet، تراکنش جدیدی باز نمی‌کند تا atomicity با عملیات بیرونی حفظ شود.
+ */
+export async function creditWalletInTx(
+  tx: Prisma.TransactionClient,
   userId: string,
   amountRial: bigint,
   ref: string | null,
@@ -97,30 +101,48 @@ export async function creditWallet(
     throw new WalletError("مبلغ شارژ باید بزرگ‌تر از صفر باشد.");
   }
 
+  if (idempotencyKey) {
+    const existing = await findByIdempotencyKey(idempotencyKey, tx);
+    if (existing) {
+      return existing;
+    }
+  }
+
+  const wallet = await lockWallet(tx, userId);
+  const balanceAfter = wallet.balanceRial + amountRial;
+
+  const transaction = await tx.walletTransaction.create({
+    data: {
+      walletId: wallet.id,
+      type: TxType.credit,
+      amountRial,
+      balanceAfter,
+      ref,
+      note,
+      idempotencyKey,
+    },
+  });
+
+  await tx.wallet.update({
+    where: { id: wallet.id },
+    data: { balanceRial: balanceAfter },
+  });
+
+  return transaction;
+}
+
+/** کیف پول کاربر را شارژ می‌کند. اگر idempotencyKey تکراری باشد، تراکنش قبلی برگردانده می‌شود. */
+export async function creditWallet(
+  userId: string,
+  amountRial: bigint,
+  ref: string | null,
+  note: string | null,
+  idempotencyKey?: string,
+): Promise<WalletTransaction> {
   try {
-    return await prisma.$transaction(async (tx) => {
-      const wallet = await lockWallet(tx, userId);
-      const balanceAfter = wallet.balanceRial + amountRial;
-
-      const transaction = await tx.walletTransaction.create({
-        data: {
-          walletId: wallet.id,
-          type: TxType.credit,
-          amountRial,
-          balanceAfter,
-          ref,
-          note,
-          idempotencyKey,
-        },
-      });
-
-      await tx.wallet.update({
-        where: { id: wallet.id },
-        data: { balanceRial: balanceAfter },
-      });
-
-      return transaction;
-    });
+    return await prisma.$transaction((tx) =>
+      creditWalletInTx(tx, userId, amountRial, ref, note, idempotencyKey),
+    );
   } catch (error) {
     return handleIdempotencyConflict(error, idempotencyKey);
   }
