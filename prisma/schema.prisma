@@ -14,12 +14,18 @@ model User {
   id        String   @id @default(cuid())
   mobile    String   @unique
   name      String?
+  role      Role     @default(user)
   createdAt DateTime @default(now())
 
   wallet   Wallet?
   orders   Order[]
   sessions Session[]
   payments Payment[]
+}
+
+enum Role {
+  user
+  operator
 }
 
 // کد یک‌بارمصرف احراز هویت با موبایل. کد هرگز خام ذخیره نمی‌شود، فقط هش آن.

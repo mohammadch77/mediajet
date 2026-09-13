@@ -95,3 +95,12 @@ export class SessionError extends Error {
     this.name = "SessionError";
   }
 }
+
+/** برای مسیرهای پنل اپراتور: کاربر جاری را برمی‌گرداند، فقط اگر نقش operator داشته باشد. */
+export async function requireOperator(): Promise<User> {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "operator") {
+    throw new SessionError("این عملیات فقط برای اپراتور مجاز است.");
+  }
+  return user;
+}

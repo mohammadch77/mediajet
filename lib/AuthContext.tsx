@@ -3,7 +3,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
-export type AuthUser = { id: string; mobile: string; walletBalanceRial: string };
+export type AuthUser = { id: string; mobile: string; role: "user" | "operator"; walletBalanceRial: string };
 
 type AuthContextValue = {
   user: AuthUser | null;

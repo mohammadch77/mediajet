@@ -85,3 +85,32 @@ export const verifyOtpInput = z.object({
 });
 
 export type VerifyOtpInput = z.infer<typeof verifyOtpInput>;
+
+const orderStatusValues = [
+  "draft",
+  "awaiting_payment",
+  "queued",
+  "processing",
+  "ready",
+  "delivered",
+  "cancelled",
+  "failed",
+  "refunded",
+] as const;
+
+export const operatorStatusInput = z.object({
+  toStatus: z.enum(orderStatusValues, {
+    error: requiredOrInvalidType("وضعیت مقصد الزامی است.", "وضعیت مقصد نامعتبر است."),
+  }),
+  note: z.string().optional(),
+});
+
+export type OperatorStatusInput = z.infer<typeof operatorStatusInput>;
+
+export const operatorDeliverInput = z.object({
+  fileUrl: z
+    .string({ error: "لینک فایل تحویلی الزامی است." })
+    .url("لینک فایل تحویلی معتبر نیست."),
+});
+
+export type OperatorDeliverInput = z.infer<typeof operatorDeliverInput>;
