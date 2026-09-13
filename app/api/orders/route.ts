@@ -25,21 +25,39 @@ export async function GET() {
     include: { delivery: true },
   });
 
+  const supportUsername = process.env.TELEGRAM_SUPPORT_USERNAME || "@support";
+
   return NextResponse.json({
-    orders: orders.map((order) => ({
-      id: order.id,
-      category: order.category,
-      sourceSite: order.sourceSite,
-      productUrl: order.productUrl,
-      priceRial: order.priceRial.toString(),
-      priceLabel: rialToTomanLabel(Number(order.priceRial)),
-      status: order.status,
-      createdAt: order.createdAt.toISOString(),
-      downloadUrl:
-        (order.status === "ready" || order.status === "delivered") && order.delivery
-          ? order.delivery.fileUrl
-          : null,
-    })),
+    orders: orders.map((order) => {
+      const isDeliverable = order.status === "ready" || order.status === "delivered";
+      const delivery = order.delivery;
+
+      let downloadUrl: string | null = null;
+      let supportMessage: string | null = null;
+
+      if (isDeliverable && delivery) {
+        if (delivery.isLarge) {
+          supportMessage = `فایل شما آماده است؛ برای دریافت به پشتیبانی (${supportUsername}) پیام دهید.`;
+        } else if (delivery.storageKey) {
+          downloadUrl = `/api/orders/${order.id}/download`;
+        } else if (delivery.fileUrl) {
+          downloadUrl = delivery.fileUrl;
+        }
+      }
+
+      return {
+        id: order.id,
+        category: order.category,
+        sourceSite: order.sourceSite,
+        productUrl: order.productUrl,
+        priceRial: order.priceRial.toString(),
+        priceLabel: rialToTomanLabel(Number(order.priceRial)),
+        status: order.status,
+        createdAt: order.createdAt.toISOString(),
+        downloadUrl,
+        supportMessage,
+      };
+    }),
   });
 }
 

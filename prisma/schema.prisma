@@ -161,11 +161,20 @@ model OrderEvent {
   @@index([orderId])
 }
 
+// تحویل فایل سفارش به دو روش ممکن است ثبت شود:
+// ۱) fileUrl: لینک دستی که اپراتور مستقیماً وارد می‌کند (روش قدیمی).
+// ۲) storageKey: فایلی که از طریق بات تلگرام دریافت و در storage ذخیره شده (روش جدید).
+// وقتی isLarge=true باشد، هیچ فایلی ذخیره نشده و پنل کاربر پیام پشتیبانی نشان می‌دهد.
 model Delivery {
-  id          String   @id @default(cuid())
-  orderId     String   @unique
-  fileUrl     String
-  deliveredAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  orderId        String   @unique
+  fileUrl        String?
+  storageKey     String?
+  fileName       String?
+  mimeType       String?
+  fileSizeBytes  Int?
+  isLarge        Boolean  @default(false)
+  deliveredAt    DateTime @default(now())
 
   order Order @relation(fields: [orderId], references: [id])
 }

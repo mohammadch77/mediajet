@@ -114,3 +114,31 @@ export const operatorDeliverInput = z.object({
 });
 
 export type OperatorDeliverInput = z.infer<typeof operatorDeliverInput>;
+
+// فقط فیلدهایی از آپدیت تلگرام که در webhook استفاده می‌شوند اعتبارسنجی می‌شوند؛
+// بدنه‌ی واقعی تلگرام فیلدهای بسیار بیشتری دارد که برای ما اهمیتی ندارند.
+export const telegramUpdateInput = z.object({
+  message: z
+    .object({
+      message_id: z.number(),
+      chat: z.object({ id: z.union([z.number(), z.string()]) }),
+      text: z.string().optional(),
+      caption: z.string().optional(),
+      document: z
+        .object({
+          file_id: z.string(),
+          file_name: z.string().optional(),
+          mime_type: z.string().optional(),
+          file_size: z.number().optional(),
+        })
+        .optional(),
+      reply_to_message: z
+        .object({
+          text: z.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+});
+
+export type TelegramUpdateInput = z.infer<typeof telegramUpdateInput>;

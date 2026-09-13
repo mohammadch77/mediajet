@@ -17,6 +17,7 @@ type Order = {
   status: OrderStatus;
   createdAt: string;
   downloadUrl: string | null;
+  supportMessage: string | null;
 };
 
 type WalletTx = {
@@ -258,8 +259,11 @@ export default function DashboardPage() {
                     {o.productUrl}
                   </a>
                   <div className="text-dim text-[.78rem] mt-1.5">{toJalaliDate(o.createdAt)}</div>
+                  {o.supportMessage && (
+                    <div className="text-cyan text-[.8rem] mt-2 max-w-[420px]">{o.supportMessage}</div>
+                  )}
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-3 flex-wrap shrink-0">
                   <span className="font-semibold text-[.95rem]">{o.priceLabel}</span>
                   <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)]">
                     {STATUS_LABELS[o.status]}
