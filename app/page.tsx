@@ -4,6 +4,8 @@ import dynamic from "next/dynamic";
 import { CATEGORIES, type Category } from "@/data/categories";
 import { toPersianDigits } from "@/lib/money";
 import OrderDrawer from "@/components/OrderDrawer";
+import AuthModal from "@/components/AuthModal";
+import { useAuth } from "@/lib/AuthContext";
 
 // صحنه‌ی سه‌بعدی فقط سمت کلاینت لود شود
 const HeroScene = dynamic(() => import("@/components/HeroScene"), { ssr: false });
@@ -28,6 +30,7 @@ function useReveal() {
 export default function Home() {
   const [drawerCat, setDrawerCat] = useState<Category | null>(null);
   const [open, setOpen] = useState(false);
+  const { user, loading, logout, authModalOpen, openAuthModal, closeAuthModal } = useAuth();
   useReveal();
 
   const openCat = (c: Category) => { setDrawerCat(c); setOpen(true); };
@@ -61,9 +64,26 @@ export default function Home() {
             </a>
           ))}
         </div>
-        <button className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-[18px] py-2.5 rounded-full whitespace-nowrap shrink-0 transition hover:-translate-y-px hover:shadow-[0_0_60px_-10px_#6B5BFF]">
-          ورود / ثبت‌نام
-        </button>
+        {!loading && user ? (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span dir="ltr" className="text-text text-[.85rem] font-semibold px-3.5 py-2 whitespace-nowrap">
+              {user.mobile}
+            </span>
+            <button
+              onClick={logout}
+              className="font-body cursor-pointer border-none font-bold text-[.85rem] text-text bg-[rgba(255,255,255,.08)] px-4 py-2.5 rounded-full whitespace-nowrap shrink-0 transition hover:bg-[rgba(255,255,255,.16)]"
+            >
+              خروج
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={openAuthModal}
+            className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-[18px] py-2.5 rounded-full whitespace-nowrap shrink-0 transition hover:-translate-y-px hover:shadow-[0_0_60px_-10px_#6B5BFF]"
+          >
+            ورود / ثبت‌نام
+          </button>
+        )}
       </nav>
 
       {/* HERO */}
@@ -147,7 +167,8 @@ export default function Home() {
             <div className="absolute w-[140px] h-[140px] rounded-full bg-[rgba(255,255,255,.08)] -bottom-10 right-[20%]" />
             <div className="text-[rgba(255,255,255,.85)] text-[.9rem] relative">موجودی کیف پول</div>
             <div className="font-display text-[2.6rem] font-extrabold my-1.5 mb-[22px] relative" dir="rtl">
-              {toPersianDigits("2,450,000")} <small className="text-base font-medium">تومان</small>
+              {toPersianDigits(Math.round(Number(user?.walletBalanceRial ?? 0) / 10).toLocaleString("en-US"))}{" "}
+              <small className="text-base font-medium">تومان</small>
             </div>
             <div className="flex gap-2.5 flex-wrap relative">
               {["۱۰۰٬۰۰۰", "۵۰۰٬۰۰۰", "۱٬۰۰۰٬۰۰۰"].map((v) => (
@@ -184,6 +205,7 @@ export default function Home() {
       </footer>
 
       <OrderDrawer open={open} category={drawerCat} onClose={close} />
+      <AuthModal open={authModalOpen} onClose={closeAuthModal} />
     </div>
   );
 }

@@ -20,10 +20,17 @@ function firstErrorMessage(error: ZodError): string {
   return error.issues[0]?.message ?? "ورودی نامعتبر است.";
 }
 
+/** پیام "الزامی" برای فیلد غایب و پیام "نوع نامعتبر" برای مقداری با نوع اشتباه. */
+function requiredOrInvalidType(requiredMsg: string, invalidTypeMsg: string) {
+  return (iss: { input?: unknown }) => (iss.input === undefined ? requiredMsg : invalidTypeMsg);
+}
+
 export const chargeInput = z.object({
-  userId: z.string({ required_error: "شناسه‌ی کاربر الزامی است." }).min(1, "شناسه‌ی کاربر الزامی است."),
+  userId: z
+    .string({ error: "شناسه‌ی کاربر الزامی است." })
+    .min(1, "شناسه‌ی کاربر الزامی است."),
   amountRial: z
-    .number({ required_error: "مبلغ الزامی است.", invalid_type_error: "مبلغ باید عدد باشد." })
+    .number({ error: requiredOrInvalidType("مبلغ الزامی است.", "مبلغ باید عدد باشد.") })
     .int("مبلغ باید عدد صحیح باشد.")
     .positive("مبلغ باید بزرگ‌تر از صفر باشد."),
 });
@@ -31,24 +38,27 @@ export const chargeInput = z.object({
 export type ChargeInput = z.infer<typeof chargeInput>;
 
 export const createOrderInput = z.object({
-  categoryId: z.string({ required_error: "دسته‌بندی الزامی است." }).min(1, "دسته‌بندی الزامی است."),
-  site: z.string({ required_error: "سایت الزامی است." }).min(1, "سایت الزامی است."),
+  categoryId: z
+    .string({ error: "دسته‌بندی الزامی است." })
+    .min(1, "دسته‌بندی الزامی است."),
+  site: z
+    .string({ error: "سایت الزامی است." })
+    .min(1, "سایت الزامی است."),
   productUrl: z
-    .string({ required_error: "آدرس محصول الزامی است." })
+    .string({ error: "آدرس محصول الزامی است." })
     .url("آدرس محصول معتبر نیست."),
   paymentMethod: z.literal("wallet", {
-    required_error: "روش پرداخت الزامی است.",
-    invalid_type_error: "روش پرداخت نامعتبر است.",
+    error: requiredOrInvalidType("روش پرداخت الزامی است.", "روش پرداخت نامعتبر است."),
   }),
   idempotencyKey: z
-    .string({ required_error: "کلید یکتای درخواست الزامی است." })
+    .string({ error: "کلید یکتای درخواست الزامی است." })
     .min(1, "کلید یکتای درخواست الزامی است."),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderInput>;
 
 const mobileField = z
-  .string({ required_error: "شماره موبایل الزامی است." })
+  .string({ error: "شماره موبایل الزامی است." })
   .regex(/^09\d{9}$/, "شماره موبایل معتبر نیست.");
 
 export const requestOtpInput = z.object({
@@ -60,7 +70,7 @@ export type RequestOtpInput = z.infer<typeof requestOtpInput>;
 export const verifyOtpInput = z.object({
   mobile: mobileField,
   code: z
-    .string({ required_error: "کد تأیید الزامی است." })
+    .string({ error: "کد تأیید الزامی است." })
     .regex(/^\d{6}$/, "کد تأیید باید ۶ رقم باشد."),
 });
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateInput, verifyOtpInput, ValidationError } from "@/lib/validation";
 import { verifyOtp, OtpError } from "@/lib/otp";
 import { findOrCreateUserByMobile, createSession } from "@/lib/session";
+import { prisma } from "@/lib/db";
 
 // POST /api/auth/verify-otp
 // تأیید کد OTP؛ در صورت موفقیت کاربر را (در صورت نبود) می‌سازد و نشست ورود ایجاد می‌کند.
@@ -29,5 +30,11 @@ export async function POST(req: NextRequest) {
   const user = await findOrCreateUserByMobile(input.mobile);
   await createSession(user.id);
 
-  return NextResponse.json({ userId: user.id, mobile: user.mobile });
+  const wallet = await prisma.wallet.findUnique({ where: { userId: user.id } });
+
+  return NextResponse.json({
+    userId: user.id,
+    mobile: user.mobile,
+    walletBalanceRial: (wallet?.balanceRial ?? 0n).toString(),
+  });
 }

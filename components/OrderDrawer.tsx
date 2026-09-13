@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { CATEGORIES, categoryById, type Category } from "@/data/categories";
 import { detectSite } from "@/lib/detectSite";
+import { useAuth } from "@/lib/AuthContext";
 
 interface Props {
   open: boolean;
@@ -10,14 +11,27 @@ interface Props {
 }
 
 type Stage = "sites" | "form";
+type SubmitStatus = "idle" | "submitting" | "success" | "error";
+
+function newIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 export default function OrderDrawer({ open, category, onClose }: Props) {
+  const { requireAuth, setWalletBalance } = useAuth();
   const [stage, setStage] = useState<Stage>("sites");
   const [selectedCatId, setSelectedCatId] = useState<string>("");
   const [selectedSite, setSelectedSite] = useState<string>("");
   const [link, setLink] = useState("");
   const [detected, setDetected] = useState("");
   const [priceLabel, setPriceLabel] = useState("—");
+  const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [orderResult, setOrderResult] = useState<{ orderId: string; priceLabel: string; walletBalanceRial: string | null } | null>(null);
 
   // با باز شدن دراور، مرحله را ریست کن
   useEffect(() => {
@@ -28,8 +42,19 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
       setLink("");
       setDetected("");
       setPriceLabel("—");
+      setIdempotencyKey(newIdempotencyKey());
+      setSubmitStatus("idle");
+      setSubmitError(null);
+      setOrderResult(null);
     }
   }, [open, category]);
+
+  // اگر پارامترهای سفارش تغییر کند، کلید یکتای درخواست هم عوض شود تا با درخواست قبلی تداخل نکند.
+  useEffect(() => {
+    if (submitStatus === "idle") {
+      setIdempotencyKey(newIdempotencyKey());
+    }
+  }, [selectedCatId, selectedSite, link]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // بستن با Esc
   useEffect(() => {
@@ -85,6 +110,63 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
     const site = cat && cat.sites.includes(selectedSite) ? selectedSite : "";
     setSelectedSite(site);
     fetchQuote(id, site);
+  };
+
+  const handleSubmit = async () => {
+    if (submitStatus === "submitting") return;
+    setSubmitError(null);
+
+    if (!link.trim()) {
+      setSubmitError("لینک محصول را وارد کن.");
+      return;
+    }
+    if (!selectedSite) {
+      setSubmitError("سایت مبدأ را انتخاب کن.");
+      return;
+    }
+
+    setSubmitStatus("submitting");
+    try {
+      await requireAuth();
+    } catch {
+      // کاربر مودال ورود را بدون تکمیل ورود بست
+      setSubmitStatus("idle");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoryId: selectedCatId,
+          site: selectedSite,
+          productUrl: link,
+          paymentMethod: "wallet",
+          idempotencyKey,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSubmitStatus("error");
+        setSubmitError(
+          data.error === "موجودی کیف پول کافی نیست."
+            ? "موجودی کیف پول کافی نیست. لطفاً ابتدا کیف پول را شارژ کن."
+            : data.error ?? "ثبت سفارش با خطا مواجه شد.",
+        );
+        return;
+      }
+
+      setOrderResult({ orderId: data.orderId, priceLabel: data.priceLabel, walletBalanceRial: data.walletBalanceRial });
+      setSubmitStatus("success");
+      if (data.walletBalanceRial) {
+        setWalletBalance(data.walletBalanceRial);
+      }
+    } catch {
+      setSubmitStatus("error");
+      setSubmitError("خطا در ارتباط با سرور. دوباره تلاش کن.");
+    }
   };
 
   if (!category) return null;
@@ -159,6 +241,27 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
                 ))}
               </div>
             </>
+          ) : submitStatus === "success" && orderResult ? (
+            <div className="flex flex-col items-center text-center py-8 gap-3">
+              <div className="w-16 h-16 rounded-full bg-[rgba(56,225,255,.12)] border border-[rgba(56,225,255,.4)] grid place-items-center text-3xl">✓</div>
+              <h4 className="font-display text-[1.25rem]">سفارش با موفقیت ثبت شد</h4>
+              <p className="text-dim text-[.9rem]">
+                شماره‌ی سفارش: <b dir="ltr" className="text-cyan latin">{orderResult.orderId}</b>
+              </p>
+              <p className="text-dim text-[.9rem]">مبلغ پرداخت‌شده: <b className="text-primary2">{orderResult.priceLabel}</b></p>
+              {orderResult.walletBalanceRial && (
+                <p className="text-dim text-[.85rem]">
+                  موجودی جدید کیف پول: {" "}
+                  <b className="text-text">{Math.round(Number(orderResult.walletBalanceRial) / 10).toLocaleString("en-US")} تومان</b>
+                </p>
+              )}
+              <button
+                onClick={onClose}
+                className="mt-4 font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[.95rem] px-6 py-3 bg-[rgba(255,255,255,.08)] text-text hover:bg-[rgba(255,255,255,.16)]"
+              >
+                بستن
+              </button>
+            </div>
           ) : (
             <>
               <div className="mb-[18px]">
@@ -208,14 +311,21 @@ export default function OrderDrawer({ open, category, onClose }: Props) {
         </div>
 
         {/* footer (form stage) */}
-        {stage === "form" && (
+        {stage === "form" && submitStatus !== "success" && (
           <div className="p-[16px_26px_22px] border-t border-[rgba(138,124,255,.14)] shrink-0 bg-bg2">
             <div className="flex items-center justify-between bg-[rgba(107,91,255,.08)] border border-dashed border-[rgba(138,124,255,.4)] rounded-[14px] p-[16px_20px] mb-3.5">
               <span>هزینه‌ی تخمینی</span>
               <span className="font-display text-[1.5rem] font-extrabold text-primary2">{priceLabel}</span>
             </div>
-            <button className="w-full font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] p-4 bg-gradient-to-br from-accent to-accent2 text-white shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px]">
-              ثبت و پرداخت سفارش
+            {submitError && (
+              <div className="text-[.85rem] text-accent2 mb-3 text-center leading-[1.8]">{submitError}</div>
+            )}
+            <button
+              onClick={handleSubmit}
+              disabled={submitStatus === "submitting"}
+              className="w-full font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] p-4 bg-gradient-to-br from-accent to-accent2 text-white shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
+            >
+              {submitStatus === "submitting" ? "در حال ثبت..." : "ثبت و پرداخت سفارش"}
             </button>
           </div>
         )}
