@@ -142,3 +142,13 @@ export const telegramUpdateInput = z.object({
 });
 
 export type TelegramUpdateInput = z.infer<typeof telegramUpdateInput>;
+
+export const sendSupportMessageInput = z.object({
+  text: z
+    .string({ error: "متن پیام الزامی است." })
+    .trim()
+    .min(1, "متن پیام الزامی است.")
+    .max(2000, "متن پیام نباید بیشتر از ۲۰۰۰ نویسه باشد."),
+});
+
+export type SendSupportMessageInput = z.infer<typeof sendSupportMessageInput>;

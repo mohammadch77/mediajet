@@ -63,3 +63,17 @@ export function notifyOrderCreated(params: {
     console.error("[تلگرام خطا] TELEGRAM_CHAT_OPERATOR تنظیم نشده است.");
   }
 }
+
+/** پیام جدید کاربر در صندوق پشتیبانی را به چت پشتیبانی اطلاع می‌دهد؛ پشتیبانی با reply روی این پیام جواب می‌دهد. */
+export function notifySupportMessage(params: { userId: string; text: string }): void {
+  const { userId, text } = params;
+
+  const supportChatId = process.env.TELEGRAM_CHAT_SUPPORT;
+  if (!supportChatId) {
+    console.error("[تلگرام خطا] TELEGRAM_CHAT_SUPPORT تنظیم نشده است.");
+    return;
+  }
+
+  const supportText = ["💬 پیام جدید از کاربر", `شناسه کاربر: ${userId}`, "", text].join("\n");
+  void sendMessage(supportChatId, supportText);
+}

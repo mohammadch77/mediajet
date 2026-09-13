@@ -31,6 +31,13 @@ type WalletTx = {
 
 type WalletData = { balanceLabel: string; transactions: WalletTx[] };
 
+type SupportMessage = {
+  id: string;
+  sender: "user" | "support";
+  text: string;
+  createdAt: string;
+};
+
 function categoryTitle(id: string): string {
   return CATEGORIES.find((c) => c.id === id)?.title ?? id;
 }
@@ -45,6 +52,13 @@ export default function DashboardPage() {
   const [chargeAmountToman, setChargeAmountToman] = useState("");
   const [charging, setCharging] = useState(false);
   const [chargeError, setChargeError] = useState<string | null>(null);
+
+  const [messages, setMessages] = useState<SupportMessage[] | null>(null);
+  const [hasUnread, setHasUnread] = useState(false);
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageError, setMessageError] = useState<string | null>(null);
 
   async function loadDashboard() {
     try {
@@ -64,6 +78,60 @@ export default function DashboardPage() {
     }
   }
 
+  async function loadSupportMessages() {
+    try {
+      const res = await fetch("/api/support/messages");
+      if (!res.ok) return;
+      const data = await res.json();
+      setMessages(data.messages);
+      setHasUnread(data.hasUnread);
+    } catch {
+      // خطای دریافت پیام‌های پشتیبانی بی‌اثر است؛ بقیه‌ی پنل باید کار کند.
+    }
+  }
+
+  // با باز کردن صندوق پیام، پیام‌های پشتیبانی خوانده‌شده علامت می‌خورند.
+  async function toggleSupportInbox() {
+    const opening = !inboxOpen;
+    setInboxOpen(opening);
+    if (opening && hasUnread) {
+      setHasUnread(false);
+      try {
+        await fetch("/api/support/messages", { method: "PATCH" });
+      } catch {
+        // بی‌اثر است؛ در بازخوانی بعدی دوباره تلاش می‌شود.
+      }
+    }
+  }
+
+  async function handleSendMessage() {
+    setMessageError(null);
+    const text = messageText.trim();
+    if (!text) {
+      setMessageError("متن پیام را وارد کن.");
+      return;
+    }
+
+    setSendingMessage(true);
+    try {
+      const res = await fetch("/api/support/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "ارسال پیام با خطا مواجه شد.");
+      }
+      setMessages((prev) => [...(prev ?? []), data]);
+      setMessageText("");
+    } catch (e) {
+      setMessageError(e instanceof Error ? e.message : "ارسال پیام با خطا مواجه شد.");
+    } finally {
+      setSendingMessage(false);
+    }
+  }
+
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -80,6 +148,7 @@ export default function DashboardPage() {
     }
 
     loadDashboard();
+    loadSupportMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user, router, openAuthModal]);
 
@@ -281,6 +350,70 @@ export default function DashboardPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      {/* SUPPORT INBOX */}
+      <section className="mt-14">
+        <button
+          onClick={toggleSupportInbox}
+          className="w-full flex items-center justify-between gap-3 font-body cursor-pointer border-none bg-transparent p-0 mb-4"
+        >
+          <h2 className="font-display text-[1.3rem] font-bold flex items-center gap-2.5">
+            پیام‌ها / پشتیبانی
+            {hasUnread && (
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-accent2" />
+            )}
+          </h2>
+          <span className="text-dim text-[.85rem]">{inboxOpen ? "بستن ▲" : "باز کردن ▼"}</span>
+        </button>
+
+        {inboxOpen && (
+          <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-[20px_22px]">
+            <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto mb-4">
+              {!messages ? (
+                <div className="text-dim text-[.9rem]">در حال بارگذاری...</div>
+              ) : messages.length === 0 ? (
+                <div className="text-dim text-[.9rem]">هنوز پیامی ثبت نشده است.</div>
+              ) : (
+                messages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={
+                      "max-w-[80%] rounded-2xl p-3 text-[.88rem] leading-relaxed " +
+                      (m.sender === "user"
+                        ? "self-start bg-[rgba(138,124,255,.16)] border border-[rgba(138,124,255,.24)]"
+                        : "self-end bg-[rgba(56,225,255,.1)] border border-[rgba(56,225,255,.24)]")
+                    }
+                  >
+                    <div className="whitespace-pre-wrap break-words">{m.text}</div>
+                    <div className="text-dim text-[.72rem] mt-1.5">{toJalaliDateTime(m.createdAt)}</div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <input
+                type="text"
+                placeholder="پیام خودت را بنویس..."
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !sendingMessage) handleSendMessage();
+                }}
+                className="flex-1 min-w-[200px] bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2.5 text-[.9rem] outline-none focus:border-cyan"
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={sendingMessage}
+                className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-5 py-2.5 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {sendingMessage ? "در حال ارسال..." : "ارسال"}
+              </button>
+            </div>
+            {messageError && <div className="text-accent2 text-[.82rem] mt-2">{messageError}</div>}
           </div>
         )}
       </section>

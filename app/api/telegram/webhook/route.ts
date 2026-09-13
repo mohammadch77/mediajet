@@ -5,18 +5,17 @@ import { prisma } from "@/lib/db";
 import { fileStorage } from "@/lib/storage";
 import { sendMessage } from "@/lib/telegram";
 import { assertTransition, type OrderStatus } from "@/lib/orderState";
-import { validateInput, telegramUpdateInput, ValidationError } from "@/lib/validation";
+import { validateInput, telegramUpdateInput, ValidationError, type TelegramUpdateInput } from "@/lib/validation";
 
 const MAX_SMALL_FILE_BYTES = 20 * 1024 * 1024; // ۲۰ مگابایت؛ سقف دانلود فایل از طریق بات تلگرام
 const ORDER_ID_PATTERN = /شماره سفارش:\s*(\S+)/;
+const SUPPORT_USER_ID_PATTERN = /شناسه کاربر:\s*(\S+)/;
 const LARGE_MARKER_PATTERN = /^\/large\b|بزرگ/i;
 
 // POST /api/telegram/webhook
-// دریافت آپدیت از تلگرام. فقط پیام‌های reply شده‌ی چت اپراتور مجاز پذیرفته می‌شوند:
-// - اگر پیام reply شامل فایل (document) باشد و علامت «بزرگ» نداشته باشد → فایل کوچک،
-//   دانلود و در storage ذخیره می‌شود و سفارش به ready می‌رود.
-// - اگر متن/کپشن reply شامل دستور «/large» یا کلمه‌ی «بزرگ» باشد → فایل بزرگ،
-//   بدون ذخیره‌ی فایل، سفارش به ready می‌رود و پنل کاربر پیام پشتیبانی نشان می‌دهد.
+// دریافت آپدیت از تلگرام. فقط پیام‌های reply شده‌ی چت اپراتور یا چت پشتیبانی مجاز پذیرفته می‌شوند:
+// - چت اپراتور: reply روی پیام سفارش با فایل (کوچک) یا دستور «/large» (بزرگ) سفارش را به ready می‌برد.
+// - چت پشتیبانی: reply روی پیام اطلاع‌رسانی صندوق پشتیبانی، پیام پشتیبانی را برای همان کاربر ثبت می‌کند.
 export async function POST(req: NextRequest) {
   if (!isFromOperatorWebhook(req)) {
     // توکن webhook نامعتبر: بدون افشای جزئیات، درخواست نادیده گرفته می‌شود.
@@ -39,9 +38,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  const supportChatId = process.env.TELEGRAM_CHAT_SUPPORT;
+  if (supportChatId && String(message.chat.id) === supportChatId) {
+    return handleSupportReply(message, supportChatId);
+  }
+
   const operatorChatId = process.env.TELEGRAM_CHAT_OPERATOR;
   if (!operatorChatId || String(message.chat.id) !== operatorChatId) {
-    // پیام از چتی غیر از اپراتور مجاز؛ نادیده گرفته می‌شود.
+    // پیام از چتی غیر از اپراتور یا پشتیبانی مجاز؛ نادیده گرفته می‌شود.
     return NextResponse.json({ ok: true });
   }
 
@@ -97,6 +101,35 @@ export async function POST(req: NextRequest) {
       `⚠️ ثبت تحویل سفارش ${orderId} با خطا مواجه شد: ${error instanceof Error ? error.message : "خطای نامشخص"}`,
     );
   }
+
+  return NextResponse.json({ ok: true });
+}
+
+/** پیام reply در چت پشتیبانی را به یک SupportMessage برای کاربر مرجع تبدیل می‌کند. */
+async function handleSupportReply(
+  message: NonNullable<TelegramUpdateInput["message"]>,
+  supportChatId: string,
+): Promise<NextResponse> {
+  const replyText = message.reply_to_message?.text;
+  const userId = replyText ? SUPPORT_USER_ID_PATTERN.exec(replyText)?.[1] : undefined;
+  if (!userId) {
+    return NextResponse.json({ ok: true });
+  }
+
+  const text = message.text ?? message.caption;
+  if (!text) {
+    return NextResponse.json({ ok: true });
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    await sendMessage(supportChatId, `⚠️ کاربر با شناسه ${userId} یافت نشد.`);
+    return NextResponse.json({ ok: true });
+  }
+
+  await prisma.supportMessage.create({
+    data: { userId, sender: "support", text, readByUser: false },
+  });
 
   return NextResponse.json({ ok: true });
 }

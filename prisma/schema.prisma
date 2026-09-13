@@ -17,10 +17,11 @@ model User {
   role      Role     @default(user)
   createdAt DateTime @default(now())
 
-  wallet   Wallet?
-  orders   Order[]
-  sessions Session[]
-  payments Payment[]
+  wallet          Wallet?
+  orders          Order[]
+  sessions        Session[]
+  payments        Payment[]
+  supportMessages SupportMessage[]
 }
 
 enum Role {
@@ -177,4 +178,24 @@ model Delivery {
   deliveredAt    DateTime @default(now())
 
   order Order @relation(fields: [orderId], references: [id])
+}
+
+// پیام صندوق پشتیبانی دوطرفه: کاربر فقط از پنل کاربری، پشتیبانی فقط از تلگرام.
+// append-only: فقط insert و آپدیت readByUser مجاز است؛ متن پیام هرگز ویرایش نمی‌شود.
+model SupportMessage {
+  id         String              @id @default(cuid())
+  userId     String
+  sender     SupportMessageSender
+  text       String
+  readByUser Boolean             @default(false)
+  createdAt  DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+enum SupportMessageSender {
+  user
+  support
 }
