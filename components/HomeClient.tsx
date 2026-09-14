@@ -290,6 +290,7 @@ export default function HomeClient({ content }: { content: Record<string, string
           <a href="/p/about" className="text-dim hover:text-text transition">درباره ما</a>
           <a href="/p/terms" className="text-dim hover:text-text transition">قوانین و مقررات</a>
           <a href="/p/faq" className="text-dim hover:text-text transition">سؤالات متداول</a>
+          <a href="/blog" className="text-dim hover:text-text transition">وبلاگ</a>
         </div>
         <p className="max-w-[60ch] mx-auto mt-4 text-[.78rem] text-[#5b6390] leading-[1.85]">
           {content["footer.copyright"]}

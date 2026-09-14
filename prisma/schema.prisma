@@ -25,6 +25,7 @@ model User {
 
   roleChangesReceived RoleChangeLog[] @relation("RoleChangeTarget")
   roleChangesMade     RoleChangeLog[] @relation("RoleChangeActor")
+  blogPosts           BlogPost[]
 }
 
 // لاگ append-only از تغییرات نقش کاربر توسط ادمین (چه کسی، چه زمانی، از چه نقشی به چه نقشی).
@@ -256,4 +257,27 @@ model Page {
   metaDescription String?
   updatedAt       DateTime @updatedAt
   updatedBy       String
+}
+
+// نوشته‌های وبلاگ. همان الگوی Page: contentHtml همیشه پیش از ذخیره sanitize می‌شود
+// (lib/sanitize.ts) و دوباره در رندر عمومی. published=false یعنی پیش‌نویس: در سایت عمومی ۴۰۴.
+// publishedAt زمان اولین انتشار را نگه می‌دارد (برای نمایش تاریخ در لیست عمومی و مرتب‌سازی).
+model BlogPost {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  title           String
+  excerpt         String?
+  contentHtml     String
+  coverImage      String?
+  published       Boolean   @default(false)
+  publishedAt     DateTime?
+  metaTitle       String?
+  metaDescription String?
+  authorId        String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([published, publishedAt])
 }

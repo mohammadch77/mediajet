@@ -29,7 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/settings", label: "تنظیمات", icon: <Icon path="M10.3 2.5h3.4l.6 2.7 2.4-1.4 2.4 2.4-1.4 2.4 2.7.6v3.4l-2.7.6 1.4 2.4-2.4 2.4-2.4-1.4-.6 2.7h-3.4l-.6-2.7-2.4 1.4-2.4-2.4 1.4-2.4-2.7-.6V9.2l2.7-.6-1.4-2.4 2.4-2.4 2.4 1.4.6-2.7ZM9.5 12a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0Z" /> },
   { href: "/admin/content", label: "محتوا", icon: <Icon path="M4 5h16v3H4V5Zm0 6h10v3H4v-3Zm0 6h16v2H4v-2Z" /> },
   { href: "/admin/pages", label: "صفحات", icon: <Icon path="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm8 0v5h5M8 13h8m-8 4h5" /> },
-  { href: "/admin/blog", label: "وبلاگ", icon: <Icon path="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4Zm3 5h9m-9 4h9m-9 4h5" />, soon: true },
+  { href: "/admin/blog", label: "وبلاگ", icon: <Icon path="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4Zm3 5h9m-9 4h9m-9 4h5" /> },
   { href: "/admin/reports", label: "گزارش‌ها", icon: <Icon path="M3 3v18h18M8 17V10m5 7V6m5 11v-4" />, soon: true },
 ];
 

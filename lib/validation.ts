@@ -258,3 +258,52 @@ export const createPageInput = z.object({
 });
 
 export type CreatePageInput = z.infer<typeof createPageInput>;
+
+export const updateBlogPostInput = z.object({
+  title: z
+    .string({ error: "عنوان نوشته الزامی است." })
+    .trim()
+    .min(1, "عنوان نوشته نمی‌تواند خالی باشد.")
+    .max(200, "عنوان نباید بیشتر از ۲۰۰ نویسه باشد."),
+  excerpt: z
+    .string()
+    .trim()
+    .max(500, "خلاصه نباید بیشتر از ۵۰۰ نویسه باشد.")
+    .optional()
+    .or(z.literal("")),
+  contentHtml: z
+    .string({ error: "محتوای نوشته الزامی است." })
+    .max(200000, "محتوا خیلی طولانی است."),
+  coverImage: z
+    .url("آدرس عکس کاور نامعتبر است.")
+    .max(1000, "آدرس عکس کاور خیلی طولانی است.")
+    .optional()
+    .or(z.literal("")),
+  published: z.boolean({ error: "وضعیت انتشار نامعتبر است." }),
+  metaTitle: z
+    .string()
+    .trim()
+    .max(200, "عنوان سئو نباید بیشتر از ۲۰۰ نویسه باشد.")
+    .optional()
+    .or(z.literal("")),
+  metaDescription: z
+    .string()
+    .trim()
+    .max(500, "توضیحات سئو نباید بیشتر از ۵۰۰ نویسه باشد.")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type UpdateBlogPostInput = z.infer<typeof updateBlogPostInput>;
+
+export const createBlogPostInput = z.object({
+  slug: z
+    .string({ error: "نامک (slug) نوشته الزامی است." })
+    .trim()
+    .min(1, "نامک نمی‌تواند خالی باشد.")
+    .max(80, "نامک نباید بیشتر از ۸۰ نویسه باشد.")
+    .regex(slugPattern, "نامک فقط می‌تواند شامل حروف انگلیسی کوچک، عدد و خط تیره باشد."),
+  title: updateBlogPostInput.shape.title,
+});
+
+export type CreateBlogPostInput = z.infer<typeof createBlogPostInput>;
