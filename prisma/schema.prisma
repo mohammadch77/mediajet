@@ -22,11 +22,31 @@ model User {
   sessions        Session[]
   payments        Payment[]
   supportMessages SupportMessage[]
+
+  roleChangesReceived RoleChangeLog[] @relation("RoleChangeTarget")
+  roleChangesMade     RoleChangeLog[] @relation("RoleChangeActor")
+}
+
+// لاگ append-only از تغییرات نقش کاربر توسط ادمین (چه کسی، چه زمانی، از چه نقشی به چه نقشی).
+// immutable: فقط insert می‌شود.
+model RoleChangeLog {
+  id           String   @id @default(cuid())
+  targetUserId String
+  fromRole     Role
+  toRole       Role
+  changedById  String
+  createdAt    DateTime @default(now())
+
+  targetUser User @relation("RoleChangeTarget", fields: [targetUserId], references: [id])
+  changedBy  User @relation("RoleChangeActor", fields: [changedById], references: [id])
+
+  @@index([targetUserId])
 }
 
 enum Role {
   user
   operator
+  admin
 }
 
 // کد یک‌بارمصرف احراز هویت با موبایل. کد هرگز خام ذخیره نمی‌شود، فقط هش آن.

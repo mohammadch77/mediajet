@@ -104,3 +104,12 @@ export async function requireOperator(): Promise<User> {
   }
   return user;
 }
+
+/** برای مسیرهای پنل ادمین: کاربر جاری را برمی‌گرداند، فقط اگر نقش admin داشته باشد. operator و user رد می‌شوند. */
+export async function requireAdmin(): Promise<User> {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "admin") {
+    throw new SessionError("این عملیات فقط برای مدیر سیستم مجاز است.");
+  }
+  return user;
+}

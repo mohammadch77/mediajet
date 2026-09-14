@@ -152,3 +152,13 @@ export const sendSupportMessageInput = z.object({
 });
 
 export type SendSupportMessageInput = z.infer<typeof sendSupportMessageInput>;
+
+const roleValues = ["user", "operator", "admin"] as const;
+
+export const changeUserRoleInput = z.object({
+  role: z.enum(roleValues, {
+    error: requiredOrInvalidType("نقش جدید الزامی است.", "نقش نامعتبر است."),
+  }),
+});
+
+export type ChangeUserRoleInput = z.infer<typeof changeUserRoleInput>;
