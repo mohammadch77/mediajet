@@ -286,6 +286,11 @@ export default function HomeClient({ content }: { content: Record<string, string
             )}
           </div>
         )}
+        <div className="flex items-center justify-center gap-4 mt-3 text-[.82rem]">
+          <a href="/p/about" className="text-dim hover:text-text transition">درباره ما</a>
+          <a href="/p/terms" className="text-dim hover:text-text transition">قوانین و مقررات</a>
+          <a href="/p/faq" className="text-dim hover:text-text transition">سؤالات متداول</a>
+        </div>
         <p className="max-w-[60ch] mx-auto mt-4 text-[.78rem] text-[#5b6390] leading-[1.85]">
           {content["footer.copyright"]}
         </p>

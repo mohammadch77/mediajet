@@ -38,3 +38,16 @@ body {
 .reveal { opacity: 0; transform: translateY(34px); transition: opacity .7s, transform .7s; }
 .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } }
+
+/* استایل محتوای صفحات متن‌آزاد (ویرایشگر ادمین + نمایش عمومی) */
+.prose-page { color: #EEF0FB; line-height: 1.9; }
+.prose-page h1 { font-size: 1.8rem; font-weight: 800; margin: 1.2em 0 .5em; }
+.prose-page h2 { font-size: 1.4rem; font-weight: 800; margin: 1.1em 0 .5em; }
+.prose-page h3 { font-size: 1.15rem; font-weight: 700; margin: 1em 0 .4em; }
+.prose-page p { margin: .8em 0; color: #C7CBE8; }
+.prose-page ul, .prose-page ol { margin: .8em 0; padding-inline-start: 1.6em; color: #C7CBE8; }
+.prose-page li { margin: .3em 0; }
+.prose-page a { color: #6EE7F0; text-decoration: underline; }
+.prose-page strong { color: #fff; }
+.prose-page blockquote { border-inline-start: 3px solid rgba(138,124,255,.4); padding-inline-start: 1em; color: #9AA0C7; margin: 1em 0; }
+.prose-page hr { border: none; border-top: 1px solid rgba(138,124,255,.2); margin: 1.5em 0; }

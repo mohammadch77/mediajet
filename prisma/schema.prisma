@@ -241,3 +241,19 @@ model SiteContent {
   updatedAt DateTime @updatedAt
   updatedBy String
 }
+
+// صفحات متن‌آزاد سایت (درباره ما، قوانین و مقررات، سؤالات متداول و مشابه).
+// contentHtml همیشه پیش از ذخیره sanitize می‌شود (lib/sanitize.ts) تا امکان
+// تزریق اسکریپت مخرب از سمت ادمین یا حساب هک‌شده وجود نداشته باشد.
+// published=false یعنی پیش‌نویس: در سایت عمومی ۴۰۴ برمی‌گردد.
+model Page {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  contentHtml     String
+  published       Boolean  @default(false)
+  metaTitle       String?
+  metaDescription String?
+  updatedAt       DateTime @updatedAt
+  updatedBy       String
+}

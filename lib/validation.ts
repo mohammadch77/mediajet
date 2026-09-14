@@ -218,3 +218,43 @@ export const updateContentInput = z.object({
 });
 
 export type UpdateContentInput = z.infer<typeof updateContentInput>;
+
+const slugPattern = /^[a-z0-9-]+$/;
+
+export const updatePageInput = z.object({
+  title: z
+    .string({ error: "عنوان صفحه الزامی است." })
+    .trim()
+    .min(1, "عنوان صفحه نمی‌تواند خالی باشد.")
+    .max(200, "عنوان نباید بیشتر از ۲۰۰ نویسه باشد."),
+  contentHtml: z
+    .string({ error: "محتوای صفحه الزامی است." })
+    .max(200000, "محتوا خیلی طولانی است."),
+  published: z.boolean({ error: "وضعیت انتشار نامعتبر است." }),
+  metaTitle: z
+    .string()
+    .trim()
+    .max(200, "عنوان سئو نباید بیشتر از ۲۰۰ نویسه باشد.")
+    .optional()
+    .or(z.literal("")),
+  metaDescription: z
+    .string()
+    .trim()
+    .max(500, "توضیحات سئو نباید بیشتر از ۵۰۰ نویسه باشد.")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type UpdatePageInput = z.infer<typeof updatePageInput>;
+
+export const createPageInput = z.object({
+  slug: z
+    .string({ error: "نامک (slug) صفحه الزامی است." })
+    .trim()
+    .min(1, "نامک نمی‌تواند خالی باشد.")
+    .max(80, "نامک نباید بیشتر از ۸۰ نویسه باشد.")
+    .regex(slugPattern, "نامک فقط می‌تواند شامل حروف انگلیسی کوچک، عدد و خط تیره باشد."),
+  title: updatePageInput.shape.title,
+});
+
+export type CreatePageInput = z.infer<typeof createPageInput>;
