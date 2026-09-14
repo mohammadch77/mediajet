@@ -55,6 +55,10 @@ export async function createPage(
   });
 }
 
+export async function deletePage(slug: string): Promise<void> {
+  await prisma.page.delete({ where: { slug } });
+}
+
 export async function updatePage(
   slug: string,
   data: {

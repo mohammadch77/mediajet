@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toJalaliDateTime } from "@/lib/jalali";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 
 type PageRow = {
   id: string;
@@ -14,6 +15,8 @@ type PageRow = {
 export default function AdminPagesList() {
   const [pages, setPages] = useState<PageRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<PageRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     setError(null);
@@ -30,6 +33,23 @@ export default function AdminPagesList() {
   useEffect(() => {
     load();
   }, []);
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/pages/${pendingDelete.slug}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "خطا در حذف صفحه.");
+      setPendingDelete(null);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطا در حذف صفحه.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <div>
@@ -52,7 +72,7 @@ export default function AdminPagesList() {
       {pages && (
         <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-[.85rem] min-w-[560px]">
+            <table className="w-full text-[.85rem] min-w-[640px]">
               <thead>
                 <tr className="text-dim text-[.75rem] border-b border-[rgba(138,124,255,.14)]">
                   <th className="text-right px-4 py-3 font-semibold">عنوان</th>
@@ -80,13 +100,19 @@ export default function AdminPagesList() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-dim">{toJalaliDateTime(p.updatedAt)}</td>
-                    <td className="px-4 py-3 text-left">
+                    <td className="px-4 py-3 text-left whitespace-nowrap">
                       <Link
                         href={`/admin/pages/${p.slug}`}
-                        className="px-3 py-1.5 rounded-lg bg-[rgba(138,124,255,.14)] text-primary font-bold text-[.78rem] hover:bg-[rgba(138,124,255,.22)] transition"
+                        className="px-3 py-1.5 rounded-lg bg-[rgba(138,124,255,.14)] text-primary font-bold text-[.78rem] hover:bg-[rgba(138,124,255,.22)] transition ml-2"
                       >
                         ویرایش
                       </Link>
+                      <button
+                        onClick={() => setPendingDelete(p)}
+                        className="px-3 py-1.5 rounded-lg bg-[rgba(255,107,107,.1)] text-[#ff6b6b] font-bold text-[.78rem] hover:bg-[rgba(255,107,107,.18)] transition"
+                      >
+                        حذف
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -95,6 +121,16 @@ export default function AdminPagesList() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="حذف صفحه"
+        message={`آیا از حذف صفحه‌ی «${pendingDelete?.title}» مطمئنی؟ این عملیات غیرقابل بازگشت است.`}
+        confirmLabel="حذف صفحه"
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

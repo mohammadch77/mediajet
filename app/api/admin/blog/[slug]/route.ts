@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, SessionError } from "@/lib/session";
 import { validateInput, ValidationError, updateBlogPostInput } from "@/lib/validation";
-import { getBlogPostBySlug, updateBlogPost } from "@/lib/blogPosts";
+import { getBlogPostBySlug, updateBlogPost, deleteBlogPost } from "@/lib/blogPosts";
 
 // GET /api/admin/blog/:slug
 // دریافت یک نوشته برای ویرایش. فقط admin.
@@ -65,4 +65,25 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
   );
 
   return NextResponse.json({ post });
+}
+
+// DELETE /api/admin/blog/:slug
+// حذف نوشته‌ی وبلاگ. فقط admin. غیرقابل بازگشت.
+export async function DELETE(_req: NextRequest, { params }: { params: { slug: string } }) {
+  try {
+    await requireAdmin();
+  } catch (error) {
+    if (error instanceof SessionError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    throw error;
+  }
+
+  const existing = await getBlogPostBySlug(params.slug);
+  if (!existing) {
+    return NextResponse.json({ error: "نوشته پیدا نشد." }, { status: 404 });
+  }
+
+  await deleteBlogPost(params.slug);
+  return NextResponse.json({ ok: true });
 }

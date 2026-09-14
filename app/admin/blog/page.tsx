@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toJalaliDateTime } from "@/lib/jalali";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 
 type BlogPostRow = {
   id: string;
@@ -17,6 +18,8 @@ export default function AdminBlogList() {
   const [newSlug, setNewSlug] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<BlogPostRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     setError(null);
@@ -52,6 +55,23 @@ export default function AdminBlogList() {
       setError(e instanceof Error ? e.message : "خطا در ساخت نوشته.");
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/blog/${pendingDelete.slug}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "خطا در حذف نوشته.");
+      setPendingDelete(null);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطا در حذف نوشته.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -102,7 +122,7 @@ export default function AdminBlogList() {
       {posts && (
         <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-[.85rem] min-w-[560px]">
+            <table className="w-full text-[.85rem] min-w-[640px]">
               <thead>
                 <tr className="text-dim text-[.75rem] border-b border-[rgba(138,124,255,.14)]">
                   <th className="text-right px-4 py-3 font-semibold">عنوان</th>
@@ -137,13 +157,19 @@ export default function AdminBlogList() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-dim">{toJalaliDateTime(p.updatedAt)}</td>
-                    <td className="px-4 py-3 text-left">
+                    <td className="px-4 py-3 text-left whitespace-nowrap">
                       <Link
                         href={`/admin/blog/${p.slug}`}
-                        className="px-3 py-1.5 rounded-lg bg-[rgba(138,124,255,.14)] text-primary font-bold text-[.78rem] hover:bg-[rgba(138,124,255,.22)] transition"
+                        className="px-3 py-1.5 rounded-lg bg-[rgba(138,124,255,.14)] text-primary font-bold text-[.78rem] hover:bg-[rgba(138,124,255,.22)] transition ml-2"
                       >
                         ویرایش
                       </Link>
+                      <button
+                        onClick={() => setPendingDelete(p)}
+                        className="px-3 py-1.5 rounded-lg bg-[rgba(255,107,107,.1)] text-[#ff6b6b] font-bold text-[.78rem] hover:bg-[rgba(255,107,107,.18)] transition"
+                      >
+                        حذف
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -152,6 +178,16 @@ export default function AdminBlogList() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="حذف نوشته"
+        message={`آیا از حذف نوشته‌ی «${pendingDelete?.title}» مطمئنی؟ این عملیات غیرقابل بازگشت است.`}
+        confirmLabel="حذف نوشته"
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, SessionError } from "@/lib/session";
 import { validateInput, ValidationError, updatePageInput } from "@/lib/validation";
-import { getPageBySlug, updatePage } from "@/lib/pages";
+import { getPageBySlug, updatePage, deletePage } from "@/lib/pages";
 
 // GET /api/admin/pages/:slug
 // دریافت یک صفحه برای ویرایش. فقط admin.
@@ -64,4 +64,25 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
   );
 
   return NextResponse.json({ page });
+}
+
+// DELETE /api/admin/pages/:slug
+// حذف صفحه‌ی متن‌آزاد. فقط admin. غیرقابل بازگشت.
+export async function DELETE(_req: NextRequest, { params }: { params: { slug: string } }) {
+  try {
+    await requireAdmin();
+  } catch (error) {
+    if (error instanceof SessionError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    throw error;
+  }
+
+  const existing = await getPageBySlug(params.slug);
+  if (!existing) {
+    return NextResponse.json({ error: "صفحه پیدا نشد." }, { status: 404 });
+  }
+
+  await deletePage(params.slug);
+  return NextResponse.json({ ok: true });
 }

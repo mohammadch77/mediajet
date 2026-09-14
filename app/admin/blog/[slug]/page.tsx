@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { toJalaliDateTime } from "@/lib/jalali";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 
 const RichTextEditor = dynamic(() => import("@/components/admin/RichTextEditor"), {
   ssr: false,
@@ -25,6 +26,7 @@ type BlogPostData = {
 
 export default function AdminBlogEditor() {
   const params = useParams<{ slug: string }>();
+  const router = useRouter();
   const slug = params.slug;
 
   const [post, setPost] = useState<BlogPostData | null>(null);
@@ -38,6 +40,8 @@ export default function AdminBlogEditor() {
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
   const [ok, setOk] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -91,6 +95,20 @@ export default function AdminBlogEditor() {
       setError(e instanceof Error ? e.message : "خطا در ذخیره‌ی نوشته.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/blog/${slug}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "خطا در حذف نوشته.");
+      router.push("/admin/blog");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطا در حذف نوشته.");
+      setDeleting(false);
     }
   }
 
@@ -217,9 +235,31 @@ export default function AdminBlogEditor() {
               </button>
               {ok && !error && <div className="text-[#3ddc84] text-[.78rem]">{ok}</div>}
             </div>
+
+            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(255,107,107,.2)] rounded-2xl p-4 sm:p-5">
+              <h2 className="font-display font-bold text-[.9rem] mb-2 text-[#ff6b6b]">منطقه‌ی خطر</h2>
+              <p className="text-dim text-[.78rem] mb-3">حذف نوشته غیرقابل بازگشت است.</p>
+              <button
+                onClick={() => setConfirmDeleteOpen(true)}
+                disabled={busy}
+                className="w-full px-4 py-2.5 rounded-xl bg-[rgba(255,107,107,.1)] text-[#ff6b6b] text-[.85rem] font-bold hover:bg-[rgba(255,107,107,.18)] disabled:opacity-50 transition"
+              >
+                حذف نوشته
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="حذف نوشته"
+        message={`آیا از حذف نوشته‌ی «${post?.title ?? slug}» مطمئنی؟ این عملیات غیرقابل بازگشت است.`}
+        confirmLabel="حذف نوشته"
+        busy={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDeleteOpen(false)}
+      />
     </div>
   );
 }

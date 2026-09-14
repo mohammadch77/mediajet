@@ -56,6 +56,10 @@ export async function createBlogPost(
   });
 }
 
+export async function deleteBlogPost(slug: string): Promise<void> {
+  await prisma.blogPost.delete({ where: { slug } });
+}
+
 export async function updateBlogPost(
   slug: string,
   data: {
