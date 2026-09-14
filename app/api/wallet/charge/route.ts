@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const idempotencyKey = crypto.randomUUID();
   const callbackUrl = new URL("/api/wallet/charge/callback", req.url).toString();
 
-  const gateway = getGateway();
+  const gateway = await getGateway();
   const { authority, redirectUrl } = await gateway.requestPayment(amountRial, callbackUrl);
 
   await prisma.payment.create({

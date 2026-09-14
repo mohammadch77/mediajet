@@ -1,9 +1,10 @@
 // احراز هویت با موبایل + OTP.
-// در حالت شبیه‌سازی (بدون سرویس پیامک واقعی)، کد در کنسول سرور چاپ می‌شود.
+// ارسال از طریق lib/sms.ts؛ تا وقتی کلید پنل پیامک تنظیم نشده، کد در کنسول سرور چاپ می‌شود.
 // اصول امنیتی: کد هرگز خام ذخیره نمی‌شود (فقط هش)، محدودیت تلاش، انقضا، rate limit روی ارسال مجدد.
 
 import crypto from "crypto";
 import { prisma } from "./db";
+import { getSmsPanel } from "./sms";
 
 export class OtpError extends Error {
   constructor(message: string) {
@@ -56,8 +57,8 @@ export async function requestOtp(mobile: string): Promise<void> {
     }),
   ]);
 
-  // حالت شبیه‌سازی: به‌جای ارسال پیامک واقعی، کد در کنسول سرور چاپ می‌شود.
-  console.log(`[OTP شبیه‌سازی] موبایل ${mobile} → کد: ${code}`);
+  const smsPanel = await getSmsPanel();
+  await smsPanel.sendSms(mobile, `کد ورود مدیاجت: ${code}`);
 }
 
 /** کد OTP را تأیید می‌کند. در صورت موفقیت، کد را used می‌کند تا دوباره قابل استفاده نباشد. */

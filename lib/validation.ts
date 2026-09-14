@@ -162,3 +162,18 @@ export const changeUserRoleInput = z.object({
 });
 
 export type ChangeUserRoleInput = z.infer<typeof changeUserRoleInput>;
+
+const settingKeyValues = ["ZARINPAL_MERCHANT_ID", "SMS_PANEL_API_KEY"] as const;
+
+export const updateSettingInput = z.object({
+  key: z.enum(settingKeyValues, {
+    error: requiredOrInvalidType("کلید تنظیم الزامی است.", "کلید تنظیم نامعتبر است."),
+  }),
+  value: z
+    .string({ error: "مقدار الزامی است." })
+    .trim()
+    .min(1, "مقدار نمی‌تواند خالی باشد.")
+    .max(2000, "مقدار نباید بیشتر از ۲۰۰۰ نویسه باشد."),
+});
+
+export type UpdateSettingInput = z.infer<typeof updateSettingInput>;

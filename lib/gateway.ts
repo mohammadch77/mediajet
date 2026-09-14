@@ -2,6 +2,7 @@
 // تا جایگزینی MockGateway با ZarinpalGateway واقعی بدون تغییر در بقیه‌ی کد ممکن باشد.
 
 import crypto from "crypto";
+import { getSetting } from "./settings";
 
 export type GatewayRequestResult = {
   authority: string;
@@ -49,10 +50,14 @@ export class MockGateway implements PaymentGateway {
 }
 
 /**
- * انتخاب پیاده‌سازی درگاه فعال. برای اتصال زرین‌پال واقعی، فقط این تابع را
- * تغییر بده (مثلاً بر اساس process.env.PAYMENT_GATEWAY) و یک ZarinpalGateway
- * که همین PaymentGateway را پیاده‌سازی می‌کند اضافه کن؛ بقیه‌ی کد دست‌نخورده می‌ماند.
+ * انتخاب پیاده‌سازی درگاه فعال. کلید مرچنت از تنظیمات رمزنگاری‌شده (getSetting) خوانده
+ * می‌شود، نه از env مستقیم — تا از پنل ادمین (/admin/settings) قابل تغییر باشد.
+ * برای اتصال زرین‌پال واقعی، وقتی کلید تنظیم شده باشد، به‌جای MockGateway یک
+ * ZarinpalGateway که همین PaymentGateway را با آن کلید پیاده‌سازی می‌کند برگردان؛
+ * بقیه‌ی کد (payment.ts، route شارژ) دست‌نخورده می‌ماند.
  */
-export function getGateway(): PaymentGateway {
+export async function getGateway(): Promise<PaymentGateway> {
+  const merchantId = await getSetting("ZARINPAL_MERCHANT_ID");
+  void merchantId; // TODO: وقتی ZarinpalGateway واقعی اضافه شد، این مقدار به آن پاس داده می‌شود.
   return new MockGateway();
 }

@@ -42,7 +42,7 @@ export async function confirmCharge(
   authority: string,
   gatewayStatusOk: boolean,
 ): Promise<{ status: PaymentStatus }> {
-  const gateway = getGateway();
+  const gateway = await getGateway();
 
   return prisma.$transaction(async (tx) => {
     const payment = await lockPayment(tx, authority);

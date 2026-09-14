@@ -222,3 +222,12 @@ enum SupportMessageSender {
   user
   support
 }
+
+// تنظیمات حساس سیستم (کلید درگاه پرداخت، کلید پنل پیامک و مشابه).
+// valueEncrypted همیشه رمزنگاری‌شده (AES-256-GCM) است؛ مقدار خام هرگز در دیتابیس ذخیره نمی‌شود.
+model AppSetting {
+  key            String   @id
+  valueEncrypted String
+  updatedAt      DateTime @updatedAt
+  updatedBy      String
+}
