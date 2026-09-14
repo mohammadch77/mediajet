@@ -177,3 +177,44 @@ export const updateSettingInput = z.object({
 });
 
 export type UpdateSettingInput = z.infer<typeof updateSettingInput>;
+
+const contentKeyValues = [
+  "hero.eyebrow",
+  "hero.title_line1",
+  "hero.title_line2",
+  "hero.subtitle",
+  "hero.button_primary",
+  "hero.button_secondary",
+  "contact.phone",
+  "contact.email",
+  "contact.address",
+  "contact.telegram",
+  "contact.hours",
+  "contact.description",
+  "footer.tagline",
+  "footer.copyright",
+  "footer.social_instagram",
+  "footer.social_telegram",
+  "header.nav1_label",
+  "header.nav1_href",
+  "header.nav2_label",
+  "header.nav2_href",
+  "header.nav3_label",
+  "header.nav3_href",
+] as const;
+
+const contentFieldInput = z.object({
+  key: z.enum(contentKeyValues, {
+    error: requiredOrInvalidType("کلید محتوا الزامی است.", "کلید محتوا نامعتبر است."),
+  }),
+  value: z
+    .string({ error: "مقدار الزامی است." })
+    .trim()
+    .max(2000, "مقدار نباید بیشتر از ۲۰۰۰ نویسه باشد."),
+});
+
+export const updateContentInput = z.object({
+  fields: z.array(contentFieldInput).min(1, "حداقل یک فیلد باید ارسال شود."),
+});
+
+export type UpdateContentInput = z.infer<typeof updateContentInput>;

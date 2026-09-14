@@ -231,3 +231,13 @@ model AppSetting {
   updatedAt      DateTime @updatedAt
   updatedBy      String
 }
+
+// محتوای ساختاریافته‌ی سایت (متن هیرو، تماس با ما، فوتر، منوی هدر و مشابه).
+// غیرحساس است، پس برخلاف AppSetting رمزنگاری نمی‌شود. اگر کلیدی تنظیم نشده باشد،
+// مقدار پیش‌فرض همان متن فعلی کد است (lib/content.ts) تا سایت هیچ‌وقت خالی نشود.
+model SiteContent {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+  updatedBy String
+}
