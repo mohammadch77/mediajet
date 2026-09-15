@@ -151,3 +151,33 @@ export async function computeCartTotal(
     payableTotalRial: applySurcharge(subtotalRial, percent),
   };
 }
+
+export interface CartDualTotalResult {
+  subtotalRial: number;
+  walletTotalRial: number;
+  gatewayTotalRial: number;
+}
+
+/**
+ * مجموع سبد برای هر دو روش پرداخت با یک بار خواندن تنظیمات (برای صفحه‌ی سبد خرید).
+ * مثل computeDualPrice، درصد کارمزد در خروجی نیست.
+ */
+export async function computeCartDualTotal(items: CartItemInput[]): Promise<CartDualTotalResult | null> {
+  if (items.length === 0) return null;
+
+  const priced: PriceResult[] = [];
+  for (const item of items) {
+    const p = computePrice(item.categoryId, item.site);
+    if (!p) return null;
+    priced.push(p);
+  }
+
+  const subtotalRial = priced.reduce((sum, p) => sum + p.finalPriceRial, 0);
+  const settings = await getPaymentSettings();
+
+  return {
+    subtotalRial,
+    walletTotalRial: applySurcharge(subtotalRial, settings.walletSurchargePercent),
+    gatewayTotalRial: applySurcharge(subtotalRial, settings.gatewaySurchargePercent),
+  };
+}

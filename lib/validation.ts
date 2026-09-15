@@ -78,6 +78,20 @@ export const quoteInput = z.object({
 
 export type QuoteInput = z.infer<typeof quoteInput>;
 
+export const addCartItemInput = z.object({
+  categoryId: z
+    .string({ error: "دسته‌بندی الزامی است." })
+    .min(1, "دسته‌بندی الزامی است."),
+  site: z
+    .string({ error: "سایت الزامی است." })
+    .min(1, "سایت الزامی است."),
+  productUrl: z
+    .string({ error: "آدرس محصول الزامی است." })
+    .url("آدرس محصول معتبر نیست."),
+});
+
+export type AddCartItemInput = z.infer<typeof addCartItemInput>;
+
 // تنظیمات عددی پرداخت؛ مقدار همیشه عدد صحیح است و بازه‌ی مجاز هر کلید جداگانه
 // در سرور (lib/paymentSettings.ts) هم دوباره بررسی می‌شود.
 const paymentSettingKeyValues = [

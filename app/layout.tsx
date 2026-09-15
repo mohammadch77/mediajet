@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
+import { CartProvider } from "@/lib/CartContext";
 
 export const metadata: Metadata = {
   title: "مدیاجت — هر فایلی از هر سایت استوک، فقط با یک لینک",
@@ -12,7 +13,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fa" dir="rtl">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <CartProvider>{children}</CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

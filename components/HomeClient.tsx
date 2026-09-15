@@ -4,11 +4,12 @@ import dynamic from "next/dynamic";
 import { CATEGORIES, ALL_SITES, type Category } from "@/data/categories";
 import { toPersianDigits } from "@/lib/money";
 import { useLinkDetect } from "@/lib/useLinkDetect";
-import { unsupportedSiteMessage, type LinkEntry } from "@/lib/linkDetect";
+import { unsupportedSiteMessage, sitePresetEntry, type LinkEntry } from "@/lib/linkDetect";
 import OrderDrawer from "@/components/OrderDrawer";
 import AuthModal from "@/components/AuthModal";
 import SiteMarquee from "@/components/SiteMarquee";
 import { useAuth } from "@/lib/AuthContext";
+import { useCart } from "@/lib/CartContext";
 import Link from "next/link";
 
 // صحنه‌ی سه‌بعدی فقط سمت کلاینت لود شود
@@ -53,6 +54,7 @@ export default function HomeClient({ content }: { content: Record<string, string
   const [heroError, setHeroError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, loading, logout, authModalOpen, openAuthModal, closeAuthModal } = useAuth();
+  const { count: cartCount } = useCart();
   const heroDetection = useLinkDetect(heroLink);
   useReveal();
 
@@ -63,6 +65,7 @@ export default function HomeClient({ content }: { content: Record<string, string
   ];
 
   const openCat = (c: Category) => { setDrawerCat(c); setLinkEntry(null); setOpen(true); };
+  const openSite = (site: string) => { setDrawerCat(null); setLinkEntry(sitePresetEntry(site)); setOpen(true); };
   const close = () => setOpen(false);
 
   // فیلد اصلی: کاربر فقط لینک را می‌دهد؛ فقط سایت از روی دامنه تشخیص داده می‌شود.
@@ -110,6 +113,24 @@ export default function HomeClient({ content }: { content: Record<string, string
               </a>
             ))}
           </div>
+
+          {/* cart badge — همیشه دیده می‌شود تا کاربر بداند چند آیتم در سبد دارد */}
+          <Link
+            href="/cart"
+            aria-label="سبد خرید"
+            className="relative shrink-0 w-9 h-9 grid place-items-center rounded-full bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)] transition hover:bg-[rgba(255,255,255,.12)]"
+          >
+            <svg viewBox="0 0 24 24" fill="none" width="17" height="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="9" cy="21" r="1" />
+              <circle cx="20" cy="21" r="1" />
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+            </svg>
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-white text-[.65rem] font-bold grid place-items-center">
+                {toPersianDigits(cartCount)}
+              </span>
+            )}
+          </Link>
 
           {/* desktop auth area */}
           <div className="max-[760px]:hidden">
@@ -324,9 +345,9 @@ export default function HomeClient({ content }: { content: Record<string, string
         </div>
         <div className="grid grid-cols-2 gap-4 min-[600px]:grid-cols-3 min-[900px]:grid-cols-4">
           {SITE_CATEGORY_COUNTS.map(({ site, count }) => (
-            <a
+            <div
               key={site}
-              href="#cats"
+              onClick={() => openSite(site)}
               className="reveal group relative bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-[18px] p-[22px_18px] cursor-pointer transition hover:-translate-y-1.5 hover:border-[rgba(56,225,255,.4)] hover:shadow-[0_20px_40px_-20px_rgba(56,225,255,.3)]"
             >
               <div className="w-10 h-10 rounded-[10px] bg-[rgba(138,124,255,.14)] grid place-items-center text-[.75rem] font-latin font-bold text-cyan mb-3">
@@ -334,7 +355,7 @@ export default function HomeClient({ content }: { content: Record<string, string
               </div>
               <h4 className="latin font-display text-[1rem] mb-1 truncate">{site}</h4>
               <div className="text-dim text-[.8rem]">{toPersianDigits(count)} دسته‌ی قابل سفارش</div>
-            </a>
+            </div>
           ))}
         </div>
       </section>

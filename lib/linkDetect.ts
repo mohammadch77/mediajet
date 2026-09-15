@@ -15,6 +15,11 @@ export interface LinkEntry {
   candidates: Category[];
 }
 
+/** ورودی دراور وقتی کاربر از روی کارتِ یک سایت مشخص شروع می‌کند (لینک هنوز خالی است). */
+export function sitePresetEntry(site: string): LinkEntry {
+  return { link: "", site, candidates: CATEGORIES.filter((c) => c.sites.includes(site)) };
+}
+
 export function unsupportedSiteMessage(): string {
   return `این سایت فعلاً پشتیبانی نمی‌شود. سایت‌های پشتیبانی‌شده: ${ALL_SITES.join("، ")}`;
 }

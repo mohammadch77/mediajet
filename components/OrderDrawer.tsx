@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { CATEGORIES, categoryById, type Category } from "@/data/categories";
 import { detectSite } from "@/lib/detectSite";
 import type { LinkEntry } from "@/lib/linkDetect";
 import { useAuth } from "@/lib/AuthContext";
+import { useCart } from "@/lib/CartContext";
 
 interface Props {
   open: boolean;
@@ -16,7 +18,6 @@ interface Props {
 
 type Stage = "sites" | "pick-category" | "form";
 type SubmitStatus = "idle" | "submitting" | "success" | "error";
-type PaymentMethod = "wallet" | "gateway";
 
 /** قیمت نهایی هر روش پرداخت؛ درصد کارمزد هرگز به کلاینت نمی‌رسد. */
 type Quote = {
@@ -26,29 +27,9 @@ type Quote = {
   gatewayPriceLabel: string;
 };
 
-const FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
-
-function toPersianDigits(input: string | number): string {
-  return String(input).replace(/\d/g, (d) => FA_DIGITS[Number(d)]);
-}
-
-/** اختلاف دو قیمت به تومان، برای برچسب «X تومان کمتر». */
-function savingsLabel(walletRial: bigint, gatewayRial: bigint): string | null {
-  const diff = gatewayRial - walletRial;
-  if (diff <= 0n) return null;
-  const toman = Number(diff) / 10;
-  return `${toPersianDigits(Math.round(toman).toLocaleString("en-US"))} تومان کمتر`;
-}
-
-function newIdempotencyKey(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
 export default function OrderDrawer({ open, category, linkEntry, onClose }: Props) {
-  const { user, requireAuth, setWalletBalance } = useAuth();
+  const { requireAuth } = useAuth();
+  const { bumpCount } = useCart();
   const [stage, setStage] = useState<Stage>("sites");
   const [selectedCatId, setSelectedCatId] = useState<string>("");
   const [selectedSite, setSelectedSite] = useState<string>("");
@@ -56,14 +37,9 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
   const [link, setLink] = useState("");
   const [detected, setDetected] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wallet");
-  const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [orderResult, setOrderResult] = useState<{ orderId: string; priceLabel: string; walletBalanceRial: string | null } | null>(null);
-
-  const walletBalanceRial = user ? BigInt(user.walletBalanceRial) : 0n;
-  const walletSufficient = quote !== null && walletBalanceRial >= quote.walletPriceRial;
+  const [addedItem, setAddedItem] = useState<{ categoryTitle: string; priceLabel: string } | null>(null);
 
   // دریافت قیمت از سرور (قیمت هرگز سمت کلاینت محاسبه نمی‌شود).
   // سرور قیمت نهایی هر دو روش پرداخت را می‌دهد؛ درصد کارمزد هیچ‌وقت فرستاده نمی‌شود.
@@ -88,13 +64,6 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
     }
   }, []);
 
-  // پیش‌فرض همیشه ارزان‌ترین گزینه‌ی قابل استفاده: کیف پول اگر موجودی کافی باشد، وگرنه درگاه.
-  // اگر کاربر خودش انتخاب کرده باشد، انتخابش دست‌نخورده می‌ماند تا قیمت عوض شود.
-  useEffect(() => {
-    if (!quote) return;
-    setPaymentMethod(walletSufficient ? "wallet" : "gateway");
-  }, [quote, walletSufficient]);
-
   // با باز شدن دراور از روی کارتِ یک دسته (جریان قدیمی): مرحله‌ی انتخاب سایت را نشان بده.
   useEffect(() => {
     if (open && category && !linkEntry) {
@@ -105,10 +74,9 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
       setLink("");
       setDetected("");
       setQuote(null);
-      setIdempotencyKey(newIdempotencyKey());
       setSubmitStatus("idle");
       setSubmitError(null);
-      setOrderResult(null);
+      setAddedItem(null);
     }
   }, [open, category, linkEntry]);
 
@@ -122,20 +90,12 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
       setCandidates(linkEntry.candidates);
       setSubmitStatus("idle");
       setSubmitError(null);
-      setOrderResult(null);
-      setIdempotencyKey(newIdempotencyKey());
+      setAddedItem(null);
       setSelectedCatId("");
       setQuote(null);
       setStage("pick-category");
     }
   }, [open, linkEntry]);
-
-  // اگر پارامترهای سفارش تغییر کند، کلید یکتای درخواست هم عوض شود تا با درخواست قبلی تداخل نکند.
-  useEffect(() => {
-    if (submitStatus === "idle") {
-      setIdempotencyKey(newIdempotencyKey());
-    }
-  }, [selectedCatId, selectedSite, link]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // بستن با Esc
   useEffect(() => {
@@ -183,7 +143,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
     fetchQuote(id, site);
   };
 
-  const handleSubmit = async () => {
+  const handleAddToCart = async () => {
     if (submitStatus === "submitting") return;
     setSubmitError(null);
 
@@ -206,43 +166,46 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
     }
 
     try {
-      const res = await fetch("/api/orders", {
+      const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           categoryId: selectedCatId,
           site: selectedSite,
           productUrl: link,
-          paymentMethod,
-          idempotencyKey,
         }),
       });
       const data = await res.json();
 
       if (!res.ok) {
         setSubmitStatus("error");
-        setSubmitError(
-          data.error === "موجودی کیف پول کافی نیست."
-            ? "موجودی کیف پول کافی نیست. لطفاً ابتدا کیف پول را شارژ کن."
-            : data.error ?? "ثبت سفارش با خطا مواجه شد.",
-        );
+        setSubmitError(data.error ?? "افزودن به سبد با خطا مواجه شد.");
         return;
       }
 
-      // پرداخت مستقیم از درگاه: سفارش در انتظار پرداخت ساخته شده و باید به درگاه هدایت شویم.
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl;
-        return;
-      }
-
-      setOrderResult({ orderId: data.orderId, priceLabel: data.priceLabel, walletBalanceRial: data.walletBalanceRial });
+      setAddedItem({ categoryTitle: data.categoryTitle, priceLabel: data.priceLabel });
       setSubmitStatus("success");
-      if (data.walletBalanceRial) {
-        setWalletBalance(data.walletBalanceRial);
-      }
+      bumpCount();
     } catch {
       setSubmitStatus("error");
       setSubmitError("خطا در ارتباط با سرور. دوباره تلاش کن.");
+    }
+  };
+
+  /** برای افزودن آیتم بعدی: فرم را با همان نقطه‌ی ورود (سایت/دسته) خالی می‌کند. */
+  const addAnother = () => {
+    setLink("");
+    setSubmitStatus("idle");
+    setSubmitError(null);
+    setAddedItem(null);
+    if (linkEntry) {
+      setSelectedCatId("");
+      setQuote(null);
+      setStage("pick-category");
+    } else if (category) {
+      setSelectedSite("");
+      setQuote(null);
+      setStage("sites");
     }
   };
 
@@ -345,26 +308,28 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
                 ))}
               </div>
             </>
-          ) : submitStatus === "success" && orderResult ? (
+          ) : submitStatus === "success" && addedItem ? (
             <div className="flex flex-col items-center text-center py-8 gap-3">
               <div className="w-16 h-16 rounded-full bg-[rgba(56,225,255,.12)] border border-[rgba(56,225,255,.4)] grid place-items-center text-3xl">✓</div>
-              <h4 className="font-display text-[1.25rem]">سفارش با موفقیت ثبت شد</h4>
+              <h4 className="font-display text-[1.25rem]">به سبد اضافه شد</h4>
               <p className="text-dim text-[.9rem]">
-                شماره‌ی سفارش: <b dir="ltr" className="text-cyan latin">{orderResult.orderId}</b>
+                <b className="text-text">{addedItem.categoryTitle}</b> — <b className="text-primary2">{addedItem.priceLabel}</b>
               </p>
-              <p className="text-dim text-[.9rem]">مبلغ پرداخت‌شده: <b className="text-primary2">{orderResult.priceLabel}</b></p>
-              {orderResult.walletBalanceRial && (
-                <p className="text-dim text-[.85rem]">
-                  موجودی جدید کیف پول: {" "}
-                  <b className="text-text">{Math.round(Number(orderResult.walletBalanceRial) / 10).toLocaleString("en-US")} تومان</b>
-                </p>
-              )}
-              <button
-                onClick={onClose}
-                className="mt-4 font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[.95rem] px-6 py-3 bg-[rgba(255,255,255,.08)] text-text hover:bg-[rgba(255,255,255,.16)]"
-              >
-                بستن
-              </button>
+              <div className="flex gap-2.5 flex-wrap justify-center mt-4">
+                <button
+                  onClick={addAnother}
+                  className="font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[.95rem] px-5 py-3 bg-[rgba(255,255,255,.08)] text-text hover:bg-[rgba(255,255,255,.16)]"
+                >
+                  افزودن آیتم دیگر
+                </button>
+                <Link
+                  href="/cart"
+                  onClick={onClose}
+                  className="font-body cursor-pointer font-bold rounded-[14px] transition text-[.95rem] px-5 py-3 bg-gradient-to-br from-primary to-primary2 text-white hover:-translate-y-px"
+                >
+                  رفتن به سبد خرید ←
+                </Link>
+              </div>
             </div>
           ) : (
             <>
@@ -423,85 +388,27 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
                 <span className="font-display text-[1.5rem] font-extrabold text-primary2">—</span>
               </div>
             ) : (
-              <div className="mb-3.5">
-                <div className="text-[.85rem] font-semibold mb-2.5">روش پرداخت</div>
-                {/* روی موبایل تک‌ستونی (روی‌هم)، از ۴۰۰px به بالا دوستونی کنار هم */}
-                <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2.5">
-                  {/* کیف پول */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("wallet")}
-                    aria-pressed={paymentMethod === "wallet"}
-                    className={`text-right font-body cursor-pointer rounded-[14px] p-3.5 min-h-[92px] flex flex-col justify-between gap-1.5 border transition ${
-                      paymentMethod === "wallet"
-                        ? "bg-[rgba(61,220,132,.1)] border-[rgba(61,220,132,.55)] shadow-[0_0_0_2px_rgba(61,220,132,.18)]"
-                        : "bg-surface border-[rgba(138,124,255,.18)] hover:border-[rgba(61,220,132,.4)]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-[.85rem] font-bold">پرداخت از کیف پول</span>
-                      <span className="text-[.68rem] font-bold text-[#3ddc84] bg-[rgba(61,220,132,.14)] border border-[rgba(61,220,132,.35)] rounded-full px-2 py-0.5 shrink-0">
-                        ارزان‌تر
-                      </span>
-                    </div>
-                    <div className="font-display text-[1.15rem] font-extrabold text-[#3ddc84] break-words">
-                      {quote.walletPriceLabel}
-                    </div>
-                    {savingsLabel(quote.walletPriceRial, quote.gatewayPriceRial) && (
-                      <div className="text-[.72rem] text-[#3ddc84]">
-                        {savingsLabel(quote.walletPriceRial, quote.gatewayPriceRial)}
-                      </div>
-                    )}
-                  </button>
-
-                  {/* درگاه */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("gateway")}
-                    aria-pressed={paymentMethod === "gateway"}
-                    className={`text-right font-body cursor-pointer rounded-[14px] p-3.5 min-h-[92px] flex flex-col justify-between gap-1.5 border transition ${
-                      paymentMethod === "gateway"
-                        ? "bg-[rgba(107,91,255,.12)] border-[rgba(138,124,255,.6)] shadow-[0_0_0_2px_rgba(107,91,255,.18)]"
-                        : "bg-surface border-[rgba(138,124,255,.18)] hover:border-[rgba(138,124,255,.45)]"
-                    }`}
-                  >
-                    <span className="text-[.85rem] font-bold">پرداخت مستقیم از درگاه</span>
-                    <div className="font-display text-[1.15rem] font-extrabold text-primary2 break-words">
-                      {quote.gatewayPriceLabel}
-                    </div>
-                    <div className="text-[.72rem] text-dim">بدون نیاز به شارژ کیف پول</div>
-                  </button>
+              <div className="mb-3.5 bg-[rgba(107,91,255,.08)] border border-[rgba(138,124,255,.2)] rounded-[14px] p-[16px_20px]">
+                <div className="text-[.82rem] text-dim mb-1.5">هزینه‌ی این آیتم (بسته به روش پرداخت در سبد)</div>
+                <div className="flex items-center gap-2 flex-wrap font-display font-extrabold text-[1.15rem]">
+                  <span className="text-[#3ddc84]">{quote.walletPriceLabel}</span>
+                  <span className="text-dim text-[.85rem] font-normal">تا</span>
+                  <span className="text-primary2">{quote.gatewayPriceLabel}</span>
                 </div>
-
-                {/* موجودی ناکافی: گزینه غیرفعال نمی‌شود؛ فقط پیشنهاد شارژ داده می‌شود. */}
-                {!walletSufficient && (
-                  <div className="mt-2.5 flex items-center justify-between gap-2 flex-wrap bg-[rgba(61,220,132,.07)] border border-[rgba(61,220,132,.28)] rounded-[12px] p-3">
-                    <span className="text-[.78rem] text-[#3ddc84] leading-[1.7]">
-                      برای قیمت ارزان‌تر، کیف پولت را شارژ کن.
-                    </span>
-                    <a
-                      href="/dashboard"
-                      className="text-[.78rem] font-bold text-[#3ddc84] border border-[rgba(61,220,132,.45)] rounded-full px-3 py-1.5 shrink-0 transition hover:bg-[rgba(61,220,132,.14)]"
-                    >
-                      شارژ کیف پول
-                    </a>
-                  </div>
-                )}
+                <div className="text-[.72rem] text-dim mt-1.5">
+                  روش پرداخت (کیف پول یا درگاه) را در صفحه‌ی سبد خرید انتخاب می‌کنی.
+                </div>
               </div>
             )}
             {submitError && (
               <div className="text-[.85rem] text-accent2 mb-3 text-center leading-[1.8]">{submitError}</div>
             )}
             <button
-              onClick={handleSubmit}
+              onClick={handleAddToCart}
               disabled={submitStatus === "submitting"}
               className="w-full font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] p-4 bg-gradient-to-br from-accent to-accent2 text-white shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
             >
-              {submitStatus === "submitting"
-                ? "در حال ثبت..."
-                : paymentMethod === "gateway"
-                  ? "ثبت سفارش و انتقال به درگاه"
-                  : "ثبت و پرداخت از کیف پول"}
+              {submitStatus === "submitting" ? "در حال افزودن..." : "افزودن به سبد"}
             </button>
           </div>
         )}

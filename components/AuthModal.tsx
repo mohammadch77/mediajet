@@ -105,7 +105,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
 
   return (
     <div
-      className="fixed inset-0 z-[300] grid place-items-center px-4 bg-[rgba(8,9,20,.72)] backdrop-blur-[6px]"
+      className="fixed inset-0 z-[400] grid place-items-center px-4 bg-[rgba(8,9,20,.72)] backdrop-blur-[6px]"
       onClick={onClose}
     >
       <div
