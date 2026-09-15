@@ -33,9 +33,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "بدنه‌ی درخواست نامعتبر است." }, { status: 400 });
   }
 
-  const order = await prisma.order.findUnique({ where: { id } });
+  // TODO(cart-ui): این endpoint فعلاً فقط اولین آیتم سفارش را تحویل می‌دهد؛ وقتی UI سبد
+  // خرید ساخته شد باید orderItemId هم از ورودی گرفته شود.
+  const order = await prisma.order.findUnique({ where: { id }, include: { items: true } });
   if (!order) {
     return NextResponse.json({ error: "سفارش یافت نشد." }, { status: 404 });
+  }
+  const item = order.items[0];
+  if (!item) {
+    return NextResponse.json({ error: "سفارش بدون آیتم است." }, { status: 422 });
   }
 
   const fromStatus = order.status as OrderStatus;
@@ -49,10 +55,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const actor = `operator:${operator.id}`;
   await prisma.$transaction(async (tx) => {
     await tx.delivery.upsert({
-      where: { orderId: id },
-      create: { orderId: id, fileUrl: input.fileUrl },
+      where: { orderItemId: item.id },
+      create: { orderItemId: item.id, fileUrl: input.fileUrl },
       update: { fileUrl: input.fileUrl, deliveredAt: new Date() },
     });
+    await tx.orderItem.update({ where: { id: item.id }, data: { status: "ready" } });
     await tx.order.update({ where: { id }, data: { status: TO_STATUS } });
     await tx.orderEvent.create({
       data: { orderId: id, fromStatus, toStatus: TO_STATUS, actor, note: "ثبت لینک تحویل" },

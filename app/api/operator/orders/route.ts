@@ -36,20 +36,24 @@ export async function GET(req: NextRequest) {
   const orders = await prisma.order.findMany({
     where: statusParam ? { status: statusParam as OrderStatus } : undefined,
     orderBy: { createdAt: "asc" },
-    include: { delivery: true, user: true },
+    include: { items: { include: { delivery: true } }, user: true },
   });
 
+  // TODO(cart-ui): فعلاً فقط اولین آیتم هر سفارش نمایش داده می‌شود.
   return NextResponse.json({
-    orders: orders.map((order) => ({
-      id: order.id,
-      category: order.category,
-      sourceSite: order.sourceSite,
-      productUrl: order.productUrl,
-      priceLabel: rialToTomanLabel(Number(order.priceRial)),
-      status: order.status,
-      createdAt: order.createdAt.toISOString(),
-      user: { id: order.user.id, mobile: order.user.mobile, name: order.user.name },
-      deliveryUrl: order.delivery?.fileUrl ?? null,
-    })),
+    orders: orders.map((order) => {
+      const item = order.items[0];
+      return {
+        id: order.id,
+        category: item?.category ?? null,
+        sourceSite: item?.sourceSite ?? null,
+        productUrl: item?.productUrl ?? null,
+        priceLabel: rialToTomanLabel(Number(order.totalPriceRial)),
+        status: order.status,
+        createdAt: order.createdAt.toISOString(),
+        user: { id: order.user.id, mobile: order.user.mobile, name: order.user.name },
+        deliveryUrl: item?.delivery?.fileUrl ?? null,
+      };
+    }),
   });
 }

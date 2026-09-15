@@ -55,9 +55,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
   if (!order) {
     await sendMessage(operatorChatId, `⚠️ سفارش با شماره ${orderId} یافت نشد.`);
+    return NextResponse.json({ ok: true });
+  }
+  // TODO(cart-ui): فعلاً فقط اولین آیتم سفارش از طریق بات تلگرام تحویل داده می‌شود.
+  const item = order.items[0];
+  if (!item) {
+    await sendMessage(operatorChatId, `⚠️ سفارش ${orderId} بدون آیتم است.`);
     return NextResponse.json({ ok: true });
   }
 
@@ -66,7 +72,7 @@ export async function POST(req: NextRequest) {
 
   try {
     if (isLarge) {
-      await deliverLarge(order.id, order.status as OrderStatus, `operator:${operatorChatId}`);
+      await deliverLarge(order.id, item.id, order.status as OrderStatus, `operator:${operatorChatId}`);
       await sendMessage(operatorChatId, `✅ سفارش ${orderId} به‌عنوان فایل بزرگ ثبت شد.`);
     } else if (message.document) {
       if ((message.document.file_size ?? 0) > MAX_SMALL_FILE_BYTES) {
@@ -83,6 +89,7 @@ export async function POST(req: NextRequest) {
 
       await deliverSmall(
         order.id,
+        item.id,
         order.status as OrderStatus,
         `operator:${operatorChatId}`,
         {
@@ -154,9 +161,12 @@ function buildStorageKey(orderId: string, fileName?: string): string {
 async function advanceToReady(
   tx: Prisma.TransactionClient,
   orderId: string,
+  orderItemId: string,
   fromStatus: OrderStatus,
   actor: string,
 ): Promise<void> {
+  await tx.orderItem.update({ where: { id: orderItemId }, data: { status: "ready" } });
+
   let current = fromStatus;
 
   if (current === "ready" || current === "delivered") {
@@ -187,6 +197,7 @@ async function advanceToReady(
 
 async function deliverSmall(
   orderId: string,
+  orderItemId: string,
   fromStatus: OrderStatus,
   actor: string,
   file: {
@@ -198,12 +209,12 @@ async function deliverSmall(
   },
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    await advanceToReady(tx, orderId, fromStatus, actor);
+    await advanceToReady(tx, orderId, orderItemId, fromStatus, actor);
     const now = new Date();
     await tx.delivery.upsert({
-      where: { orderId },
+      where: { orderItemId },
       create: {
-        orderId,
+        orderItemId,
         storageKey: file.storageKey,
         fileName: file.fileName,
         mimeType: file.mimeType,
@@ -228,12 +239,17 @@ async function deliverSmall(
   });
 }
 
-async function deliverLarge(orderId: string, fromStatus: OrderStatus, actor: string): Promise<void> {
+async function deliverLarge(
+  orderId: string,
+  orderItemId: string,
+  fromStatus: OrderStatus,
+  actor: string,
+): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    await advanceToReady(tx, orderId, fromStatus, actor);
+    await advanceToReady(tx, orderId, orderItemId, fromStatus, actor);
     await tx.delivery.upsert({
-      where: { orderId },
-      create: { orderId, isLarge: true },
+      where: { orderItemId },
+      create: { orderItemId, isLarge: true },
       update: { isLarge: true, deliveredAt: new Date() },
     });
   });

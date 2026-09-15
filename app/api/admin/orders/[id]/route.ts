@@ -19,7 +19,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     where: { id: params.id },
     include: {
       user: true,
-      delivery: true,
+      items: { include: { delivery: true } },
       events: { orderBy: { createdAt: "asc" } },
     },
   });
@@ -28,23 +28,26 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "سفارش پیدا نشد." }, { status: 404 });
   }
 
+  // TODO(cart-ui): فعلاً فقط اولین آیتم نمایش داده می‌شود؛ باید همه‌ی items را نشان دهد.
+  const item = order.items[0];
+
   return NextResponse.json({
     order: {
       id: order.id,
-      category: order.category,
-      sourceSite: order.sourceSite,
-      productUrl: order.productUrl,
-      priceLabel: rialToTomanLabel(Number(order.priceRial)),
+      category: item?.category ?? null,
+      sourceSite: item?.sourceSite ?? null,
+      productUrl: item?.productUrl ?? null,
+      priceLabel: rialToTomanLabel(Number(order.totalPriceRial)),
       status: order.status,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
       user: { id: order.user.id, mobile: order.user.mobile, name: order.user.name },
-      delivery: order.delivery
+      delivery: item?.delivery
         ? {
-            fileUrl: order.delivery.fileUrl,
-            fileName: order.delivery.fileName,
-            isLarge: order.delivery.isLarge,
-            deliveredAt: order.delivery.deliveredAt.toISOString(),
+            fileUrl: item.delivery.fileUrl,
+            fileName: item.delivery.fileName,
+            isLarge: item.delivery.isLarge,
+            deliveredAt: item.delivery.deliveredAt.toISOString(),
           }
         : null,
       events: order.events.map((e) => ({

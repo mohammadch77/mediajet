@@ -46,3 +46,38 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   failed: "ناموفق",
   refunded: "بازگشت وجه",
 };
+
+// وضعیت تحویل یک آیتم سفارش؛ مستقل از وضعیت کلی سفارش (lib/orderState.ts#OrderStatus)
+// و مستقل از بقیه‌ی آیتم‌های همان سفارش.
+export type OrderItemStatus = "pending" | "ready" | "delivered";
+
+export const ITEM_STATUS_LABELS: Record<OrderItemStatus, string> = {
+  pending: "در حال پردازش",
+  ready: "آماده‌ی دانلود",
+  delivered: "تحویل‌شده",
+};
+
+/**
+ * وضعیت کلی سفارش را از وضعیت آیتم‌هایش مشتق می‌کند — فقط برای سفارش‌هایی که وارد صف
+ * پردازش شده‌اند (queued/processing/ready/delivered). draft/awaiting_payment/cancelled/
+ * failed/refunded با ماشین وضعیت سفارش (نه آیتم‌ها) کنترل می‌شوند و این تابع روی آن‌ها
+ * فراخوانی نمی‌شود.
+ *
+ * قانون: همه‌ی آیتم‌ها delivered → سفارش delivered.
+ *        حداقل یک آیتم ready یا delivered → سفارش ready (بقیه هنوز در حال پردازش‌اند).
+ *        در غیر این صورت (همه pending) → سفارش processing.
+ */
+export function deriveOrderStatusFromItems(
+  itemStatuses: OrderItemStatus[],
+): "processing" | "ready" | "delivered" {
+  if (itemStatuses.length === 0) {
+    throw new Error("سفارش بدون آیتم نمی‌تواند وضعیت داشته باشد.");
+  }
+  if (itemStatuses.every((s) => s === "delivered")) {
+    return "delivered";
+  }
+  if (itemStatuses.some((s) => s === "ready" || s === "delivered")) {
+    return "ready";
+  }
+  return "processing";
+}

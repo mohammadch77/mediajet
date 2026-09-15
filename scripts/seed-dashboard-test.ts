@@ -38,40 +38,62 @@ async function main() {
   const order1 = await prisma.order.create({
     data: {
       userId: user.id,
-      sourceSite: "Freepik",
-      category: "psd",
-      productUrl: "https://freepik.com/example-1",
-      priceRial: 900_000n,
+      totalPriceRial: 900_000n,
+      paymentMethod: "wallet",
       status: "delivered",
+      items: {
+        create: {
+          sourceSite: "Freepik",
+          category: "psd",
+          productUrl: "https://freepik.com/example-1",
+          priceRial: 900_000n,
+          status: "delivered",
+        },
+      },
     },
+    include: { items: true },
   });
   await prisma.delivery.create({
-    data: { orderId: order1.id, fileUrl: "https://example.com/files/order1.zip" },
+    data: { orderItemId: order1.items[0].id, fileUrl: "https://example.com/files/order1.zip" },
   });
 
   await prisma.order.create({
     data: {
       userId: user.id,
-      sourceSite: "Envato",
-      category: "premiere",
-      productUrl: "https://elements.envato.com/example-2",
-      priceRial: 2_500_000n,
+      totalPriceRial: 2_500_000n,
+      paymentMethod: "wallet",
       status: "processing",
+      items: {
+        create: {
+          sourceSite: "Envato",
+          category: "premiere",
+          productUrl: "https://elements.envato.com/example-2",
+          priceRial: 2_500_000n,
+        },
+      },
     },
   });
 
   const order3 = await prisma.order.create({
     data: {
       userId: user.id,
-      sourceSite: "Vecteezy",
-      category: "vector",
-      productUrl: "https://vecteezy.com/example-3",
-      priceRial: 700_000n,
+      totalPriceRial: 700_000n,
+      paymentMethod: "wallet",
       status: "ready",
+      items: {
+        create: {
+          sourceSite: "Vecteezy",
+          category: "vector",
+          productUrl: "https://vecteezy.com/example-3",
+          priceRial: 700_000n,
+          status: "ready",
+        },
+      },
     },
+    include: { items: true },
   });
   await prisma.delivery.create({
-    data: { orderId: order3.id, fileUrl: "https://example.com/files/order3.zip" },
+    data: { orderItemId: order3.items[0].id, fileUrl: "https://example.com/files/order3.zip" },
   });
 
   console.log("Seeded user mobile:", mobile);

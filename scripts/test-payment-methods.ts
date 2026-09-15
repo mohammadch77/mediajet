@@ -128,8 +128,8 @@ async function main() {
   check("پاسخ ۲۰۰", walletOrder.status === 200, JSON.stringify(walletOrder.json));
   check(
     "قیمت ثبت‌شده شامل کارمزد ۵٪ است",
-    wOrder?.priceRial === BigInt(expectedWallet),
-    `${wOrder?.priceRial} (انتظار ${expectedWallet})`,
+    wOrder?.totalPriceRial === BigInt(expectedWallet),
+    `${wOrder?.totalPriceRial} (انتظار ${expectedWallet})`,
   );
   check("سفارش مستقیم به صف رفت", wOrder?.status === "queued", String(wOrder?.status));
   check(
@@ -163,8 +163,8 @@ async function main() {
   }
   check(
     "قیمت ثبت‌شده شامل کارمزد ۱۱٪ است",
-    gOrderBefore?.priceRial === BigInt(expectedGateway),
-    `${gOrderBefore?.priceRial} (انتظار ${expectedGateway})`,
+    gOrderBefore?.totalPriceRial === BigInt(expectedGateway),
+    `${gOrderBefore?.totalPriceRial} (انتظار ${expectedGateway})`,
   );
   check(
     "پیش از پرداخت در awaiting_payment است (به صف نرفته)",

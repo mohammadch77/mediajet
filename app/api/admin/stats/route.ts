@@ -22,7 +22,7 @@ export async function GET() {
   const [totalUsers, ordersByStatus, paidOrders, walletsSum] = await Promise.all([
     prisma.user.count(),
     prisma.order.groupBy({ by: ["status"], _count: { _all: true } }),
-    prisma.order.findMany({ where: { status: { in: PAID_STATUSES } }, select: { priceRial: true } }),
+    prisma.order.findMany({ where: { status: { in: PAID_STATUSES } }, select: { totalPriceRial: true } }),
     prisma.wallet.aggregate({ _sum: { balanceRial: true } }),
   ]);
 
@@ -32,7 +32,7 @@ export async function GET() {
     statusCounts[g.status] = g._count._all;
   }
 
-  const totalRevenueRial = paidOrders.reduce((sum, o) => sum + o.priceRial, 0n);
+  const totalRevenueRial = paidOrders.reduce((sum, o) => sum + o.totalPriceRial, 0n);
   const totalWalletBalanceRial = walletsSum._sum.balanceRial ?? 0n;
 
   // سفارش‌های ۷ روز اخیر برای نمودار، به تفکیک روز

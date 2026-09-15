@@ -104,3 +104,50 @@ export async function computeDualPrice(
     gatewayPriceRial: applySurcharge(base.finalPriceRial, settings.gatewaySurchargePercent),
   };
 }
+
+export interface CartItemInput {
+  categoryId: string;
+  site: string;
+}
+
+export interface CartPriceResult {
+  items: PriceResult[];
+  /** مجموع قیمت پایه‌ی همه‌ی آیتم‌ها، پیش از کارمزد روش پرداخت. */
+  subtotalRial: number;
+  paymentMethod: PaymentMethod;
+  /** مجموع قابل‌پرداخت: کارمزد روش پرداخت روی کل سبد اعمال می‌شود، نه تک‌تک آیتم‌ها. */
+  payableTotalRial: number;
+}
+
+/**
+ * قیمت کل سبد برای یک روش پرداخت مشخص، فقط سمت سرور. اگر دسته/سایت هر آیتم نامعتبر
+ * باشد null برمی‌گردد (سبد نباید نیمه‌قیمت‌گذاری‌شده باشد).
+ */
+export async function computeCartTotal(
+  items: CartItemInput[],
+  paymentMethod: PaymentMethod,
+): Promise<CartPriceResult | null> {
+  if (items.length === 0) return null;
+
+  const priced: PriceResult[] = [];
+  for (const item of items) {
+    const p = computePrice(item.categoryId, item.site);
+    if (!p) return null;
+    priced.push(p);
+  }
+
+  const subtotalRial = priced.reduce((sum, p) => sum + p.finalPriceRial, 0);
+
+  const settings = await getPaymentSettings();
+  const percent =
+    paymentMethod === "wallet"
+      ? settings.walletSurchargePercent
+      : settings.gatewaySurchargePercent;
+
+  return {
+    items: priced,
+    subtotalRial,
+    paymentMethod,
+    payableTotalRial: applySurcharge(subtotalRial, percent),
+  };
+}

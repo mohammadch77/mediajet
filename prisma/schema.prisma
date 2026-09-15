@@ -19,6 +19,7 @@ model User {
 
   wallet          Wallet?
   orders          Order[]
+  cart            Cart?
   sessions        Session[]
   payments        Payment[]
   supportMessages SupportMessage[]
@@ -146,22 +147,46 @@ enum PaymentStatus {
 model Order {
   id             String      @id @default(cuid())
   userId         String
-  sourceSite     String
-  category       String
-  productUrl     String
-  priceRial      BigInt
+  totalPriceRial BigInt // مجموع priceRial همه‌ی آیتم‌ها به‌علاوه‌ی کارمزد روش پرداخت؛ فقط سمت سرور محاسبه می‌شود
+  paymentMethod  String // "wallet" یا "gateway"؛ نوع lib/pricing.ts#PaymentMethod
   status         OrderStatus @default(draft)
   idempotencyKey String?     @unique // کلید یکتای درخواست ثبت سفارش؛ از ساخت سفارش تکراری جلوگیری می‌کند
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  user     User            @relation(fields: [userId], references: [id])
-  events   OrderEvent[]
-  delivery Delivery?
-  payment  Payment?
+  user    User         @relation(fields: [userId], references: [id])
+  events  OrderEvent[]
+  items   OrderItem[]
+  payment Payment?
 
   @@index([userId])
   @@index([status])
+}
+
+// یک آیتم سفارش: یک محصول از یک سایت مبدأ با قیمت پایه‌ی خودش.
+// وضعیت تحویل این آیتم مستقل از بقیه‌ی آیتم‌های همان سفارش است؛ کاربر هر آیتمِ آماده را
+// می‌تواند زودتر دانلود کند. وضعیت کلی سفارش از وضعیت آیتم‌ها در lib/orderState.ts محاسبه می‌شود.
+model OrderItem {
+  id         String          @id @default(cuid())
+  orderId    String
+  sourceSite String
+  category   String
+  productUrl String
+  priceRial  BigInt // قیمت پایه‌ی همین آیتم (پیش از کارمزد روش پرداخت که روی کل سفارش اعمال می‌شود)
+  status     OrderItemStatus @default(pending)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  order    Order     @relation(fields: [orderId], references: [id])
+  delivery Delivery?
+
+  @@index([orderId])
+}
+
+enum OrderItemStatus {
+  pending // در صف / در حال پردازش
+  ready // فایل آماده‌ی دانلود است
+  delivered // کاربر دانلود کرده یا اپراتور تحویل را نهایی کرده
 }
 
 enum OrderStatus {
@@ -198,7 +223,7 @@ model OrderEvent {
 // وقتی isLarge=true باشد، هیچ فایلی ذخیره نشده و پنل کاربر پیام پشتیبانی نشان می‌دهد.
 model Delivery {
   id             String   @id @default(cuid())
-  orderId        String   @unique
+  orderItemId    String   @unique
   fileUrl        String?
   storageKey     String?
   fileName       String?
@@ -210,7 +235,36 @@ model Delivery {
   lastAccessedAt DateTime?
   deliveredAt    DateTime @default(now())
 
-  order Order @relation(fields: [orderId], references: [id])
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+}
+
+// سبد خرید کاربر پیش از ثبت سفارش. هر کاربرِ لاگین‌کرده حداکثر یک سبد باز دارد،
+// پس با بستن مرورگر یا تعویض دستگاه از بین نمی‌رود. سبد مهمان (کاربر لاگین‌نکرده)
+// در این قدم پیاده‌سازی نمی‌شود؛ پیش از افزودن آیتم باید لاگین کند.
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id])
+  items CartItem[]
+}
+
+// priceRial این‌جا فقط کش نمایشی قیمت لحظه‌ی افزودن به سبد است؛ در لحظه‌ی ثبت سفارش
+// قیمت واقعی دوباره سمت سرور با lib/pricing.ts محاسبه می‌شود و مبنای پرداخت همان است.
+model CartItem {
+  id         String   @id @default(cuid())
+  cartId     String
+  sourceSite String
+  category   String
+  productUrl String
+  priceRial  BigInt
+  createdAt  DateTime @default(now())
+
+  cart Cart @relation(fields: [cartId], references: [id])
+
+  @@index([cartId])
 }
 
 // پیام صندوق پشتیبانی دوطرفه: کاربر فقط از پنل کاربری، پشتیبانی فقط از تلگرام.

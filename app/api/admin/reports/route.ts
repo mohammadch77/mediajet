@@ -85,7 +85,14 @@ export async function GET(req: NextRequest) {
   ] = await Promise.all([
     prisma.order.findMany({
       where: { createdAt: { gte: from, lte: to } },
-      select: { id: true, priceRial: true, status: true, category: true, sourceSite: true, createdAt: true, userId: true },
+      select: {
+        id: true,
+        totalPriceRial: true,
+        status: true,
+        createdAt: true,
+        userId: true,
+        items: { select: { category: true, sourceSite: true } },
+      },
     }),
     prisma.order.groupBy({ by: ["status"], _count: { _all: true } }),
     prisma.user.count({ where: { createdAt: { gte: from, lte: to } } }),
@@ -109,7 +116,7 @@ export async function GET(req: NextRequest) {
 
   // درآمد فقط از سفارش‌های پرداخت‌شده (کسرشده از کیف‌پول) محاسبه می‌شود.
   const paidOrdersInRange = ordersInRange.filter((o) => (PAID_STATUSES as readonly string[]).includes(o.status));
-  const totalRevenueRial = paidOrdersInRange.reduce((sum, o) => sum + o.priceRial, 0n);
+  const totalRevenueRial = paidOrdersInRange.reduce((sum, o) => sum + o.totalPriceRial, 0n);
 
   // نمودار روند درآمد: به تفکیک روز در بازه‌ی انتخاب‌شده.
   const dayBuckets: { date: string; revenueRial: string; orderCount: number }[] = [];
@@ -124,7 +131,7 @@ export async function GET(req: NextRequest) {
     if (!bucket) continue;
     bucket.orderCount += 1;
     if ((PAID_STATUSES as readonly string[]).includes(o.status)) {
-      bucket.revenueRial += o.priceRial;
+      bucket.revenueRial += o.totalPriceRial;
     }
   }
   for (const [date, b] of bucketMap) {
@@ -140,8 +147,10 @@ export async function GET(req: NextRequest) {
   const categoryCounts = new Map<string, number>();
   const siteCounts = new Map<string, number>();
   for (const o of ordersInRange) {
-    categoryCounts.set(o.category, (categoryCounts.get(o.category) ?? 0) + 1);
-    siteCounts.set(o.sourceSite, (siteCounts.get(o.sourceSite) ?? 0) + 1);
+    for (const item of o.items) {
+      categoryCounts.set(item.category, (categoryCounts.get(item.category) ?? 0) + 1);
+      siteCounts.set(item.sourceSite, (siteCounts.get(item.sourceSite) ?? 0) + 1);
+    }
   }
   const byCategory = Array.from(categoryCounts.entries())
     .map(([category, count]) => ({ category, title: categoryById(category)?.title ?? category, count }))

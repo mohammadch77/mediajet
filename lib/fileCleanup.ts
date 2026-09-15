@@ -13,7 +13,7 @@ const RETENTION_MS = 24 * 60 * 60 * 1000; // ۲۴ ساعت از آخرین دس�
  * فایل‌های کوچکِ روی دیسک را که بیش از ۲۴ ساعت از آخرین دسترسی‌شان گذشته پاک می‌کند.
  * فقط تحویل‌های isLarge=false و isOnDisk=true و دارای telegramFileId (قابل‌بازیابی) بررسی می‌شوند.
  */
-export async function cleanupStaleFiles(): Promise<{ deletedCount: number; deletedOrderIds: string[] }> {
+export async function cleanupStaleFiles(): Promise<{ deletedCount: number; deletedOrderItemIds: string[] }> {
   const cutoff = new Date(Date.now() - RETENTION_MS);
 
   const staleDeliveries = await prisma.delivery.findMany({
@@ -26,7 +26,7 @@ export async function cleanupStaleFiles(): Promise<{ deletedCount: number; delet
     },
   });
 
-  const deletedOrderIds: string[] = [];
+  const deletedOrderItemIds: string[] = [];
 
   for (const delivery of staleDeliveries) {
     if (!delivery.storageKey) continue;
@@ -36,13 +36,13 @@ export async function cleanupStaleFiles(): Promise<{ deletedCount: number; delet
         where: { id: delivery.id },
         data: { isOnDisk: false },
       });
-      deletedOrderIds.push(delivery.orderId);
+      deletedOrderItemIds.push(delivery.orderItemId);
     } catch (error) {
       console.error(`[پاک‌سازی فایل خطا] حذف فایل تحویل ${delivery.id} با خطا مواجه شد:`, error);
     }
   }
 
-  return { deletedCount: deletedOrderIds.length, deletedOrderIds };
+  return { deletedCount: deletedOrderItemIds.length, deletedOrderItemIds };
 }
 
 /**

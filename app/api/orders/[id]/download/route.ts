@@ -13,13 +13,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const { id } = await params;
-  const order = await prisma.order.findUnique({ where: { id }, include: { delivery: true } });
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: { items: { include: { delivery: true } } },
+  });
 
   if (!order || order.userId !== currentUser.id) {
     return NextResponse.json({ error: "سفارش یافت نشد." }, { status: 404 });
   }
 
-  const delivery = order.delivery;
+  // TODO(cart-ui): فعلاً فقط اولین آیتم سفارش دانلود می‌شود.
+  const delivery = order.items[0]?.delivery;
   if (!delivery || !delivery.storageKey || delivery.isLarge) {
     return NextResponse.json({ error: "فایل این سفارش برای دانلود مستقیم در دسترس نیست." }, { status: 404 });
   }

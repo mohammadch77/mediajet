@@ -35,6 +35,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       orderBy: { createdAt: "desc" },
       skip: ordersPageParams.skip,
       take: ordersPageParams.take,
+      include: { items: true },
     }),
     user.wallet
       ? prisma.walletTransaction.count({ where: { walletId: user.wallet.id } })
@@ -61,9 +62,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     orders: paginatedResult(
       orders.map((o) => ({
         id: o.id,
-        category: o.category,
-        sourceSite: o.sourceSite,
-        priceLabel: rialToTomanLabel(Number(o.priceRial)),
+        category: o.items[0]?.category ?? null,
+        sourceSite: o.items[0]?.sourceSite ?? null,
+        priceLabel: rialToTomanLabel(Number(o.totalPriceRial)),
         status: o.status,
         createdAt: o.createdAt.toISOString(),
       })),

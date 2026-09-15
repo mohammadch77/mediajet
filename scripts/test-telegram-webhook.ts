@@ -37,10 +37,22 @@ async function main() {
   console.log("کاربر تست ساخته شد:", user.id);
 
   const orderSmall = await prisma.order.create({
-    data: { userId: user.id, sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/a", priceRial: 700000n, status: "queued" },
+    data: {
+      userId: user.id,
+      totalPriceRial: 700000n,
+      paymentMethod: "wallet",
+      status: "queued",
+      items: { create: { sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/a", priceRial: 700000n } },
+    },
   });
   const orderLarge = await prisma.order.create({
-    data: { userId: user.id, sourceSite: "Envato", category: "video", productUrl: "https://envato.com/b", priceRial: 1200000n, status: "processing" },
+    data: {
+      userId: user.id,
+      totalPriceRial: 1200000n,
+      paymentMethod: "wallet",
+      status: "processing",
+      items: { create: { sourceSite: "Envato", category: "video", productUrl: "https://envato.com/b", priceRial: 1200000n } },
+    },
   });
   console.log("سفارش‌های تست:", { small: orderSmall.id, large: orderLarge.id });
 
@@ -59,8 +71,16 @@ async function main() {
   });
   console.log("[۱] پیام از چت غیرمجاز (انتظار 200 و بی‌اثر):", r1.status);
 
-  const afterUnauthorized = await prisma.order.findUnique({ where: { id: orderSmall.id }, include: { delivery: true } });
-  console.log("    وضعیت سفارش بعد از پیام غیرمجاز (باید همچنان queued باشد):", afterUnauthorized?.status, "| delivery:", afterUnauthorized?.delivery);
+  const afterUnauthorized = await prisma.order.findUnique({
+    where: { id: orderSmall.id },
+    include: { items: { include: { delivery: true } } },
+  });
+  console.log(
+    "    وضعیت سفارش بعد از پیام غیرمجاز (باید همچنان queued باشد):",
+    afterUnauthorized?.status,
+    "| delivery:",
+    afterUnauthorized?.items[0]?.delivery,
+  );
 
   // [۲] فایل کوچک: اپراتور روی پیام سفارش reply می‌کند و فایل می‌فرستد
   const r2 = await fetch(`${BASE_URL}/api/telegram/webhook`, {
@@ -77,10 +97,16 @@ async function main() {
   });
   console.log("[۲] تحویل فایل کوچک:", r2.status, await r2.json());
 
-  const smallOrder = await prisma.order.findUnique({ where: { id: orderSmall.id }, include: { delivery: true, events: true } });
+  const smallOrder = await prisma.order.findUnique({
+    where: { id: orderSmall.id },
+    include: { items: { include: { delivery: true } }, events: true },
+  });
   console.log("    وضعیت سفارش کوچک (انتظار ready):", smallOrder?.status);
-  console.log("    delivery:", smallOrder?.delivery);
-  console.log("    رویدادها:", smallOrder?.events.map((e) => `${e.fromStatus} → ${e.toStatus} (${e.actor})`));
+  console.log("    delivery:", smallOrder?.items[0]?.delivery);
+  console.log(
+    "    رویدادها:",
+    smallOrder?.events.map((e: { fromStatus: string | null; toStatus: string; actor: string }) => `${e.fromStatus} → ${e.toStatus} (${e.actor})`),
+  );
 
   // [۲.۱] دانلود از پنل کاربر (endpoint محافظت‌شده)
   const rDownload = await fetch(`${BASE_URL}/api/orders/${orderSmall.id}/download`, { headers: { Cookie: userCookie } });
@@ -109,8 +135,11 @@ async function main() {
   });
   console.log("[۳] علامت‌گذاری فایل بزرگ:", r3.status, await r3.json());
 
-  const largeOrder = await prisma.order.findUnique({ where: { id: orderLarge.id }, include: { delivery: true } });
-  console.log("    وضعیت سفارش بزرگ (انتظار ready):", largeOrder?.status, "| isLarge:", largeOrder?.delivery?.isLarge);
+  const largeOrder = await prisma.order.findUnique({
+    where: { id: orderLarge.id },
+    include: { items: { include: { delivery: true } } },
+  });
+  console.log("    وضعیت سفارش بزرگ (انتظار ready):", largeOrder?.status, "| isLarge:", largeOrder?.items[0]?.delivery?.isLarge);
 
   // [۳.۱] در پنل کاربر باید پیام پشتیبانی نمایش داده شود، نه لینک دانلود
   const rOrders = await fetch(`${BASE_URL}/api/orders`, { headers: { Cookie: userCookie } });

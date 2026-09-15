@@ -43,8 +43,8 @@ export async function GET(req: NextRequest) {
     ...(search
       ? {
           OR: [
-            { sourceSite: { contains: search, mode: "insensitive" } },
-            { category: { contains: search, mode: "insensitive" } },
+            { items: { some: { sourceSite: { contains: search, mode: "insensitive" } } } },
+            { items: { some: { category: { contains: search, mode: "insensitive" } } } },
             { user: { mobile: { contains: search, mode: "insensitive" } } },
             { user: { name: { contains: search, mode: "insensitive" } } },
           ],
@@ -59,17 +59,18 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       skip: params.skip,
       take: params.take,
-      include: { user: true },
+      include: { user: true, items: true },
     }),
   ]);
 
+  // TODO(cart-ui): فعلاً فقط اولین آیتم هر سفارش نمایش داده می‌شود.
   return NextResponse.json(
     paginatedResult(
       orders.map((o) => ({
         id: o.id,
-        category: o.category,
-        sourceSite: o.sourceSite,
-        priceLabel: rialToTomanLabel(Number(o.priceRial)),
+        category: o.items[0]?.category ?? null,
+        sourceSite: o.items[0]?.sourceSite ?? null,
+        priceLabel: rialToTomanLabel(Number(o.totalPriceRial)),
         status: o.status,
         createdAt: o.createdAt.toISOString(),
         user: { id: o.user.id, mobile: o.user.mobile, name: o.user.name },

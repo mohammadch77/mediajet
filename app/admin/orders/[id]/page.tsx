@@ -7,9 +7,9 @@ import { STATUS_LABELS, type OrderStatus } from "@/lib/orderState";
 
 type OrderDetail = {
   id: string;
-  category: string;
-  sourceSite: string;
-  productUrl: string;
+  category: string | null;
+  sourceSite: string | null;
+  productUrl: string | null;
   priceLabel: string;
   status: OrderStatus;
   createdAt: string;
@@ -76,7 +76,7 @@ export default function AdminOrderDetailPage() {
           <div><span className="text-dim">آخرین به‌روزرسانی: </span>{toJalaliDateTime(order.updatedAt)}</div>
           <div className="sm:col-span-2 min-w-0">
             <span className="text-dim">لینک محصول: </span>
-            <a href={order.productUrl} target="_blank" rel="noreferrer" dir="ltr" className="text-cyan hover:underline break-all">
+            <a href={order.productUrl ?? undefined} target="_blank" rel="noreferrer" dir="ltr" className="text-cyan hover:underline break-all">
               {order.productUrl}
             </a>
           </div>

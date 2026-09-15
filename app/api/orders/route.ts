@@ -33,15 +33,18 @@ export async function GET() {
   const orders = await prisma.order.findMany({
     where: { userId: currentUser.id },
     orderBy: { createdAt: "desc" },
-    include: { delivery: true },
+    include: { items: { include: { delivery: true } } },
   });
 
   const supportUsername = process.env.TELEGRAM_SUPPORT_USERNAME || "@support";
 
   return NextResponse.json({
+    // TODO(cart-ui): این پاسخ فعلاً فرض می‌کند هر سفارش دقیقاً یک آیتم دارد (اولین آیتم).
+    // وقتی UI سبد خرید ساخته شد باید همه‌ی items هر سفارش را برگرداند.
     orders: orders.map((order) => {
-      const isDeliverable = order.status === "ready" || order.status === "delivered";
-      const delivery = order.delivery;
+      const item = order.items[0];
+      const isDeliverable = item?.status === "ready" || item?.status === "delivered";
+      const delivery = item?.delivery;
 
       let downloadUrl: string | null = null;
       let supportMessage: string | null = null;
@@ -58,11 +61,11 @@ export async function GET() {
 
       return {
         id: order.id,
-        category: order.category,
-        sourceSite: order.sourceSite,
-        productUrl: order.productUrl,
-        priceRial: order.priceRial.toString(),
-        priceLabel: rialToTomanLabel(Number(order.priceRial)),
+        category: item?.category ?? null,
+        sourceSite: item?.sourceSite ?? null,
+        productUrl: item?.productUrl ?? null,
+        priceRial: order.totalPriceRial.toString(),
+        priceLabel: rialToTomanLabel(Number(order.totalPriceRial)),
         status: order.status,
         createdAt: order.createdAt.toISOString(),
         downloadUrl,
@@ -140,12 +143,18 @@ export async function POST(req: NextRequest) {
       const order = await tx.order.create({
         data: {
           userId,
-          sourceSite: site,
-          category: categoryId,
-          productUrl,
-          priceRial,
+          totalPriceRial: priceRial,
+          paymentMethod,
           status: "draft",
           idempotencyKey,
+          items: {
+            create: {
+              sourceSite: site,
+              category: categoryId,
+              productUrl,
+              priceRial: BigInt(price.finalPriceRial),
+            },
+          },
         },
       });
 
@@ -199,8 +208,8 @@ export async function POST(req: NextRequest) {
   if (order.status === "queued") {
     notifyOrderCreated({
       orderId: order.id,
-      priceLabel: rialToTomanLabel(Number(order.priceRial)),
-      productUrl: order.productUrl,
+      priceLabel: rialToTomanLabel(Number(order.totalPriceRial)),
+      productUrl,
     });
   }
 
@@ -220,7 +229,7 @@ async function transitionOrder(
 }
 
 async function buildResponse(
-  order: { id: string; status: string; priceRial: bigint },
+  order: { id: string; status: string; totalPriceRial: bigint },
   idempotencyKey: string,
 ) {
   const [walletTransaction, payment] = await Promise.all([
@@ -237,8 +246,8 @@ async function buildResponse(
   return NextResponse.json({
     orderId: order.id,
     status: order.status,
-    priceRial: order.priceRial.toString(),
-    priceLabel: rialToTomanLabel(Number(order.priceRial)),
+    priceRial: order.totalPriceRial.toString(),
+    priceLabel: rialToTomanLabel(Number(order.totalPriceRial)),
     walletBalanceRial: walletTransaction ? walletTransaction.balanceAfter.toString() : null,
     redirectUrl,
   });
