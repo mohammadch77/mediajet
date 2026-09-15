@@ -57,7 +57,7 @@ export const createOrderInput = z.object({
   productUrl: z
     .string({ error: "آدرس محصول الزامی است." })
     .url("آدرس محصول معتبر نیست."),
-  paymentMethod: z.literal("wallet", {
+  paymentMethod: z.enum(["wallet", "gateway"], {
     error: requiredOrInvalidType("روش پرداخت الزامی است.", "روش پرداخت نامعتبر است."),
   }),
   idempotencyKey: z
@@ -66,6 +66,40 @@ export const createOrderInput = z.object({
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderInput>;
+
+export const quoteInput = z.object({
+  categoryId: z
+    .string({ error: "دسته‌بندی الزامی است." })
+    .min(1, "دسته‌بندی الزامی است."),
+  site: z
+    .string({ error: "سایت الزامی است." })
+    .min(1, "سایت الزامی است."),
+});
+
+export type QuoteInput = z.infer<typeof quoteInput>;
+
+// تنظیمات عددی پرداخت؛ مقدار همیشه عدد صحیح است و بازه‌ی مجاز هر کلید جداگانه
+// در سرور (lib/paymentSettings.ts) هم دوباره بررسی می‌شود.
+const paymentSettingKeyValues = [
+  "payment.gateway_surcharge_percent",
+  "payment.wallet_surcharge_percent",
+  "payment.wallet_min_charge_rial",
+] as const;
+
+const paymentSettingFieldInput = z.object({
+  key: z.enum(paymentSettingKeyValues, {
+    error: requiredOrInvalidType("کلید تنظیم الزامی است.", "کلید تنظیم نامعتبر است."),
+  }),
+  value: z
+    .number({ error: requiredOrInvalidType("مقدار الزامی است.", "مقدار باید عدد باشد.") })
+    .int("مقدار باید عدد صحیح باشد."),
+});
+
+export const updatePaymentSettingsInput = z.object({
+  fields: z.array(paymentSettingFieldInput).min(1, "حداقل یک فیلد باید ارسال شود."),
+});
+
+export type UpdatePaymentSettingsInput = z.infer<typeof updatePaymentSettingsInput>;
 
 const mobileField = z
   .string({ error: "شماره موبایل الزامی است." })

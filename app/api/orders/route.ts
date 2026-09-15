@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { computePrice } from "@/lib/pricing";
+import { computePriceForPaymentMethod } from "@/lib/pricing";
 import { rialToTomanLabel } from "@/lib/money";
 import { validateInput, createOrderInput, ValidationError } from "@/lib/validation";
 import { debitWalletInTx, WalletError } from "@/lib/wallet";
 import { assertTransition, type OrderStatus } from "@/lib/orderState";
 import { getCurrentUser } from "@/lib/session";
 import { notifyOrderCreated } from "@/lib/telegram";
+import { getGateway } from "@/lib/gateway";
+import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 
 const FOREIGN_KEY_VIOLATION = "P2003";
+
+// ثبت سفارش یک مسیر حساس مالی است: حداکثر ۱۰ تلاش در دقیقه برای هر کاربر.
+const ORDER_RATE_LIMIT = 10;
+const ORDER_RATE_WINDOW_MS = 60_000;
+
+/** کلید یکتای رکورد Payment سفارش؛ جدا از کلید سفارش تا با تراکنش کیف پول تداخل نکند. */
+function paymentIdempotencyKey(orderIdempotencyKey: string): string {
+  return `order-pay:${orderIdempotencyKey}`;
+}
 
 // GET /api/orders
 // لیست سفارش‌های کاربر جاری (فقط سفارش‌های خودش) به‌همراه اطلاعات دانلود در صورت آماده بودن.
@@ -62,12 +73,21 @@ export async function GET() {
 }
 
 // POST /api/orders
-// ثبت سفارش: اعتبارسنجی ورودی، محاسبه‌ی قیمت فقط سمت سرور، و انتقال اتمیک
-// سفارش از draft تا queued (شامل کسر کیف پول و ثبت رویدادها).
+// ثبت سفارش با دو روش پرداخت:
+//   - wallet:  کسر اتمیک از کیف پول و رفتن مستقیم به صف (draft → awaiting_payment → queued).
+//   - gateway: ساخت سفارش در awaiting_payment و هدایت کاربر به درگاه؛ صف‌شدن فقط بعد از
+//              تأیید پرداخت در callback اتفاق می‌افتد (lib/payment.ts → confirmOrderPayment).
+// قیمت در هر دو حالت فقط سمت سرور و بر اساس کارمزد همان روش پرداخت محاسبه می‌شود.
 export async function POST(req: NextRequest) {
   const currentUser = await getCurrentUser();
   if (!currentUser) {
     return NextResponse.json({ error: "برای ثبت سفارش باید وارد شوید." }, { status: 401 });
+  }
+
+  // کلید محدودیت از session ساخته می‌شود، نه از ورودی کلاینت.
+  const limit = checkRateLimit(`orders:${currentUser.id}`, ORDER_RATE_LIMIT, ORDER_RATE_WINDOW_MS);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: rateLimitMessage(limit.retryAfterSeconds) }, { status: 429 });
   }
 
   let input;
@@ -84,19 +104,30 @@ export async function POST(req: NextRequest) {
   const userId = currentUser.id;
   const { categoryId, site, productUrl, paymentMethod, idempotencyKey } = input;
 
-  // درخواست تکراری: همان سفارش قبلی برگردانده می‌شود، سفارش/کسر جدید ساخته نمی‌شود.
+  // درخواست تکراری: همان سفارش قبلی برگردانده می‌شود، سفارش/کسر/پرداخت جدید ساخته نمی‌شود.
   const existingOrder = await prisma.order.findUnique({ where: { idempotencyKey } });
   if (existingOrder) {
+    if (existingOrder.userId !== userId) {
+      return NextResponse.json({ error: "کلید یکتای درخواست نامعتبر است." }, { status: 409 });
+    }
     return buildResponse(existingOrder, idempotencyKey);
   }
 
-  const price = computePrice(categoryId, site);
+  const price = await computePriceForPaymentMethod(categoryId, site, paymentMethod);
   if (!price) {
     return NextResponse.json({ error: "دسته یا سایت نامعتبر" }, { status: 422 });
   }
 
   const actor = `user:${userId}`;
-  const priceRial = BigInt(price.finalPriceRial);
+  const priceRial = BigInt(price.payablePriceRial);
+
+  // برای پرداخت درگاهی، تلاش پرداخت پیش از تراکنش ساخته می‌شود (همان ترتیب مسیر شارژ کیف پول).
+  let gatewayAttempt: { authority: string; redirectUrl: string } | null = null;
+  if (paymentMethod === "gateway") {
+    const callbackUrl = new URL("/api/orders/payment/callback", req.url).toString();
+    const gateway = await getGateway();
+    gatewayAttempt = await gateway.requestPayment(priceRial, callbackUrl);
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -133,9 +164,22 @@ export async function POST(req: NextRequest) {
           `پرداخت سفارش ${order.id}`,
           idempotencyKey,
         );
+        await transitionOrder(tx, order.id, "awaiting_payment", "queued", "system");
+        return;
       }
 
-      await transitionOrder(tx, order.id, "awaiting_payment", "queued", "system");
+      // pending: سفارش در awaiting_payment می‌ماند تا callback درگاه آن را تأیید کند.
+      await tx.payment.create({
+        data: {
+          userId,
+          orderId: order.id,
+          amountRial: priceRial,
+          status: "initiated",
+          authority: gatewayAttempt!.authority,
+          redirectUrl: gatewayAttempt!.redirectUrl,
+          idempotencyKey: paymentIdempotencyKey(idempotencyKey),
+        },
+      });
     });
   } catch (error) {
     if (error instanceof WalletError) {
@@ -179,12 +223,23 @@ async function buildResponse(
   order: { id: string; status: string; priceRial: bigint },
   idempotencyKey: string,
 ) {
-  const walletTransaction = await prisma.walletTransaction.findUnique({ where: { idempotencyKey } });
+  const [walletTransaction, payment] = await Promise.all([
+    prisma.walletTransaction.findUnique({ where: { idempotencyKey } }),
+    prisma.payment.findUnique({ where: { idempotencyKey: paymentIdempotencyKey(idempotencyKey) } }),
+  ]);
+
+  // فقط تا وقتی پرداخت به نتیجه نرسیده، کاربر دوباره به همان صفحه‌ی پرداخت هدایت می‌شود.
+  const redirectUrl =
+    payment && (payment.status === "initiated" || payment.status === "paid")
+      ? payment.redirectUrl
+      : null;
+
   return NextResponse.json({
     orderId: order.id,
     status: order.status,
     priceRial: order.priceRial.toString(),
     priceLabel: rialToTomanLabel(Number(order.priceRial)),
     walletBalanceRial: walletTransaction ? walletTransaction.balanceAfter.toString() : null,
+    redirectUrl,
   });
 }

@@ -112,18 +112,26 @@ enum TxType {
 // یک تلاش برای شارژ کیف پول از طریق درگاه پرداخت (فعلاً MockGateway، بعداً زرین‌پال).
 // authority شناسه‌ی یکتای درگاه برای این تلاش پرداخت است.
 // idempotencyKey برای جلوگیری از شارژ تکراری در صورت فراخوانی مکرر callback به creditWallet داده می‌شود.
+// orderId فقط برای پرداخت مستقیم سفارش از درگاه پر می‌شود (پرداخت شارژ کیف پول null است).
+// یکتاست تا هر سفارش حداکثر یک تلاش پرداخت درگاهی داشته باشد و callback تکراری نتواند
+// سفارش را دوبار به صف بفرستد.
 model Payment {
   id             String        @id @default(cuid())
   userId         String
+  orderId        String?       @unique
   amountRial     BigInt
   status         PaymentStatus @default(initiated)
   authority      String        @unique
   refId          String?
+  // آدرس هدایت به صفحه‌ی پرداخت درگاه؛ ذخیره می‌شود تا در درخواست تکراری (idempotent)
+  // بتوان کاربر را به همان تلاش پرداخت قبلی برگرداند، بدون ساخت تلاش جدید.
+  redirectUrl    String?
   idempotencyKey String        @unique
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
+  user  User   @relation(fields: [userId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id])
 
   @@index([userId])
 }
@@ -150,6 +158,7 @@ model Order {
   user     User            @relation(fields: [userId], references: [id])
   events   OrderEvent[]
   delivery Delivery?
+  payment  Payment?
 
   @@index([userId])
   @@index([status])

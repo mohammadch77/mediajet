@@ -16,6 +16,29 @@ interface Props {
 
 type Stage = "sites" | "pick-category" | "form";
 type SubmitStatus = "idle" | "submitting" | "success" | "error";
+type PaymentMethod = "wallet" | "gateway";
+
+/** قیمت نهایی هر روش پرداخت؛ درصد کارمزد هرگز به کلاینت نمی‌رسد. */
+type Quote = {
+  walletPriceRial: bigint;
+  gatewayPriceRial: bigint;
+  walletPriceLabel: string;
+  gatewayPriceLabel: string;
+};
+
+const FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
+
+function toPersianDigits(input: string | number): string {
+  return String(input).replace(/\d/g, (d) => FA_DIGITS[Number(d)]);
+}
+
+/** اختلاف دو قیمت به تومان، برای برچسب «X تومان کمتر». */
+function savingsLabel(walletRial: bigint, gatewayRial: bigint): string | null {
+  const diff = gatewayRial - walletRial;
+  if (diff <= 0n) return null;
+  const toman = Number(diff) / 10;
+  return `${toPersianDigits(Math.round(toman).toLocaleString("en-US"))} تومان کمتر`;
+}
 
 function newIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -25,35 +48,52 @@ function newIdempotencyKey(): string {
 }
 
 export default function OrderDrawer({ open, category, linkEntry, onClose }: Props) {
-  const { requireAuth, setWalletBalance } = useAuth();
+  const { user, requireAuth, setWalletBalance } = useAuth();
   const [stage, setStage] = useState<Stage>("sites");
   const [selectedCatId, setSelectedCatId] = useState<string>("");
   const [selectedSite, setSelectedSite] = useState<string>("");
   const [candidates, setCandidates] = useState<Category[]>([]);
   const [link, setLink] = useState("");
   const [detected, setDetected] = useState("");
-  const [priceLabel, setPriceLabel] = useState("—");
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wallet");
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [orderResult, setOrderResult] = useState<{ orderId: string; priceLabel: string; walletBalanceRial: string | null } | null>(null);
 
-  // دریافت قیمت از سرور (قیمت هرگز سمت کلاینت محاسبه نمی‌شود)
+  const walletBalanceRial = user ? BigInt(user.walletBalanceRial) : 0n;
+  const walletSufficient = quote !== null && walletBalanceRial >= quote.walletPriceRial;
+
+  // دریافت قیمت از سرور (قیمت هرگز سمت کلاینت محاسبه نمی‌شود).
+  // سرور قیمت نهایی هر دو روش پرداخت را می‌دهد؛ درصد کارمزد هیچ‌وقت فرستاده نمی‌شود.
   const fetchQuote = useCallback(async (catId: string, site: string) => {
-    if (!catId || !site) { setPriceLabel("—"); return; }
+    if (!catId || !site) { setQuote(null); return; }
     try {
       const res = await fetch("/api/quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ categoryId: catId, site }),
       });
-      if (!res.ok) { setPriceLabel("—"); return; }
+      if (!res.ok) { setQuote(null); return; }
       const data = await res.json();
-      setPriceLabel(data.label ?? "—");
+      setQuote({
+        walletPriceRial: BigInt(data.walletPriceRial),
+        gatewayPriceRial: BigInt(data.gatewayPriceRial),
+        walletPriceLabel: data.walletPriceLabel,
+        gatewayPriceLabel: data.gatewayPriceLabel,
+      });
     } catch {
-      setPriceLabel("—");
+      setQuote(null);
     }
   }, []);
+
+  // پیش‌فرض همیشه ارزان‌ترین گزینه‌ی قابل استفاده: کیف پول اگر موجودی کافی باشد، وگرنه درگاه.
+  // اگر کاربر خودش انتخاب کرده باشد، انتخابش دست‌نخورده می‌ماند تا قیمت عوض شود.
+  useEffect(() => {
+    if (!quote) return;
+    setPaymentMethod(walletSufficient ? "wallet" : "gateway");
+  }, [quote, walletSufficient]);
 
   // با باز شدن دراور از روی کارتِ یک دسته (جریان قدیمی): مرحله‌ی انتخاب سایت را نشان بده.
   useEffect(() => {
@@ -64,7 +104,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
       setCandidates([]);
       setLink("");
       setDetected("");
-      setPriceLabel("—");
+      setQuote(null);
       setIdempotencyKey(newIdempotencyKey());
       setSubmitStatus("idle");
       setSubmitError(null);
@@ -85,7 +125,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
       setOrderResult(null);
       setIdempotencyKey(newIdempotencyKey());
       setSelectedCatId("");
-      setPriceLabel("—");
+      setQuote(null);
       setStage("pick-category");
     }
   }, [open, linkEntry]);
@@ -173,7 +213,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
           categoryId: selectedCatId,
           site: selectedSite,
           productUrl: link,
-          paymentMethod: "wallet",
+          paymentMethod,
           idempotencyKey,
         }),
       });
@@ -186,6 +226,12 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
             ? "موجودی کیف پول کافی نیست. لطفاً ابتدا کیف پول را شارژ کن."
             : data.error ?? "ثبت سفارش با خطا مواجه شد.",
         );
+        return;
+      }
+
+      // پرداخت مستقیم از درگاه: سفارش در انتظار پرداخت ساخته شده و باید به درگاه هدایت شویم.
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
         return;
       }
 
@@ -371,10 +417,78 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
         {/* footer (form stage) */}
         {stage === "form" && submitStatus !== "success" && (
           <div className="p-[16px_26px_22px] border-t border-[rgba(138,124,255,.14)] shrink-0 bg-bg2">
-            <div className="flex items-center justify-between bg-[rgba(107,91,255,.08)] border border-dashed border-[rgba(138,124,255,.4)] rounded-[14px] p-[16px_20px] mb-3.5">
-              <span>هزینه‌ی تخمینی</span>
-              <span className="font-display text-[1.5rem] font-extrabold text-primary2">{priceLabel}</span>
-            </div>
+            {!quote ? (
+              <div className="flex items-center justify-between bg-[rgba(107,91,255,.08)] border border-dashed border-[rgba(138,124,255,.4)] rounded-[14px] p-[16px_20px] mb-3.5">
+                <span>هزینه‌ی تخمینی</span>
+                <span className="font-display text-[1.5rem] font-extrabold text-primary2">—</span>
+              </div>
+            ) : (
+              <div className="mb-3.5">
+                <div className="text-[.85rem] font-semibold mb-2.5">روش پرداخت</div>
+                {/* روی موبایل تک‌ستونی (روی‌هم)، از ۴۰۰px به بالا دوستونی کنار هم */}
+                <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2.5">
+                  {/* کیف پول */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("wallet")}
+                    aria-pressed={paymentMethod === "wallet"}
+                    className={`text-right font-body cursor-pointer rounded-[14px] p-3.5 min-h-[92px] flex flex-col justify-between gap-1.5 border transition ${
+                      paymentMethod === "wallet"
+                        ? "bg-[rgba(61,220,132,.1)] border-[rgba(61,220,132,.55)] shadow-[0_0_0_2px_rgba(61,220,132,.18)]"
+                        : "bg-surface border-[rgba(138,124,255,.18)] hover:border-[rgba(61,220,132,.4)]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-[.85rem] font-bold">پرداخت از کیف پول</span>
+                      <span className="text-[.68rem] font-bold text-[#3ddc84] bg-[rgba(61,220,132,.14)] border border-[rgba(61,220,132,.35)] rounded-full px-2 py-0.5 shrink-0">
+                        ارزان‌تر
+                      </span>
+                    </div>
+                    <div className="font-display text-[1.15rem] font-extrabold text-[#3ddc84] break-words">
+                      {quote.walletPriceLabel}
+                    </div>
+                    {savingsLabel(quote.walletPriceRial, quote.gatewayPriceRial) && (
+                      <div className="text-[.72rem] text-[#3ddc84]">
+                        {savingsLabel(quote.walletPriceRial, quote.gatewayPriceRial)}
+                      </div>
+                    )}
+                  </button>
+
+                  {/* درگاه */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("gateway")}
+                    aria-pressed={paymentMethod === "gateway"}
+                    className={`text-right font-body cursor-pointer rounded-[14px] p-3.5 min-h-[92px] flex flex-col justify-between gap-1.5 border transition ${
+                      paymentMethod === "gateway"
+                        ? "bg-[rgba(107,91,255,.12)] border-[rgba(138,124,255,.6)] shadow-[0_0_0_2px_rgba(107,91,255,.18)]"
+                        : "bg-surface border-[rgba(138,124,255,.18)] hover:border-[rgba(138,124,255,.45)]"
+                    }`}
+                  >
+                    <span className="text-[.85rem] font-bold">پرداخت مستقیم از درگاه</span>
+                    <div className="font-display text-[1.15rem] font-extrabold text-primary2 break-words">
+                      {quote.gatewayPriceLabel}
+                    </div>
+                    <div className="text-[.72rem] text-dim">بدون نیاز به شارژ کیف پول</div>
+                  </button>
+                </div>
+
+                {/* موجودی ناکافی: گزینه غیرفعال نمی‌شود؛ فقط پیشنهاد شارژ داده می‌شود. */}
+                {!walletSufficient && (
+                  <div className="mt-2.5 flex items-center justify-between gap-2 flex-wrap bg-[rgba(61,220,132,.07)] border border-[rgba(61,220,132,.28)] rounded-[12px] p-3">
+                    <span className="text-[.78rem] text-[#3ddc84] leading-[1.7]">
+                      برای قیمت ارزان‌تر، کیف پولت را شارژ کن.
+                    </span>
+                    <a
+                      href="/dashboard"
+                      className="text-[.78rem] font-bold text-[#3ddc84] border border-[rgba(61,220,132,.45)] rounded-full px-3 py-1.5 shrink-0 transition hover:bg-[rgba(61,220,132,.14)]"
+                    >
+                      شارژ کیف پول
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
             {submitError && (
               <div className="text-[.85rem] text-accent2 mb-3 text-center leading-[1.8]">{submitError}</div>
             )}
@@ -383,7 +497,11 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
               disabled={submitStatus === "submitting"}
               className="w-full font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] p-4 bg-gradient-to-br from-accent to-accent2 text-white shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
             >
-              {submitStatus === "submitting" ? "در حال ثبت..." : "ثبت و پرداخت سفارش"}
+              {submitStatus === "submitting"
+                ? "در حال ثبت..."
+                : paymentMethod === "gateway"
+                  ? "ثبت سفارش و انتقال به درگاه"
+                  : "ثبت و پرداخت از کیف پول"}
             </button>
           </div>
         )}

@@ -1,4 +1,5 @@
 import { categoryById } from "@/data/categories";
+import { getPaymentSettings } from "@/lib/paymentSettings";
 
 // ضریب قیمت بر اساس سایت مبدأ (سایت‌های گران‌تر ضریب بالاتر).
 const SITE_MULTIPLIER: Record<string, number> = {
@@ -34,5 +35,72 @@ export function computePrice(categoryId: string, site: string): PriceResult | nu
     basePriceRial: cat.basePriceRial,
     multiplier,
     finalPriceRial,
+  };
+}
+
+export type PaymentMethod = "wallet" | "gateway";
+
+export interface MethodPriceResult extends PriceResult {
+  paymentMethod: PaymentMethod;
+  /** قیمت نهاییِ قابل پرداخت با این روش (قیمت پایه‌ی سایت + کارمزد روش پرداخت). */
+  payablePriceRial: number;
+}
+
+/** کارمزد را روی قیمت اعمال می‌کند؛ همان قرارداد گرد کردن موجود (Math.round) و خروجی integer ریال. */
+function applySurcharge(priceRial: number, surchargePercent: number): number {
+  return Math.round(priceRial * (1 + surchargePercent / 100));
+}
+
+/**
+ * قیمت نهایی یک سفارش برای یک روش پرداخت مشخص.
+ * درصد کارمزد هر بار تازه از تنظیمات خوانده می‌شود (بدون کش) تا ویرایش ادمین
+ * بلافاصله روی قیمت بعدی اثر بگذارد. فقط سمت سرور.
+ */
+export async function computePriceForPaymentMethod(
+  categoryId: string,
+  site: string,
+  paymentMethod: PaymentMethod,
+): Promise<MethodPriceResult | null> {
+  const base = computePrice(categoryId, site);
+  if (!base) return null;
+
+  const settings = await getPaymentSettings();
+  const percent =
+    paymentMethod === "wallet"
+      ? settings.walletSurchargePercent
+      : settings.gatewaySurchargePercent;
+
+  return {
+    ...base,
+    paymentMethod,
+    payablePriceRial: applySurcharge(base.finalPriceRial, percent),
+  };
+}
+
+export interface DualPriceResult {
+  categoryId: string;
+  site: string;
+  walletPriceRial: number;
+  gatewayPriceRial: number;
+}
+
+/**
+ * قیمت هر دو روش پرداخت را با یک بار خواندن تنظیمات برمی‌گرداند (برای /api/quote).
+ * درصدها عمداً در خروجی نیستند: UI فقط قیمت نهایی را می‌بیند، نه کارمزد را.
+ */
+export async function computeDualPrice(
+  categoryId: string,
+  site: string,
+): Promise<DualPriceResult | null> {
+  const base = computePrice(categoryId, site);
+  if (!base) return null;
+
+  const settings = await getPaymentSettings();
+
+  return {
+    categoryId,
+    site,
+    walletPriceRial: applySurcharge(base.finalPriceRial, settings.walletSurchargePercent),
+    gatewayPriceRial: applySurcharge(base.finalPriceRial, settings.gatewaySurchargePercent),
   };
 }

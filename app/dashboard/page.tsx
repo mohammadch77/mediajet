@@ -49,6 +49,7 @@ export default function DashboardPage() {
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [chargeNotice, setChargeNotice] = useState<"success" | "failed" | null>(null);
+  const [orderNotice, setOrderNotice] = useState<"success" | "failed" | null>(null);
   const [chargeAmountToman, setChargeAmountToman] = useState("");
   const [charging, setCharging] = useState(false);
   const [chargeError, setChargeError] = useState<string | null>(null);
@@ -176,6 +177,13 @@ export default function DashboardPage() {
       router.replace("/dashboard");
     }
 
+    // بازگشت از درگاه برای پرداخت مستقیم سفارش
+    const order = params.get("order");
+    if (order === "success" || order === "failed") {
+      setOrderNotice(order);
+      router.replace("/dashboard");
+    }
+
     loadDashboard();
     loadSupportMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -241,6 +249,17 @@ export default function DashboardPage() {
       {chargeNotice === "failed" && (
         <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-8">
           شارژ کیف پول ناموفق بود یا لغو شد.
+        </div>
+      )}
+
+      {orderNotice === "success" && (
+        <div className="bg-[rgba(56,225,255,.1)] border border-[rgba(56,225,255,.3)] text-cyan rounded-2xl p-4 mb-8">
+          پرداخت سفارش با موفقیت انجام شد و سفارش در صف پردازش قرار گرفت.
+        </div>
+      )}
+      {orderNotice === "failed" && (
+        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-8">
+          پرداخت سفارش ناموفق بود یا لغو شد. سفارش در وضعیت «در انتظار پرداخت» باقی ماند.
         </div>
       )}
 
