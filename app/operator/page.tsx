@@ -234,7 +234,7 @@ export default function OperatorPage() {
                       placeholder="لینک فایل تحویلی"
                       value={deliverDrafts[o.id] ?? ""}
                       onChange={(e) => setDeliverDrafts((d) => ({ ...d, [o.id]: e.target.value }))}
-                      className="bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2 text-[.82rem] flex-1 min-w-[220px] outline-none focus:border-cyan"
+                      className="bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2 text-[.82rem] flex-1 w-full sm:min-w-[220px] sm:w-auto outline-none focus:border-cyan"
                     />
                     <button
                       disabled={isBusy}

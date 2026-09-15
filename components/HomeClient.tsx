@@ -36,6 +36,7 @@ export default function HomeClient({ content }: { content: Record<string, string
   const [open, setOpen] = useState(false);
   const [heroLink, setHeroLink] = useState("");
   const [heroError, setHeroError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const { user, loading, logout, authModalOpen, openAuthModal, closeAuthModal } = useAuth();
   const heroDetection = useLinkDetect(heroLink);
   useReveal();
@@ -77,47 +78,111 @@ export default function HomeClient({ content }: { content: Record<string, string
       />
 
       {/* floating nav */}
-      <nav className="fixed top-[18px] left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 bg-[rgba(20,24,51,.7)] backdrop-blur-[20px] border border-[rgba(138,124,255,.14)] rounded-full p-[8px_8px_8px_20px] shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)] max-w-[94vw]">
-        <div className="flex items-center gap-2.5 font-display font-extrabold text-[1.15rem] whitespace-nowrap shrink-0">
-          <span className="w-[30px] h-[30px] rounded-[9px] bg-gradient-to-br from-primary to-accent grid place-items-center shadow-[0_0_60px_-10px_#6B5BFF]">
-            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
-              <path d="M3 12l7-2 2-7 2 7 7 2-7 2-2 7-2-7-7-2z" fill="#fff" />
-            </svg>
-          </span>
-          مدیاجت
-        </div>
-        <div className="flex gap-1 mx-1.5 max-[760px]:hidden">
-          {navItems.map(([href, label]) => (
-            <a key={href} href={href} className="text-dim text-[.9rem] font-medium px-3.5 py-2 rounded-full transition hover:text-text hover:bg-[rgba(255,255,255,.05)] whitespace-nowrap">
-              {label}
-            </a>
-          ))}
-        </div>
-        {!loading && user ? (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Link
-              href="/dashboard"
-              className="text-text text-[.85rem] font-semibold px-3.5 py-2 rounded-full whitespace-nowrap transition hover:bg-[rgba(255,255,255,.05)]"
-            >
-              پنل کاربری
-            </Link>
-            <span dir="ltr" className="text-text text-[.85rem] font-semibold px-3.5 py-2 whitespace-nowrap">
-              {user.mobile}
+      <nav className="fixed top-[14px] sm:top-[18px] left-1/2 -translate-x-1/2 z-[200] w-full max-w-[94vw] sm:w-auto">
+        <div className="flex items-center gap-2 bg-[rgba(20,24,51,.7)] backdrop-blur-[20px] border border-[rgba(138,124,255,.14)] rounded-full py-2 px-3 sm:p-[8px_8px_8px_20px] shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)]">
+          <div className="flex items-center gap-2 sm:gap-2.5 font-display font-extrabold text-[1rem] sm:text-[1.15rem] whitespace-nowrap shrink-0">
+            <span className="w-[28px] h-[28px] sm:w-[30px] sm:h-[30px] rounded-[9px] bg-gradient-to-br from-primary to-accent grid place-items-center shadow-[0_0_60px_-10px_#6B5BFF]">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                <path d="M3 12l7-2 2-7 2 7 7 2-7 2-2 7-2-7-7-2z" fill="#fff" />
+              </svg>
             </span>
-            <button
-              onClick={logout}
-              className="font-body cursor-pointer border-none font-bold text-[.85rem] text-text bg-[rgba(255,255,255,.08)] px-4 py-2.5 rounded-full whitespace-nowrap shrink-0 transition hover:bg-[rgba(255,255,255,.16)]"
-            >
-              خروج
-            </button>
+            مدیاجت
           </div>
-        ) : (
+          <div className="flex gap-1 mx-1.5 max-[760px]:hidden">
+            {navItems.map(([href, label]) => (
+              <a key={href} href={href} className="text-dim text-[.9rem] font-medium px-3.5 py-2 rounded-full transition hover:text-text hover:bg-[rgba(255,255,255,.05)] whitespace-nowrap">
+                {label}
+              </a>
+            ))}
+          </div>
+
+          {/* desktop auth area */}
+          <div className="max-[760px]:hidden">
+            {!loading && user ? (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Link
+                  href="/dashboard"
+                  className="text-text text-[.85rem] font-semibold px-3.5 py-2 rounded-full whitespace-nowrap transition hover:bg-[rgba(255,255,255,.05)]"
+                >
+                  پنل کاربری
+                </Link>
+                <span dir="ltr" className="text-text text-[.85rem] font-semibold px-3.5 py-2 whitespace-nowrap">
+                  {user.mobile}
+                </span>
+                <button
+                  onClick={logout}
+                  className="font-body cursor-pointer border-none font-bold text-[.85rem] text-text bg-[rgba(255,255,255,.08)] px-4 py-2.5 rounded-full whitespace-nowrap shrink-0 transition hover:bg-[rgba(255,255,255,.16)]"
+                >
+                  خروج
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={openAuthModal}
+                className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-[18px] py-2.5 rounded-full whitespace-nowrap shrink-0 transition hover:-translate-y-px hover:shadow-[0_0_60px_-10px_#6B5BFF]"
+              >
+                ورود / ثبت‌نام
+              </button>
+            )}
+          </div>
+
+          {/* mobile hamburger */}
           <button
-            onClick={openAuthModal}
-            className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-[18px] py-2.5 rounded-full whitespace-nowrap shrink-0 transition hover:-translate-y-px hover:shadow-[0_0_60px_-10px_#6B5BFF]"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="باز کردن منو"
+            aria-expanded={menuOpen}
+            className="min-[761px]:hidden mr-auto shrink-0 w-9 h-9 grid place-items-center rounded-full bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)] transition hover:bg-[rgba(255,255,255,.12)]"
           >
-            ورود / ثبت‌نام
+            <div className="w-[16px] flex flex-col gap-[4px] items-center">
+              <span className={`block h-[2px] w-full bg-text rounded transition-transform ${menuOpen ? "translate-y-[6px] rotate-45" : ""}`} />
+              <span className={`block h-[2px] w-full bg-text rounded transition-opacity ${menuOpen ? "opacity-0" : ""}`} />
+              <span className={`block h-[2px] w-full bg-text rounded transition-transform ${menuOpen ? "-translate-y-[6px] -rotate-45" : ""}`} />
+            </div>
           </button>
+        </div>
+
+        {/* mobile dropdown panel */}
+        {menuOpen && (
+          <div className="min-[761px]:hidden mt-2 bg-[rgba(20,24,51,.92)] backdrop-blur-[20px] border border-[rgba(138,124,255,.14)] rounded-[20px] p-3 shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)] flex flex-col gap-1">
+            {navItems.map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                onClick={() => setMenuOpen(false)}
+                className="text-text text-[.9rem] font-medium px-4 py-2.5 rounded-xl transition hover:bg-[rgba(255,255,255,.06)]"
+              >
+                {label}
+              </a>
+            ))}
+            <div className="h-px bg-[rgba(138,124,255,.14)] my-1" />
+            {!loading && user ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMenuOpen(false)}
+                  className="text-text text-[.9rem] font-semibold px-4 py-2.5 rounded-xl transition hover:bg-[rgba(255,255,255,.06)]"
+                >
+                  پنل کاربری
+                </Link>
+                <span dir="ltr" className="text-dim text-[.85rem] font-semibold px-4 py-1.5">
+                  {user.mobile}
+                </span>
+                <button
+                  onClick={() => { setMenuOpen(false); logout(); }}
+                  className="font-body cursor-pointer border-none text-right font-bold text-[.9rem] text-text bg-[rgba(255,255,255,.08)] px-4 py-2.5 rounded-xl transition hover:bg-[rgba(255,255,255,.16)]"
+                >
+                  خروج
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => { setMenuOpen(false); openAuthModal(); }}
+                className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-3 rounded-xl transition"
+              >
+                ورود / ثبت‌نام
+              </button>
+            )}
+          </div>
         )}
       </nav>
 

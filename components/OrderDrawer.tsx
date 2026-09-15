@@ -274,7 +274,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
               <div className="text-dim text-[.9rem] mb-4">
                 از روی لینک نتوانستیم نوع محصول را تشخیص بدهیم — دسته‌ی درست را انتخاب کن.
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
                 {candidates.map((c) => (
                   <div
                     key={c.id}
@@ -290,7 +290,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
           ) : stage === "sites" ? (
             <>
               <div className="text-dim text-[.9rem] mb-4">فایلت را از کدام سایت می‌خواهی؟</div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
                 {activeCat?.sites.map((site) => (
                   <div
                     key={site}
