@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { CATEGORIES, type Category } from "@/data/categories";
+import { CATEGORIES, ALL_SITES, type Category } from "@/data/categories";
 import { toPersianDigits } from "@/lib/money";
 import { useLinkDetect } from "@/lib/useLinkDetect";
 import { unsupportedSiteMessage, type LinkEntry } from "@/lib/linkDetect";
@@ -18,6 +18,20 @@ const STEPS = [
   { n: "01", title: "لینک را بفرست", desc: "آدرس محصول را از هر سایت پشتیبانی‌شده کپی کن و در فرم دسته‌ی مربوطه بگذار." },
   { n: "02", title: "پرداخت جزئی", desc: "قیمت خودکار محاسبه می‌شود؛ از کیف پول یا درگاه مبلغ ناچیزی می‌پردازی." },
   { n: "03", title: "فایل را بگیر", desc: "فایل اصلی و باکیفیت را دانلود کرده و در پنلت آماده‌ی دانلود قرار می‌دهیم." },
+];
+
+// تعداد دسته‌هایی که هر سایت پشتیبانی می‌کند، از روی CATEGORIES محاسبه می‌شود (منبع واحد حقیقت).
+const SITE_CATEGORY_COUNTS: { site: string; count: number }[] = ALL_SITES.map((site) => ({
+  site,
+  count: CATEGORIES.filter((c) => c.sites.includes(site)).length,
+})).sort((a, b) => b.count - a.count);
+
+// نظرهای مشتری‌ها فعلاً نمونه/جای‌نگهدار هستند چون هنوز مشتری واقعی نداریم.
+// بعداً باید با نظرات واقعی جایگزین شوند.
+const TESTIMONIALS = [
+  { name: "امیرحسین رضایی", role: "طراح گرافیک فریلنس", stars: 5, text: "خیلی سریع‌تر و ارزان‌تر از خرید اشتراک ماهانه بود. دقیقاً همون فایلی که لازم داشتم رو گرفتم." },
+  { name: "سارا محمدی", role: "مدیر محتوای آژانس تبلیغاتی", stars: 5, text: "برای پروژه‌های مشتری‌هامون از چند تا سایت مختلف فایل لازم داریم، اینجا همه رو یک‌جا پوشش می‌ده." },
+  { name: "علی کریمی", role: "تدوینگر ویدیو", stars: 4, text: "کیفیت فایل‌های ویدیویی عالی بود و پشتیبانی هم سریع جواب داد." },
 ];
 
 function useReveal() {
@@ -302,6 +316,61 @@ export default function HomeClient({ content }: { content: Record<string, string
               <div className="text-[1.8rem] mb-3 drop-shadow-[0_4px_8px_rgba(0,0,0,.4)]">{c.icon}</div>
               <h4 className="font-display text-[1.05rem] mb-[5px]">{c.title}</h4>
               <div className="text-dim text-[.8rem]">{toPersianDigits(c.sites.length)} سایت پشتیبان</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* PRODUCTS (SITE CARDS) */}
+      <section id="products" className="px-[5vw] py-[clamp(70px,10vw,120px)] max-w-[1200px] mx-auto">
+        <div className="reveal text-center mb-[clamp(40px,6vw,64px)]">
+          <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Our Sources</div>
+          <h2 className="font-display text-[clamp(1.7rem,4.5vw,2.8rem)] font-extrabold mt-3 mb-3.5">محصولات ما، همان سایت‌های استوک هستند</h2>
+          <p className="text-dim max-w-[52ch] mx-auto">روی هر سایت بزن تا دسته‌های قابل سفارش از آن را ببینی.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-4 min-[600px]:grid-cols-3 min-[900px]:grid-cols-4">
+          {SITE_CATEGORY_COUNTS.map(({ site, count }) => (
+            <a
+              key={site}
+              href="#cats"
+              className="reveal group relative bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-[18px] p-[22px_18px] cursor-pointer transition hover:-translate-y-1.5 hover:border-[rgba(56,225,255,.4)] hover:shadow-[0_20px_40px_-20px_rgba(56,225,255,.3)]"
+            >
+              <div className="w-10 h-10 rounded-[10px] bg-[rgba(138,124,255,.14)] grid place-items-center text-[.75rem] font-latin font-bold text-cyan mb-3">
+                {site.slice(0, 2)}
+              </div>
+              <h4 className="latin font-display text-[1rem] mb-1 truncate">{site}</h4>
+              <div className="text-dim text-[.8rem]">{toPersianDigits(count)} دسته‌ی قابل سفارش</div>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      {/* TESTIMONIALS */}
+      <section className="reveal px-[5vw] py-[clamp(70px,10vw,120px)] max-w-[1200px] mx-auto">
+        <div className="reveal text-center mb-[clamp(40px,6vw,64px)]">
+          <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Testimonials</div>
+          <h2 className="font-display text-[clamp(1.7rem,4.5vw,2.8rem)] font-extrabold mt-3">نظر مشتری‌ها</h2>
+        </div>
+        <div className="grid grid-cols-1 gap-5 min-[700px]:grid-cols-3">
+          {TESTIMONIALS.map((t) => (
+            <div
+              key={t.name}
+              className="reveal bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-[20px] p-[28px_24px] transition hover:-translate-y-1.5 hover:border-[rgba(138,124,255,.5)]"
+            >
+              <div className="latin text-accent2 text-[1.1rem] mb-3 tracking-[.1em]">
+                {"★".repeat(t.stars)}
+                <span className="text-[rgba(255,255,255,.15)]">{"★".repeat(5 - t.stars)}</span>
+              </div>
+              <p className="text-dim text-[.95rem] leading-[1.9] mb-5">{t.text}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent grid place-items-center font-display font-bold text-white shrink-0">
+                  {t.name.slice(0, 1)}
+                </div>
+                <div>
+                  <div className="font-bold text-[.9rem]">{t.name}</div>
+                  <div className="text-dim text-[.78rem]">{t.role}</div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
