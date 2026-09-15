@@ -73,7 +73,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
   }, [open, category, linkEntry]);
 
   // با باز شدن دراور از روی لینکِ از‌پیش‌تشخیص‌داده‌شده (فیلد صفحه‌ی اصلی یا لینک داخل خودِ دراور):
-  // اگر دسته هم مشخص باشد مستقیم برو سراغ فرم و قیمت را بگیر، وگرنه اول از کاربر دسته را بپرس.
+  // سایت مشخص است ولی دسته همیشه باید از خود کاربر پرسیده شود.
   useEffect(() => {
     if (open && linkEntry) {
       setSelectedSite(linkEntry.site);
@@ -84,17 +84,11 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
       setSubmitError(null);
       setOrderResult(null);
       setIdempotencyKey(newIdempotencyKey());
-      if (linkEntry.categoryId) {
-        setSelectedCatId(linkEntry.categoryId);
-        setStage("form");
-        fetchQuote(linkEntry.categoryId, linkEntry.site);
-      } else {
-        setSelectedCatId("");
-        setPriceLabel("—");
-        setStage("pick-category");
-      }
+      setSelectedCatId("");
+      setPriceLabel("—");
+      setStage("pick-category");
     }
-  }, [open, linkEntry, fetchQuote]);
+  }, [open, linkEntry]);
 
   // اگر پارامترهای سفارش تغییر کند، کلید یکتای درخواست هم عوض شود تا با درخواست قبلی تداخل نکند.
   useEffect(() => {
@@ -272,7 +266,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
           {stage === "pick-category" ? (
             <>
               <div className="text-dim text-[.9rem] mb-4">
-                از روی لینک نتوانستیم نوع محصول را تشخیص بدهیم — دسته‌ی درست را انتخاب کن.
+                دسته‌ی محصول را انتخاب کن تا قیمت دقیق را نشان بدهیم.
               </div>
               <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
                 {candidates.map((c) => (

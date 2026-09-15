@@ -65,9 +65,9 @@ export default function HomeClient({ content }: { content: Record<string, string
   const openCat = (c: Category) => { setDrawerCat(c); setLinkEntry(null); setOpen(true); };
   const close = () => setOpen(false);
 
-  // فیلد اصلی: کاربر فقط لینک را می‌دهد؛ سایت و در صورت امکان دسته از رویش تشخیص داده می‌شود
-  // (تشخیص دسته صرفاً بر اساس الگوی مسیر URL است و همیشه ممکن نیست — در آن صورت در دراور
-  // از کاربر پرسیده می‌شود). اگر سایت پشتیبانی نشود، پیام روشن همراه با لیست سایت‌های پشتیبانی‌شده نشان داده می‌شود.
+  // فیلد اصلی: کاربر فقط لینک را می‌دهد؛ فقط سایت از روی دامنه تشخیص داده می‌شود.
+  // دسته‌ی محصول همیشه در دراور از خود کاربر پرسیده می‌شود. اگر سایت پشتیبانی نشود،
+  // پیام روشن همراه با لیست سایت‌های پشتیبانی‌شده نشان داده می‌شود.
   const handleHeroLink = () => {
     const url = heroLink.trim();
     if (!url) { setHeroError("لینک محصول را وارد کن."); return; }
@@ -76,7 +76,7 @@ export default function HomeClient({ content }: { content: Record<string, string
       return;
     }
     setHeroError(null);
-    setLinkEntry({ link: url, site: heroDetection.site, categoryId: heroDetection.categoryId, candidates: heroDetection.candidates });
+    setLinkEntry({ link: url, site: heroDetection.site, candidates: heroDetection.candidates });
     setDrawerCat(null);
     setOpen(true);
   };
@@ -253,15 +253,9 @@ export default function HomeClient({ content }: { content: Record<string, string
               ) : heroLink && heroDetection.supported ? (
                 <span className="text-dim">
                   سایت شناسایی شد: <b className="text-cyan">{heroDetection.site}</b>
-                  {heroDetection.categoryId && (
-                    <>
-                      {" "}— تشخیص داده شد: دسته‌ی{" "}
-                      <b className="text-cyan">{CATEGORIES.find((c) => c.id === heroDetection.categoryId)?.title}</b>
-                    </>
-                  )}
                 </span>
               ) : (
-                <span className="text-dim">لینک را بگذار تا سایت و دسته به‌صورت خودکار شناسایی شود.</span>
+                <span className="text-dim">لینک را بگذار تا سایت به‌صورت خودکار شناسایی شود.</span>
               )}
             </div>
           </div>

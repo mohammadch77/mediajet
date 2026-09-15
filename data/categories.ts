@@ -40,24 +40,3 @@ export const SITE_KEYS: Record<string, string> = {
   dreamstime: "Dreamstime", artlist: "Artlist", storyblocks: "Storyblocks", lovepik: "Lovepik",
   rawpixel: "Rawpixel", creativefabrica: "CreativeFabrica",
 };
-
-// نگاشت الگوی مسیر URL به دسته‌ی محصول. بعضی سایت‌ها نوع محصول را در مسیر لینک می‌گذارند
-// (مثلاً adobe stock: `/photo/...`, freepik: `/free-vector/...`)، پس می‌شود از روی همان حدس زد.
-// این تشخیص برای همه‌ی سایت‌ها یا همه‌ی لینک‌ها کار نمی‌کند (لینک کوتاه‌شده، صفحه‌ی دسته‌بندی‌نشده و
-// غیره) — در آن حالت‌ها کاربر باید دسته را خودش از بین گزینه‌های همان سایت انتخاب کند.
-export const CATEGORY_URL_PATTERNS: { pattern: RegExp; categoryId: string }[] = [
-  { pattern: /\/(free-)?photos?\//, categoryId: "photo" },
-  { pattern: /\/(free-)?vectors?\//, categoryId: "vector" },
-  { pattern: /\/(free-)?psd\//, categoryId: "psd" },
-  { pattern: /\/mockups?\//, categoryId: "mockup" },
-  { pattern: /\/png-?images?\/|\/free-png\//, categoryId: "png" },
-  { pattern: /\/video(s)?\/|\/stock-footage\//, categoryId: "video" },
-  { pattern: /\/premiere-pro-templates?\/|\/after-effects-templates?\//, categoryId: "premiere" },
-  { pattern: /\/music\/|\/sound-effects?\/|\/audio\//, categoryId: "audio" },
-  { pattern: /\/icons?\//, categoryId: "icon" },
-  { pattern: /\/presentation-templates?\/|\/powerpoint\//, categoryId: "ppt" },
-  { pattern: /\/3d\//, categoryId: "3d" },
-  { pattern: /\/fonts?\//, categoryId: "font" },
-  { pattern: /\/ui-kits?\/|\/figma\//, categoryId: "ui" },
-  { pattern: /\/wordpress-themes?\//, categoryId: "wp" },
-];
