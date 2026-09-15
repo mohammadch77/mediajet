@@ -39,6 +39,12 @@ body {
 .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } }
 
+.mj-marquee-track { animation: mj-marquee 34s linear infinite; }
+.mj-marquee-track:hover { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .mj-marquee-track { animation: none; }
+}
+
 /* استایل محتوای صفحات متن‌آزاد (ویرایشگر ادمین + نمایش عمومی) */
 .prose-page { color: #EEF0FB; line-height: 1.9; }
 .prose-page h1 { font-size: 1.8rem; font-weight: 800; margin: 1.2em 0 .5em; }

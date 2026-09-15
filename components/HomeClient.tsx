@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { CATEGORIES, ALL_SITES, type Category } from "@/data/categories";
+import { CATEGORIES, type Category } from "@/data/categories";
 import { toPersianDigits } from "@/lib/money";
 import { useLinkDetect } from "@/lib/useLinkDetect";
 import { unsupportedSiteMessage, type LinkEntry } from "@/lib/linkDetect";
 import OrderDrawer from "@/components/OrderDrawer";
 import AuthModal from "@/components/AuthModal";
+import SiteMarquee from "@/components/SiteMarquee";
 import { useAuth } from "@/lib/AuthContext";
 import Link from "next/link";
 
@@ -246,7 +247,7 @@ export default function HomeClient({ content }: { content: Record<string, string
                   )}
                 </span>
               ) : (
-                <span className="text-dim">سایت‌های پشتیبانی‌شده: {ALL_SITES.join(" · ")}</span>
+                <span className="text-dim">لینک را بگذار تا سایت و دسته به‌صورت خودکار شناسایی شود.</span>
               )}
             </div>
           </div>
@@ -255,6 +256,15 @@ export default function HomeClient({ content }: { content: Record<string, string
           اسکرول کن<span className="text-[1.1rem]">↓</span>
         </div>
       </header>
+
+      {/* SUPPORTED SITES MARQUEE */}
+      <section className="reveal px-[5vw] pb-[clamp(50px,8vw,90px)]">
+        <div className="text-center mb-6">
+          <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Trusted Sources</div>
+          <h2 className="font-display text-[clamp(1.3rem,3vw,1.8rem)] font-extrabold mt-2">از این سایت‌ها برایت فایل می‌گیریم</h2>
+        </div>
+        <SiteMarquee />
+      </section>
 
       {/* HOW */}
       <section id="how" className="px-[5vw] py-[clamp(70px,10vw,120px)] max-w-[1200px] mx-auto">
