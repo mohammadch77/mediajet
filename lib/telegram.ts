@@ -62,10 +62,16 @@ export function notifyOrderCreated(params: {
     const linksText = items
       .map((item, i) => `${toPersianDigits(i + 1)}. ${item.productUrl}`)
       .join("\n");
+    const instruction =
+      items.length > 1
+        ? "برای تحویل هر آیتم، روی همین پیام reply کن و شماره‌ی آیتم را در متن یا کپشن بنویس، مثلاً «آیتم 2» به‌همراه فایل یا دستور /large."
+        : "برای تحویل، روی همین پیام reply کن و فایل را بفرست، یا با دستور /large آن را فایل بزرگ علامت بزن.";
     const operatorText = [
       "📦 سفارش جدید برای پردازش",
       `شماره سفارش: ${orderId}`,
       linksText,
+      "",
+      instruction,
     ].join("\n");
     void sendMessage(operatorChatId, operatorText);
   } else {

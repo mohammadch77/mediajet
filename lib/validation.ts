@@ -166,13 +166,13 @@ export const operatorStatusInput = z.object({
 
 export type OperatorStatusInput = z.infer<typeof operatorStatusInput>;
 
-export const operatorDeliverInput = z.object({
+export const operatorItemDeliverInput = z.object({
   fileUrl: z
     .string({ error: "لینک فایل تحویلی الزامی است." })
     .url("لینک فایل تحویلی معتبر نیست."),
 });
 
-export type OperatorDeliverInput = z.infer<typeof operatorDeliverInput>;
+export type OperatorItemDeliverInput = z.infer<typeof operatorItemDeliverInput>;
 
 // فقط فیلدهایی از آپدیت تلگرام که در webhook استفاده می‌شوند اعتبارسنجی می‌شوند؛
 // بدنه‌ی واقعی تلگرام فیلدهای بسیار بیشتری دارد که برای ما اهمیتی ندارند.
