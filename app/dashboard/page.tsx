@@ -35,7 +35,15 @@ type WalletTx = {
   createdAt: string;
 };
 
-type WalletData = { balanceLabel: string; transactions: WalletTx[] };
+type WalletData = {
+  balanceLabel: string;
+  walletMinChargeRial: string;
+  walletMinChargeLabel: string;
+  transactions: WalletTx[];
+};
+
+// دکمه‌های مبلغ آماده برای شارژ سریع (به تومان).
+const CHARGE_PRESETS_TOMAN = [100_000, 150_000, 200_000, 250_000];
 
 type SupportMessage = {
   id: string;
@@ -195,6 +203,11 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user, router, openAuthModal]);
 
+  function minChargeTomanLabel(): string {
+    const minRial = wallet ? Number(wallet.walletMinChargeRial) : 1_000_000;
+    return toPersianDigits((minRial / 10).toLocaleString("en-US"));
+  }
+
   async function handleCharge() {
     setChargeError(null);
     const toman = Number(chargeAmountToman);
@@ -203,12 +216,19 @@ export default function DashboardPage() {
       return;
     }
 
+    const amountRial = toman * 10;
+    const minRial = wallet ? Number(wallet.walletMinChargeRial) : 0;
+    if (minRial > 0 && amountRial < minRial) {
+      setChargeError(`حداقل شارژ کیف پول ${minChargeTomanLabel()} تومان است.`);
+      return;
+    }
+
     setCharging(true);
     try {
       const res = await fetch("/api/wallet/charge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amountRial: toman * 10 }),
+        body: JSON.stringify({ amountRial }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -286,13 +306,42 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            <div className="text-dim text-[.82rem] mb-3">
+              حداقل شارژ {minChargeTomanLabel()} تومان
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap mb-3">
+              {CHARGE_PRESETS_TOMAN.map((amount) => (
+                <button
+                  key={amount}
+                  type="button"
+                  onClick={() => {
+                    setChargeAmountToman(String(amount));
+                    setChargeError(null);
+                  }}
+                  disabled={charging}
+                  className={
+                    "font-body cursor-pointer text-[.85rem] font-bold px-4 py-2 rounded-full transition disabled:opacity-60 disabled:cursor-not-allowed border " +
+                    (chargeAmountToman === String(amount)
+                      ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
+                      : "bg-[rgba(255,255,255,.04)] border-[rgba(138,124,255,.2)] text-text hover:border-cyan")
+                  }
+                >
+                  {toPersianDigits(amount.toLocaleString("en-US"))} تومان
+                </button>
+              ))}
+            </div>
+
             <div className="flex items-center gap-3 flex-wrap mb-2">
               <input
                 type="number"
                 min={1}
-                placeholder="مبلغ به تومان"
+                placeholder="یا مبلغ دلخواه به تومان"
                 value={chargeAmountToman}
-                onChange={(e) => setChargeAmountToman(e.target.value)}
+                onChange={(e) => {
+                  setChargeAmountToman(e.target.value);
+                  setChargeError(null);
+                }}
                 className="bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2.5 text-[.9rem] w-full sm:w-[180px] outline-none focus:border-cyan"
               />
               <button
