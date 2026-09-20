@@ -12,6 +12,8 @@ type ReportData = {
     byStatus: Record<string, number>;
     byCategory: { category: string; title: string; count: number }[];
     bySite: { site: string; count: number }[];
+    avgItemsPerOrder: number;
+    avgOrderValueRial: string;
   };
   users: {
     newUsers: number;
@@ -204,7 +206,7 @@ export default function AdminReportsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
             <StatCard
               label="مجموع شارژهای بازه"
               value={rialToTomanLabel(Number(data.wallet.totalChargedRial))}
@@ -214,6 +216,17 @@ export default function AdminReportsPage() {
               label="مجموع خرج‌های بازه"
               value={rialToTomanLabel(Number(data.wallet.totalSpentRial))}
               accent="#F87171"
+            />
+            <StatCard
+              label="میانگین تعداد آیتم در سفارش"
+              value={toPersianDigits(data.orders.avgItemsPerOrder.toFixed(1))}
+              accent="#38E1FF"
+            />
+            <StatCard
+              label="میانگین ارزش سفارش"
+              value={rialToTomanLabel(Number(data.orders.avgOrderValueRial))}
+              hint="بر اساس سفارش‌های پرداخت‌شده در بازه"
+              accent="#8A7CFF"
             />
           </div>
 

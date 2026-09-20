@@ -173,6 +173,12 @@ export async function GET(req: NextRequest) {
     orderCount: u._count._all,
   }));
 
+  // میانگین تعداد آیتم در هر سفارش و میانگین ارزش سفارش (بر اساس سفارش‌های پرداخت‌شده) در بازه.
+  const totalItemsInRange = ordersInRange.reduce((sum, o) => sum + o.items.length, 0);
+  const avgItemsPerOrder = ordersInRange.length > 0 ? totalItemsInRange / ordersInRange.length : 0;
+  const avgOrderValueRial =
+    paidOrdersInRange.length > 0 ? totalRevenueRial / BigInt(paidOrdersInRange.length) : 0n;
+
   const totalChargedRial = creditAgg._sum.amountRial ?? 0n;
   const totalSpentRial = debitAgg._sum.amountRial ?? 0n;
   // موجودی معلق = مجموع فعلیِ موجودیِ همه‌ی کیف‌پول‌ها (شارژشده ولی هنوز خرج‌نشده)، مستقل از بازه‌ی انتخابی
@@ -190,6 +196,8 @@ export async function GET(req: NextRequest) {
       byStatus: statusCounts,
       byCategory,
       bySite,
+      avgItemsPerOrder,
+      avgOrderValueRial: avgOrderValueRial.toString(),
     },
     users: {
       newUsers,
