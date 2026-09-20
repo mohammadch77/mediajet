@@ -7,6 +7,7 @@ import { toPersianDigits } from "@/lib/money";
 import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
 import { STATUS_LABELS, ITEM_STATUS_LABELS, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
 import { CATEGORIES } from "@/data/categories";
+import WalletCard from "@/components/WalletCard";
 
 type OrderItem = {
   id: string;
@@ -296,65 +297,57 @@ export default function DashboardPage() {
           <div className="text-dim">در حال بارگذاری...</div>
         ) : (
           <>
-            <div
-              className="rounded-[20px] p-[26px_30px] mb-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)]"
-              style={{ background: "linear-gradient(135deg,#6B5BFF,#4536C7 70%,#FF6B35)" }}
-            >
-              <div className="text-[rgba(255,255,255,.85)] text-[.9rem]">موجودی فعلی</div>
-              <div className="font-display text-[2.2rem] font-extrabold mt-1.5" dir="rtl">
-                {wallet.balanceLabel}
+            <WalletCard balanceLabel={wallet.balanceLabel}>
+              <div className="text-[rgba(255,255,255,.75)] text-[.8rem] mb-3">
+                حداقل شارژ {minChargeTomanLabel()} تومان
               </div>
-            </div>
 
-            <div className="text-dim text-[.82rem] mb-3">
-              حداقل شارژ {minChargeTomanLabel()} تومان
-            </div>
+              <div className="flex items-center gap-2 flex-wrap mb-3">
+                {CHARGE_PRESETS_TOMAN.map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => {
+                      setChargeAmountToman(String(amount));
+                      setChargeError(null);
+                    }}
+                    disabled={charging}
+                    className={
+                      "font-body cursor-pointer text-[.85rem] font-bold px-4 py-2 rounded-full transition disabled:opacity-60 disabled:cursor-not-allowed border " +
+                      (chargeAmountToman === String(amount)
+                        ? "bg-white text-primary2 border-transparent"
+                        : "bg-[rgba(255,255,255,.1)] border-[rgba(255,255,255,.25)] text-white hover:bg-[rgba(255,255,255,.18)]")
+                    }
+                  >
+                    {toPersianDigits(amount.toLocaleString("en-US"))} تومان
+                  </button>
+                ))}
+              </div>
 
-            <div className="flex items-center gap-2 flex-wrap mb-3">
-              {CHARGE_PRESETS_TOMAN.map((amount) => (
-                <button
-                  key={amount}
-                  type="button"
-                  onClick={() => {
-                    setChargeAmountToman(String(amount));
+              <div className="flex items-center gap-3 flex-wrap">
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="یا مبلغ دلخواه به تومان"
+                  value={chargeAmountToman}
+                  onChange={(e) => {
+                    setChargeAmountToman(e.target.value);
                     setChargeError(null);
                   }}
+                  className="bg-[rgba(255,255,255,.1)] border border-[rgba(255,255,255,.25)] text-white placeholder-[rgba(255,255,255,.6)] rounded-full px-4 py-2.5 text-[.9rem] w-full sm:w-[180px] outline-none focus:border-white"
+                />
+                <button
+                  onClick={handleCharge}
                   disabled={charging}
-                  className={
-                    "font-body cursor-pointer text-[.85rem] font-bold px-4 py-2 rounded-full transition disabled:opacity-60 disabled:cursor-not-allowed border " +
-                    (chargeAmountToman === String(amount)
-                      ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
-                      : "bg-[rgba(255,255,255,.04)] border-[rgba(138,124,255,.2)] text-text hover:border-cyan")
-                  }
+                  className="font-body cursor-pointer border-none font-bold text-[.9rem] text-primary2 bg-white px-5 py-2.5 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {toPersianDigits(amount.toLocaleString("en-US"))} تومان
+                  {charging ? "در حال انتقال..." : "شارژ کیف پول"}
                 </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap mb-2">
-              <input
-                type="number"
-                min={1}
-                placeholder="یا مبلغ دلخواه به تومان"
-                value={chargeAmountToman}
-                onChange={(e) => {
-                  setChargeAmountToman(e.target.value);
-                  setChargeError(null);
-                }}
-                className="bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2.5 text-[.9rem] w-full sm:w-[180px] outline-none focus:border-cyan"
-              />
-              <button
-                onClick={handleCharge}
-                disabled={charging}
-                className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-5 py-2.5 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {charging ? "در حال انتقال..." : "شارژ کیف پول"}
-              </button>
-            </div>
-            {chargeError && (
-              <div className="text-accent2 text-[.82rem] mb-6">{chargeError}</div>
-            )}
+              </div>
+              {chargeError && (
+                <div className="text-white bg-[rgba(0,0,0,.2)] rounded-lg px-3 py-2 text-[.82rem] mt-3">{chargeError}</div>
+              )}
+            </WalletCard>
 
             {wallet.transactions.length === 0 ? (
               <div className="text-dim text-[.9rem]">هنوز تراکنشی ثبت نشده است.</div>

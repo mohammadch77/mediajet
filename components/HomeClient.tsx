@@ -8,6 +8,7 @@ import { unsupportedSiteMessage, sitePresetEntry, type LinkEntry } from "@/lib/l
 import OrderDrawer from "@/components/OrderDrawer";
 import AuthModal from "@/components/AuthModal";
 import SiteMarquee from "@/components/SiteMarquee";
+import WalletCard from "@/components/WalletCard";
 import { useAuth } from "@/lib/AuthContext";
 import { useCart } from "@/lib/CartContext";
 import Link from "next/link";
@@ -394,21 +395,23 @@ export default function HomeClient({ content }: { content: Record<string, string
       {/* WALLET */}
       <section id="wallet" className="px-[5vw] py-[clamp(70px,10vw,120px)] max-w-[1200px] mx-auto">
         <div className="grid grid-cols-[1.1fr_1fr] gap-[34px] items-center max-[820px]:grid-cols-1 max-[820px]:gap-6">
-          <div className="reveal relative overflow-hidden rounded-[24px] p-[34px] shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)]" style={{ background: "linear-gradient(135deg,#6B5BFF,#4536C7 70%,#FF6B35)" }}>
-            <div className="absolute w-[220px] h-[220px] rounded-full bg-[rgba(255,255,255,.1)] -top-20 -left-[50px]" />
-            <div className="absolute w-[140px] h-[140px] rounded-full bg-[rgba(255,255,255,.08)] -bottom-10 right-[20%]" />
-            <div className="text-[rgba(255,255,255,.85)] text-[.9rem] relative">موجودی کیف پول</div>
-            <div className="font-display text-[2.6rem] font-extrabold my-1.5 mb-[22px] relative" dir="rtl">
-              {toPersianDigits(Math.round(Number(user?.walletBalanceRial ?? 0) / 10).toLocaleString("en-US"))}{" "}
-              <small className="text-base font-medium">تومان</small>
-            </div>
-            <div className="flex gap-2.5 flex-wrap relative">
-              {["۱۰۰٬۰۰۰", "۵۰۰٬۰۰۰", "۱٬۰۰۰٬۰۰۰"].map((v) => (
-                <button key={v} className="font-body bg-[rgba(255,255,255,.16)] border-none text-white font-bold px-4 py-2.5 rounded-[11px] cursor-pointer transition hover:bg-[rgba(255,255,255,.32)] hover:-translate-y-0.5">
-                  + {v}
-                </button>
-              ))}
-            </div>
+          <div className="reveal">
+            <WalletCard
+              balanceLabel={
+                <>
+                  {toPersianDigits(Math.round(Number(user?.walletBalanceRial ?? 0) / 10).toLocaleString("en-US"))}{" "}
+                  <small className="text-base font-medium">تومان</small>
+                </>
+              }
+            >
+              <div className="flex gap-2.5 flex-wrap">
+                {["۱۰۰٬۰۰۰", "۵۰۰٬۰۰۰", "۱٬۰۰۰٬۰۰۰"].map((v) => (
+                  <button key={v} className="font-body bg-[rgba(255,255,255,.16)] border-none text-white font-bold px-4 py-2.5 rounded-[11px] cursor-pointer transition hover:bg-[rgba(255,255,255,.32)] hover:-translate-y-0.5">
+                    + {v}
+                  </button>
+                ))}
+              </div>
+            </WalletCard>
           </div>
           <div className="reveal">
             <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Wallet</div>
