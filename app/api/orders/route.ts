@@ -41,9 +41,7 @@ export async function GET() {
   return NextResponse.json({
     orders: orders.map((order) => ({
       id: order.id,
-      // TODO(cart-ui): دانلود مستقیم (app/api/orders/[id]/download) هنوز فقط اولین آیتم سفارش
-      // را پشتیبانی می‌کند؛ همان محدودیت این‌جا هم منعکس شده تا لینک نادرست ساخته نشود.
-      items: order.items.map((item, index) => {
+      items: order.items.map((item) => {
         const isDeliverable = item.status === "ready" || item.status === "delivered";
         const delivery = item.delivery;
 
@@ -53,8 +51,8 @@ export async function GET() {
         if (isDeliverable && delivery) {
           if (delivery.isLarge) {
             supportMessage = `فایل شما آماده است؛ برای دریافت به پشتیبانی (${supportUsername}) پیام دهید.`;
-          } else if (index === 0 && delivery.storageKey) {
-            downloadUrl = `/api/orders/${order.id}/download`;
+          } else if (delivery.storageKey) {
+            downloadUrl = `/api/orders/items/${item.id}/download`;
           } else if (delivery.fileUrl) {
             downloadUrl = delivery.fileUrl;
           }

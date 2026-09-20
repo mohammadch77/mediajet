@@ -4,34 +4,34 @@ import { getCurrentUser } from "@/lib/session";
 import { fileStorage } from "@/lib/storage";
 import { ensureFileOnDisk } from "@/lib/fileCleanup";
 
-// GET /api/orders/[id]/download
-// دانلود فایل تحویلی سفارش؛ فقط مالک سفارش و فقط برای فایل‌های کوچک (غیر «بزرگ») مجاز است.
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// GET /api/orders/items/[itemId]/download
+// دانلود فایل تحویلی یک آیتم سفارش (نه کل سفارش)؛ فقط مالک سفارش و فقط برای
+// فایل‌های کوچک (غیر «بزرگ») مجاز است.
+export async function GET(req: NextRequest, { params }: { params: Promise<{ itemId: string }> }) {
   const currentUser = await getCurrentUser();
   if (!currentUser) {
     return NextResponse.json({ error: "برای دانلود باید وارد شوید." }, { status: 401 });
   }
 
-  const { id } = await params;
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: { items: { include: { delivery: true } } },
+  const { itemId } = await params;
+  const item = await prisma.orderItem.findUnique({
+    where: { id: itemId },
+    include: { delivery: true, order: { select: { userId: true } } },
   });
 
-  if (!order || order.userId !== currentUser.id) {
-    return NextResponse.json({ error: "سفارش یافت نشد." }, { status: 404 });
+  if (!item || item.order.userId !== currentUser.id) {
+    return NextResponse.json({ error: "آیتم سفارش یافت نشد." }, { status: 404 });
   }
 
-  // TODO(cart-ui): فعلاً فقط اولین آیتم سفارش دانلود می‌شود.
-  const delivery = order.items[0]?.delivery;
+  const delivery = item.delivery;
   if (!delivery || !delivery.storageKey || delivery.isLarge) {
-    return NextResponse.json({ error: "فایل این سفارش برای دانلود مستقیم در دسترس نیست." }, { status: 404 });
+    return NextResponse.json({ error: "فایل این آیتم برای دانلود مستقیم در دسترس نیست." }, { status: 404 });
   }
 
   try {
     await ensureFileOnDisk(delivery);
   } catch (error) {
-    console.error(`[دانلود خطا] بازیابی فایل تحویل سفارش ${id} با خطا مواجه شد:`, error);
+    console.error(`[دانلود خطا] بازیابی فایل تحویل آیتم ${itemId} با خطا مواجه شد:`, error);
     return NextResponse.json({ error: "فایل روی سرور یافت نشد." }, { status: 404 });
   }
 

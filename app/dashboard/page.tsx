@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
 import { toPersianDigits } from "@/lib/money";
 import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
-import { STATUS_LABELS, type OrderStatus } from "@/lib/orderState";
+import { STATUS_LABELS, ITEM_STATUS_LABELS, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
 import { CATEGORIES } from "@/data/categories";
 
 type OrderItem = {
@@ -13,7 +13,7 @@ type OrderItem = {
   category: string;
   sourceSite: string;
   productUrl: string;
-  status: string;
+  status: OrderItemStatus;
   downloadUrl: string | null;
   supportMessage: string | null;
 };
@@ -66,11 +66,11 @@ export default function DashboardPage() {
   const [messageText, setMessageText] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messageError, setMessageError] = useState<string | null>(null);
-  const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
+  const [downloadingItemId, setDownloadingItemId] = useState<string | null>(null);
 
   async function handleDownload(item: OrderItem) {
-    if (!item.downloadUrl || downloadingOrderId) return;
-    setDownloadingOrderId(item.id);
+    if (!item.downloadUrl || downloadingItemId) return;
+    setDownloadingItemId(item.id);
     try {
       const res = await fetch(item.downloadUrl);
       if (!res.ok) {
@@ -92,7 +92,7 @@ export default function DashboardPage() {
     } catch {
       setError("دانلود فایل با خطا مواجه شد؛ دوباره تلاش کنید.");
     } finally {
-      setDownloadingOrderId(null);
+      setDownloadingItemId(null);
     }
   }
 
@@ -392,6 +392,18 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2.5 flex-wrap mb-1">
                           <span className="font-display font-bold text-[.92rem]">{categoryTitle(item.category)}</span>
                           <span className="text-dim text-[.8rem]">{item.sourceSite}</span>
+                          <span
+                            className={
+                              "px-2.5 py-1 rounded-full text-[.74rem] font-bold " +
+                              (item.status === "delivered"
+                                ? "bg-[rgba(56,225,255,.12)] text-cyan"
+                                : item.status === "ready"
+                                  ? "bg-[rgba(107,91,255,.16)] text-primary2"
+                                  : "bg-[rgba(255,255,255,.06)] text-dim")
+                            }
+                          >
+                            {ITEM_STATUS_LABELS[item.status]}
+                          </span>
                         </div>
                         <a
                           href={item.productUrl}
@@ -410,10 +422,10 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => handleDownload(item)}
-                          disabled={downloadingOrderId === item.id}
+                          disabled={downloadingItemId === item.id}
                           className="font-body cursor-pointer border-none font-bold text-[.85rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-2.5 rounded-full whitespace-nowrap transition hover:-translate-y-px disabled:opacity-70 disabled:cursor-wait shrink-0"
                         >
-                          {downloadingOrderId === item.id ? "در حال آماده‌سازی فایل شما..." : "دانلود"}
+                          {downloadingItemId === item.id ? "در حال آماده‌سازی فایل شما..." : "دانلود"}
                         </button>
                       )}
                     </div>

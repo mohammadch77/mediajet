@@ -108,8 +108,9 @@ async function main() {
     smallOrder?.events.map((e: { fromStatus: string | null; toStatus: string; actor: string }) => `${e.fromStatus} → ${e.toStatus} (${e.actor})`),
   );
 
-  // [۲.۱] دانلود از پنل کاربر (endpoint محافظت‌شده)
-  const rDownload = await fetch(`${BASE_URL}/api/orders/${orderSmall.id}/download`, { headers: { Cookie: userCookie } });
+  // [۲.۱] دانلود از پنل کاربر (endpoint محافظت‌شده، بر اساس orderItemId)
+  const smallItemId = smallOrder!.items[0].id;
+  const rDownload = await fetch(`${BASE_URL}/api/orders/items/${smallItemId}/download`, { headers: { Cookie: userCookie } });
   const downloadBody = await rDownload.text();
   console.log("[۲.۱] دانلود فایل توسط مالک سفارش (انتظار 200):", rDownload.status, "طول محتوا:", downloadBody.length);
 
@@ -117,7 +118,7 @@ async function main() {
   const otherMobile = "0936" + Math.floor(1000000 + Math.random() * 8999999);
   const otherUser = await prisma.user.create({ data: { mobile: otherMobile, wallet: { create: { balanceRial: 0n } } } });
   const otherCookie = await makeSessionCookie(otherUser.id);
-  const rDownloadOther = await fetch(`${BASE_URL}/api/orders/${orderSmall.id}/download`, { headers: { Cookie: otherCookie } });
+  const rDownloadOther = await fetch(`${BASE_URL}/api/orders/items/${smallItemId}/download`, { headers: { Cookie: otherCookie } });
   console.log("[۲.۲] دانلود توسط کاربر غیرمالک (انتظار 404):", rDownloadOther.status);
 
   // [۳] فایل بزرگ: اپراتور با دستور «/large» پاسخ می‌دهد (بدون فایل)
@@ -148,6 +149,63 @@ async function main() {
   const smallInPanel = ordersData.orders.find((o: { id: string }) => o.id === orderSmall.id);
   console.log("[۳.۱] سفارش بزرگ در پنل:", { downloadUrl: largeInPanel?.downloadUrl, supportMessage: largeInPanel?.supportMessage });
   console.log("    سفارش کوچک در پنل:", { downloadUrl: smallInPanel?.downloadUrl, supportMessage: smallInPanel?.supportMessage });
+
+  // [۴] سفارش چندآیتمی: یک آیتم آماده (با دانلود جدا)، یک آیتم بزرگ (پیام پشتیبانی)، یک آیتم در انتظار
+  const orderMulti = await prisma.order.create({
+    data: {
+      userId: user.id,
+      totalPriceRial: 3_000_000n,
+      paymentMethod: "wallet",
+      status: "processing",
+      items: {
+        create: [
+          { sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/multi-ready", priceRial: 1_000_000n, status: "ready" },
+          { sourceSite: "Envato", category: "video", productUrl: "https://envato.com/multi-large", priceRial: 1_500_000n, status: "ready" },
+          { sourceSite: "Shutterstock", category: "photo", productUrl: "https://shutterstock.com/multi-pending", priceRial: 500_000n, status: "pending" },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+  const [multiReadyItem, multiLargeItem] = orderMulti.items;
+  await prisma.delivery.create({
+    data: {
+      orderItemId: multiReadyItem.id,
+      storageKey: `test/${multiReadyItem.id}.zip`,
+      fileName: "ready-item.zip",
+      mimeType: "application/zip",
+      fileSizeBytes: 1234,
+      isLarge: false,
+      isOnDisk: true,
+    },
+  });
+  await prisma.delivery.create({
+    data: { orderItemId: multiLargeItem.id, isLarge: true, isOnDisk: false },
+  });
+
+  const rMultiOrders = await fetch(`${BASE_URL}/api/orders`, { headers: { Cookie: userCookie } });
+  const multiOrdersData = await rMultiOrders.json();
+  const multiInPanel = multiOrdersData.orders.find((o: { id: string }) => o.id === orderMulti.id);
+  console.log(
+    "[۴] سفارش چندآیتمی در پنل (باید ۳ آیتم با وضعیت/دانلود جدا داشته باشد):",
+    multiInPanel?.items.map((i: { status: string; downloadUrl: string | null; supportMessage: string | null }) => ({
+      status: i.status,
+      downloadUrl: i.downloadUrl,
+      supportMessage: i.supportMessage,
+    })),
+  );
+
+  // [۴.۱] دانلود آیتم آماده‌ی سفارش چندآیتمی به‌صورت مستقل (نه آیتم اول کل داده‌ها، بلکه بر اساس orderItemId خودش)
+  const rMultiDownload = await fetch(`${BASE_URL}/api/orders/items/${multiReadyItem.id}/download`, {
+    headers: { Cookie: userCookie },
+  });
+  console.log("[۴.۱] دانلود آیتم آماده‌ی سفارش چندآیتمی (انتظار 200):", rMultiDownload.status);
+
+  // [۴.۲] آیتم بزرگ نباید مستقیماً دانلود شود
+  const rMultiLargeDownload = await fetch(`${BASE_URL}/api/orders/items/${multiLargeItem.id}/download`, {
+    headers: { Cookie: userCookie },
+  });
+  console.log("[۴.۲] دانلود آیتم بزرگ (انتظار 404، باید فقط پیام پشتیبانی داشته باشد):", rMultiLargeDownload.status);
 }
 
 main()
