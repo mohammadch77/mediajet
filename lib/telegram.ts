@@ -2,6 +2,8 @@
 // در حالت شبیه‌سازی (بدون توکن تنظیم‌شده)، پیام به‌جای ارسال واقعی در کنسول سرور چاپ می‌شود.
 // ارسال هرگز نباید فرآیند ثبت سفارش را بلاک یا fail کند؛ خطاها فقط لاگ می‌شوند.
 
+import { toPersianDigits } from "./money";
+
 const TELEGRAM_API_BASE = "https://api.telegram.org";
 
 /** پیام متنی را به یک چت تلگرام ارسال می‌کند. در نبود توکن، در کنسول لاگ می‌شود (حالت شبیه‌سازی). */
@@ -29,13 +31,17 @@ export async function sendMessage(chatId: string, text: string): Promise<void> {
   }
 }
 
-/** پیام‌های اطلاع‌رسانی سفارش را به‌صورت غیرمسدودکننده به چت‌های مالی و اپراتور ارسال می‌کند. */
+/**
+ * پیام‌های اطلاع‌رسانی سفارش را به‌صورت غیرمسدودکننده به چت‌های مالی و اپراتور ارسال می‌کند.
+ * برای سفارش تک‌آیتمی و چندآیتمی (تسویه‌ی سبد خرید) یکسان کار می‌کند: همه‌ی لینک‌ها در یک
+ * پیام با شماره‌ی سفارش برای اپراتور فهرست می‌شوند.
+ */
 export function notifyOrderCreated(params: {
   orderId: string;
   priceLabel: string;
-  productUrl: string;
+  items: { productUrl: string }[];
 }): void {
-  const { orderId, priceLabel, productUrl } = params;
+  const { orderId, priceLabel, items } = params;
 
   const financeChatId = process.env.TELEGRAM_CHAT_FINANCE;
   const operatorChatId = process.env.TELEGRAM_CHAT_OPERATOR;
@@ -44,8 +50,8 @@ export function notifyOrderCreated(params: {
     const financeText = [
       "🧾 سفارش جدید ثبت و پرداخت شد",
       `شماره سفارش: ${orderId}`,
+      `تعداد آیتم‌ها: ${toPersianDigits(items.length)}`,
       `مبلغ پرداختی: ${priceLabel}`,
-      `لینک محصول: ${productUrl}`,
     ].join("\n");
     void sendMessage(financeChatId, financeText);
   } else {
@@ -53,10 +59,13 @@ export function notifyOrderCreated(params: {
   }
 
   if (operatorChatId) {
+    const linksText = items
+      .map((item, i) => `${toPersianDigits(i + 1)}. ${item.productUrl}`)
+      .join("\n");
     const operatorText = [
       "📦 سفارش جدید برای پردازش",
       `شماره سفارش: ${orderId}`,
-      `لینک محصول: ${productUrl}`,
+      linksText,
     ].join("\n");
     void sendMessage(operatorChatId, operatorText);
   } else {

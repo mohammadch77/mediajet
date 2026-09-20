@@ -92,6 +92,17 @@ export const addCartItemInput = z.object({
 
 export type AddCartItemInput = z.infer<typeof addCartItemInput>;
 
+export const cartCheckoutInput = z.object({
+  paymentMethod: z.enum(["wallet", "gateway"], {
+    error: requiredOrInvalidType("روش پرداخت الزامی است.", "روش پرداخت نامعتبر است."),
+  }),
+  idempotencyKey: z
+    .string({ error: "کلید یکتای درخواست الزامی است." })
+    .min(1, "کلید یکتای درخواست الزامی است."),
+});
+
+export type CartCheckoutInput = z.infer<typeof cartCheckoutInput>;
+
 // تنظیمات عددی پرداخت؛ مقدار همیشه عدد صحیح است و بازه‌ی مجاز هر کلید جداگانه
 // در سرور (lib/paymentSettings.ts) هم دوباره بررسی می‌شود.
 const paymentSettingKeyValues = [

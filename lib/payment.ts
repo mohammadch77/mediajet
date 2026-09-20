@@ -4,6 +4,7 @@ import { Prisma, PaymentStatus } from "@prisma/client";
 import { prisma } from "./db";
 import { getGateway } from "./gateway";
 import { creditWalletInTx } from "./wallet";
+import { clearCartInTx } from "./cart";
 import { assertTransition, type OrderStatus } from "./orderState";
 
 export class PaymentError extends Error {
@@ -89,11 +90,11 @@ export async function confirmCharge(
 // پرداخت مستقیم سفارش از درگاه (خواهر جریان شارژ کیف پول در بالا)
 // ---------------------------------------------------------------------------
 
-type OrderRow = { id: string; status: OrderStatus; priceRial: bigint; productUrl: string };
+type OrderRow = { id: string; status: OrderStatus; totalPriceRial: bigint; cartCheckout: boolean };
 
 async function lockOrder(tx: Prisma.TransactionClient, orderId: string): Promise<OrderRow> {
   const rows = await tx.$queryRaw<OrderRow[]>`
-    SELECT id, status::text AS status, "priceRial", "productUrl"
+    SELECT id, status::text AS status, "totalPriceRial", "cartCheckout"
     FROM "Order" WHERE id = ${orderId} FOR UPDATE
   `;
   const order = rows[0];
@@ -129,7 +130,7 @@ export type OrderPaymentResult = {
   orderId: string;
   orderStatus: OrderStatus;
   /** فقط وقتی پرداخت در همین فراخوانی تأیید و سفارش به صف رفت، مقدار دارد (برای اطلاع‌رسانی تلگرام). */
-  queued: { orderId: string; priceRial: bigint; productUrl: string } | null;
+  queued: { orderId: string; priceRial: bigint } | null;
 };
 
 /**
@@ -211,11 +212,17 @@ export async function confirmOrderPayment(
       },
     });
 
+    // فقط سفارش‌هایی که از تسویه‌ی سبد خرید ساخته شده‌اند سبد کاربر را خالی می‌کنند؛
+    // سفارش تکی اصلاً از سبد عبور نکرده، پس نباید سبدِ نامرتبط کاربر را پاک کند.
+    if (order.cartCheckout) {
+      await clearCartInTx(tx, payment.userId);
+    }
+
     return {
       status: "verified" as PaymentStatus,
       orderId: order.id,
       orderStatus: "queued" as OrderStatus,
-      queued: { orderId: order.id, priceRial: order.priceRial, productUrl: order.productUrl },
+      queued: { orderId: order.id, priceRial: order.totalPriceRial },
     };
   });
 }

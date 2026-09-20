@@ -5,6 +5,7 @@
 // همیشه lib/pricing.ts#computeCartTotal است که در لحظه‌ی ثبت سفارش دوباره سمت سرور
 // محاسبه می‌شود؛ قیمت کش‌شده‌ی سبد هرگز مستقیماً به سفارش منتقل نمی‌شود.
 
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { computePrice } from "@/lib/pricing";
 
@@ -63,4 +64,11 @@ export async function clearCart(userId: string) {
   const cart = await prisma.cart.findUnique({ where: { userId } });
   if (!cart) return;
   await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+}
+
+/** مثل clearCart، اما در دل یک تراکنش موجود (تسویه‌ی سبد خرید یا تأیید پرداخت درگاهی سفارشِ سبد). */
+export async function clearCartInTx(tx: Prisma.TransactionClient, userId: string) {
+  const cart = await tx.cart.findUnique({ where: { userId } });
+  if (!cart) return;
+  await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
 }

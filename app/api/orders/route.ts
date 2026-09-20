@@ -39,39 +39,42 @@ export async function GET() {
   const supportUsername = process.env.TELEGRAM_SUPPORT_USERNAME || "@support";
 
   return NextResponse.json({
-    // TODO(cart-ui): این پاسخ فعلاً فرض می‌کند هر سفارش دقیقاً یک آیتم دارد (اولین آیتم).
-    // وقتی UI سبد خرید ساخته شد باید همه‌ی items هر سفارش را برگرداند.
-    orders: orders.map((order) => {
-      const item = order.items[0];
-      const isDeliverable = item?.status === "ready" || item?.status === "delivered";
-      const delivery = item?.delivery;
+    orders: orders.map((order) => ({
+      id: order.id,
+      // TODO(cart-ui): دانلود مستقیم (app/api/orders/[id]/download) هنوز فقط اولین آیتم سفارش
+      // را پشتیبانی می‌کند؛ همان محدودیت این‌جا هم منعکس شده تا لینک نادرست ساخته نشود.
+      items: order.items.map((item, index) => {
+        const isDeliverable = item.status === "ready" || item.status === "delivered";
+        const delivery = item.delivery;
 
-      let downloadUrl: string | null = null;
-      let supportMessage: string | null = null;
+        let downloadUrl: string | null = null;
+        let supportMessage: string | null = null;
 
-      if (isDeliverable && delivery) {
-        if (delivery.isLarge) {
-          supportMessage = `فایل شما آماده است؛ برای دریافت به پشتیبانی (${supportUsername}) پیام دهید.`;
-        } else if (delivery.storageKey) {
-          downloadUrl = `/api/orders/${order.id}/download`;
-        } else if (delivery.fileUrl) {
-          downloadUrl = delivery.fileUrl;
+        if (isDeliverable && delivery) {
+          if (delivery.isLarge) {
+            supportMessage = `فایل شما آماده است؛ برای دریافت به پشتیبانی (${supportUsername}) پیام دهید.`;
+          } else if (index === 0 && delivery.storageKey) {
+            downloadUrl = `/api/orders/${order.id}/download`;
+          } else if (delivery.fileUrl) {
+            downloadUrl = delivery.fileUrl;
+          }
         }
-      }
 
-      return {
-        id: order.id,
-        category: item?.category ?? null,
-        sourceSite: item?.sourceSite ?? null,
-        productUrl: item?.productUrl ?? null,
-        priceRial: order.totalPriceRial.toString(),
-        priceLabel: rialToTomanLabel(Number(order.totalPriceRial)),
-        status: order.status,
-        createdAt: order.createdAt.toISOString(),
-        downloadUrl,
-        supportMessage,
-      };
-    }),
+        return {
+          id: item.id,
+          category: item.category,
+          sourceSite: item.sourceSite,
+          productUrl: item.productUrl,
+          status: item.status,
+          downloadUrl,
+          supportMessage,
+        };
+      }),
+      priceRial: order.totalPriceRial.toString(),
+      priceLabel: rialToTomanLabel(Number(order.totalPriceRial)),
+      status: order.status,
+      createdAt: order.createdAt.toISOString(),
+    })),
   });
 }
 
@@ -209,7 +212,7 @@ export async function POST(req: NextRequest) {
     notifyOrderCreated({
       orderId: order.id,
       priceLabel: rialToTomanLabel(Number(order.totalPriceRial)),
-      productUrl,
+      items: [{ productUrl }],
     });
   }
 

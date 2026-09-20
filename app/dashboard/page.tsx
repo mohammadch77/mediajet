@@ -8,16 +8,22 @@ import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/orderState";
 import { CATEGORIES } from "@/data/categories";
 
-type Order = {
+type OrderItem = {
   id: string;
   category: string;
   sourceSite: string;
   productUrl: string;
+  status: string;
+  downloadUrl: string | null;
+  supportMessage: string | null;
+};
+
+type Order = {
+  id: string;
+  items: OrderItem[];
   priceLabel: string;
   status: OrderStatus;
   createdAt: string;
-  downloadUrl: string | null;
-  supportMessage: string | null;
 };
 
 type WalletTx = {
@@ -62,11 +68,11 @@ export default function DashboardPage() {
   const [messageError, setMessageError] = useState<string | null>(null);
   const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
 
-  async function handleDownload(order: Order) {
-    if (!order.downloadUrl || downloadingOrderId) return;
-    setDownloadingOrderId(order.id);
+  async function handleDownload(item: OrderItem) {
+    if (!item.downloadUrl || downloadingOrderId) return;
+    setDownloadingOrderId(item.id);
     try {
-      const res = await fetch(order.downloadUrl);
+      const res = await fetch(item.downloadUrl);
       if (!res.ok) {
         throw new Error("دانلود فایل ناموفق بود.");
       }
@@ -359,42 +365,59 @@ export default function DashboardPage() {
             {orders.map((o) => (
               <div
                 key={o.id}
-                className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-[20px_22px] flex items-center justify-between flex-wrap gap-4"
+                className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-[20px_22px]"
               >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2.5 flex-wrap mb-1.5">
-                    <span className="font-display font-bold">{categoryTitle(o.category)}</span>
-                    <span className="text-dim text-[.82rem]">{o.sourceSite}</span>
+                <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="text-dim text-[.78rem]">{toJalaliDate(o.createdAt)}</span>
+                    {o.items.length > 1 && (
+                      <span className="text-dim text-[.78rem]">· {o.items.length} آیتم</span>
+                    )}
                   </div>
-                  <a
-                    href={o.productUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    dir="ltr"
-                    className="text-dim text-[.78rem] block truncate max-w-[360px] hover:text-cyan transition"
-                  >
-                    {o.productUrl}
-                  </a>
-                  <div className="text-dim text-[.78rem] mt-1.5">{toJalaliDate(o.createdAt)}</div>
-                  {o.supportMessage && (
-                    <div className="text-cyan text-[.8rem] mt-2 max-w-[420px]">{o.supportMessage}</div>
-                  )}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="font-semibold text-[.95rem]">{o.priceLabel}</span>
+                    <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)]">
+                      {STATUS_LABELS[o.status]}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 flex-wrap shrink-0">
-                  <span className="font-semibold text-[.95rem]">{o.priceLabel}</span>
-                  <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)]">
-                    {STATUS_LABELS[o.status]}
-                  </span>
-                  {o.downloadUrl && (
-                    <button
-                      type="button"
-                      onClick={() => handleDownload(o)}
-                      disabled={downloadingOrderId === o.id}
-                      className="font-body cursor-pointer border-none font-bold text-[.85rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-2.5 rounded-full whitespace-nowrap transition hover:-translate-y-px disabled:opacity-70 disabled:cursor-wait"
+
+                <div className="grid gap-2.5">
+                  {o.items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between flex-wrap gap-3 border-t border-[rgba(138,124,255,.1)] pt-2.5 first:border-t-0 first:pt-0"
                     >
-                      {downloadingOrderId === o.id ? "در حال آماده‌سازی فایل شما..." : "دانلود"}
-                    </button>
-                  )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2.5 flex-wrap mb-1">
+                          <span className="font-display font-bold text-[.92rem]">{categoryTitle(item.category)}</span>
+                          <span className="text-dim text-[.8rem]">{item.sourceSite}</span>
+                        </div>
+                        <a
+                          href={item.productUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          dir="ltr"
+                          className="text-dim text-[.76rem] block truncate max-w-[360px] hover:text-cyan transition"
+                        >
+                          {item.productUrl}
+                        </a>
+                        {item.supportMessage && (
+                          <div className="text-cyan text-[.78rem] mt-1.5 max-w-[420px]">{item.supportMessage}</div>
+                        )}
+                      </div>
+                      {item.downloadUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(item)}
+                          disabled={downloadingOrderId === item.id}
+                          className="font-body cursor-pointer border-none font-bold text-[.85rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-2.5 rounded-full whitespace-nowrap transition hover:-translate-y-px disabled:opacity-70 disabled:cursor-wait shrink-0"
+                        >
+                          {downloadingOrderId === item.id ? "در حال آماده‌سازی فایل شما..." : "دانلود"}
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

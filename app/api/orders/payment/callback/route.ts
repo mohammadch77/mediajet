@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { confirmOrderPayment, PaymentError } from "@/lib/payment";
 import { rialToTomanLabel } from "@/lib/money";
 import { notifyOrderCreated } from "@/lib/telegram";
+import { prisma } from "@/lib/db";
 
 // GET/POST /api/orders/payment/callback
 // بازگشت از درگاه پرداخت برای پرداخت مستقیم یک سفارش (خواهر /api/wallet/charge/callback).
@@ -25,10 +26,14 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
     // اطلاع‌رسانی تلگرام فقط یک‌بار و فقط وقتی سفارش واقعاً در همین فراخوانی به صف رفت؛
     // در callback تکراری queued برابر null است، پس پیام دوباره ارسال نمی‌شود.
     if (result.queued) {
+      const items = await prisma.orderItem.findMany({
+        where: { orderId: result.queued.orderId },
+        select: { productUrl: true },
+      });
       notifyOrderCreated({
         orderId: result.queued.orderId,
         priceLabel: rialToTomanLabel(Number(result.queued.priceRial)),
-        productUrl: result.queued.productUrl,
+        items,
       });
     }
 
