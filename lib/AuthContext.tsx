@@ -3,7 +3,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
-export type AuthUser = { id: string; mobile: string; role: "user" | "operator" | "admin"; walletBalanceRial: string };
+export type AuthUser = { id: string; mobile: string; name: string | null; role: "user" | "operator" | "admin"; walletBalanceRial: string };
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -12,6 +12,7 @@ type AuthContextValue = {
   login: (user: AuthUser) => void;
   logout: () => Promise<void>;
   setWalletBalance: (walletBalanceRial: string) => void;
+  setUserName: (name: string) => void;
   authModalOpen: boolean;
   openAuthModal: () => void;
   closeAuthModal: () => void;
@@ -59,6 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser((u) => (u ? { ...u, walletBalanceRial } : u));
   }, []);
 
+  const setUserName = useCallback((name: string) => {
+    setUser((u) => (u ? { ...u, name } : u));
+  }, []);
+
   const openAuthModal = useCallback(() => setAuthModalOpen(true), []);
 
   const closeAuthModal = useCallback(() => {
@@ -84,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         setWalletBalance,
+        setUserName,
         authModalOpen,
         openAuthModal,
         closeAuthModal,

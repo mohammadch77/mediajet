@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     userId: user.id,
     mobile: user.mobile,
+    name: user.name,
     role: user.role,
     walletBalanceRial: (wallet?.balanceRial ?? 0n).toString(),
   });

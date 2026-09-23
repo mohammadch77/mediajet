@@ -87,7 +87,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         setError(data.error ?? "کد وارد شده نادرست است.");
         return;
       }
-      login({ id: data.userId, mobile: data.mobile, role: data.role, walletBalanceRial: data.walletBalanceRial });
+      login({ id: data.userId, mobile: data.mobile, name: data.name, role: data.role, walletBalanceRial: data.walletBalanceRial });
       onClose();
     } catch {
       setError("خطا در ارتباط با سرور. دوباره تلاش کن.");

@@ -16,6 +16,7 @@ export async function GET() {
     user: {
       id: user.id,
       mobile: user.mobile,
+      name: user.name,
       role: user.role,
       walletBalanceRial: (wallet?.balanceRial ?? 0n).toString(),
     },

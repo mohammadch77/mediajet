@@ -212,6 +212,16 @@ export const sendSupportMessageInput = z.object({
 
 export type SendSupportMessageInput = z.infer<typeof sendSupportMessageInput>;
 
+export const updateProfileNameInput = z.object({
+  name: z
+    .string({ error: "نام الزامی است." })
+    .trim()
+    .min(1, "نام الزامی است.")
+    .max(60, "نام نباید بیشتر از ۶۰ نویسه باشد."),
+});
+
+export type UpdateProfileNameInput = z.infer<typeof updateProfileNameInput>;
+
 const roleValues = ["user", "operator", "admin"] as const;
 
 export const changeUserRoleInput = z.object({
