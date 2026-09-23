@@ -3,9 +3,13 @@ import { useRef, useState, useCallback, type ReactNode } from "react";
 
 export default function WalletCard({
   balanceLabel,
+  eyebrowLabel = "موجودی فعلی",
+  badgeLabel = "کیف پول من",
   children,
 }: {
   balanceLabel: ReactNode;
+  eyebrowLabel?: ReactNode;
+  badgeLabel?: ReactNode;
   children?: ReactNode;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -76,7 +80,7 @@ export default function WalletCard({
 
         <div style={{ transform: "translateZ(40px)", transformStyle: "preserve-3d" }}>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[rgba(255,255,255,.85)] text-[.9rem]">موجودی فعلی</span>
+            <span className="text-[rgba(255,255,255,.85)] text-[.9rem]">{eyebrowLabel}</span>
             <span
               className="text-[.72rem] font-bold px-2.5 py-1 rounded-full text-white/90"
               style={{
@@ -85,7 +89,7 @@ export default function WalletCard({
                 backdropFilter: "blur(4px)",
               }}
             >
-              کیف پول من
+              {badgeLabel}
             </span>
           </div>
           <div

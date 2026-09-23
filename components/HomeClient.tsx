@@ -17,9 +17,9 @@ import Link from "next/link";
 const HeroScene = dynamic(() => import("@/components/HeroScene"), { ssr: false });
 
 const STEPS = [
-  { n: "01", title: "لینک را بفرست", desc: "آدرس محصول را از هر سایت پشتیبانی‌شده کپی کن و در فرم دسته‌ی مربوطه بگذار." },
-  { n: "02", title: "پرداخت جزئی", desc: "قیمت خودکار محاسبه می‌شود؛ از کیف پول یا درگاه مبلغ ناچیزی می‌پردازی." },
-  { n: "03", title: "فایل را بگیر", desc: "فایل اصلی و باکیفیت را دانلود کرده و در پنلت آماده‌ی دانلود قرار می‌دهیم." },
+  { n: "01", title: "لینک را بفرست", desc: "آدرس محصول را از هر سایت پشتیبانی‌شده کپی کن و در فرم دسته‌ی مربوطه بگذار.", highlight: undefined as string | undefined },
+  { n: "02", title: "پرداخت جزئی", desc: "قیمت خودکار محاسبه می‌شود؛ از کیف پول یا درگاه مبلغ ناچیزی می‌پردازی.", highlight: "با کیف پول شارژشده، سفارش‌ها سریع‌تر و ارزان‌تر انجام می‌شوند — بدون رفتن به درگاه هر بار." as string | undefined },
+  { n: "03", title: "فایل را بگیر", desc: "فایل اصلی و باکیفیت را دانلود کرده و در پنلت آماده‌ی دانلود قرار می‌دهیم.", highlight: undefined as string | undefined },
 ];
 
 // تعداد دسته‌هایی که هر سایت پشتیبانی می‌کند، از روی CATEGORIES محاسبه می‌شود (منبع واحد حقیقت).
@@ -309,6 +309,15 @@ export default function HomeClient({ content }: { content: Record<string, string
               <div className="latin text-[.85rem] font-bold text-accent w-10 h-10 rounded-xl bg-[rgba(255,107,53,.12)] grid place-items-center mb-5">{s.n}</div>
               <h3 className="font-display text-[1.25rem] mb-2">{s.title}</h3>
               <p className="text-dim text-[.95rem]">{s.desc}</p>
+              {s.highlight && (
+                <a
+                  href="#wallet"
+                  className="mt-3.5 flex items-start gap-2 text-cyan text-[.82rem] leading-[1.7] no-underline hover:text-[rgba(56,225,255,.8)]"
+                >
+                  <span className="shrink-0">💳</span>
+                  <span>{s.highlight}</span>
+                </a>
+              )}
             </div>
           ))}
         </div>
@@ -396,22 +405,40 @@ export default function HomeClient({ content }: { content: Record<string, string
       <section id="wallet" className="px-[5vw] py-[clamp(70px,10vw,120px)] max-w-[1200px] mx-auto">
         <div className="grid grid-cols-[1.1fr_1fr] gap-[34px] items-center max-[820px]:grid-cols-1 max-[820px]:gap-6">
           <div className="reveal">
-            <WalletCard
-              balanceLabel={
-                <>
-                  {toPersianDigits(Math.round(Number(user?.walletBalanceRial ?? 0) / 10).toLocaleString("en-US"))}{" "}
-                  <small className="text-base font-medium">تومان</small>
-                </>
-              }
-            >
-              <div className="flex gap-2.5 flex-wrap">
-                {["۱۰۰٬۰۰۰", "۵۰۰٬۰۰۰", "۱٬۰۰۰٬۰۰۰"].map((v) => (
-                  <button key={v} className="font-body bg-[rgba(255,255,255,.16)] border-none text-white font-bold px-4 py-2.5 rounded-[11px] cursor-pointer transition hover:bg-[rgba(255,255,255,.32)] hover:-translate-y-0.5">
-                    + {v}
-                  </button>
-                ))}
-              </div>
-            </WalletCard>
+            {user ? (
+              <WalletCard
+                balanceLabel={
+                  <>
+                    {toPersianDigits(Math.round(Number(user?.walletBalanceRial ?? 0) / 10).toLocaleString("en-US"))}{" "}
+                    <small className="text-base font-medium">تومان</small>
+                  </>
+                }
+              >
+                <div className="flex gap-2.5 flex-wrap">
+                  {["۱۰۰٬۰۰۰", "۵۰۰٬۰۰۰", "۱٬۰۰۰٬۰۰۰"].map((v) => (
+                    <button key={v} className="font-body bg-[rgba(255,255,255,.16)] border-none text-white font-bold px-4 py-2.5 rounded-[11px] cursor-pointer transition hover:bg-[rgba(255,255,255,.32)] hover:-translate-y-0.5">
+                      + {v}
+                    </button>
+                  ))}
+                </div>
+              </WalletCard>
+            ) : (
+              <WalletCard
+                eyebrowLabel="کیف پول شما"
+                badgeLabel="هنوز فعال نشده"
+                balanceLabel="وارد شو، کیف پولت را فعال کن"
+              >
+                <p className="text-[rgba(255,255,255,.85)] text-[.9rem] leading-[1.9] mb-5">
+                  با ورود، یک کیف پول برایت فعال می‌شود. شارژش کن تا هر سفارش سریع‌تر و ارزان‌تر از موجودی پرداخت شود — بدون نیاز به رفتن به درگاه در هر خرید.
+                </p>
+                <button
+                  onClick={openAuthModal}
+                  className="font-body cursor-pointer border-none font-bold text-[.9rem] text-primary2 bg-white px-5 py-2.5 rounded-full transition hover:-translate-y-px"
+                >
+                  ورود / شارژ کیف پول
+                </button>
+              </WalletCard>
+            )}
           </div>
           <div className="reveal">
             <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Wallet</div>
