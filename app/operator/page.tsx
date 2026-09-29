@@ -22,6 +22,7 @@ type OperatorItem = {
 
 type OperatorOrder = {
   id: string;
+  orderNumber: string;
   priceLabel: string;
   status: OrderStatus;
   createdAt: string;
@@ -246,7 +247,9 @@ export default function OperatorPage() {
                 <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2.5 flex-wrap mb-1.5">
-                      <span className="font-display font-bold">سفارش {o.id.slice(0, 8)}</span>
+                      <span className="font-display font-bold">
+                        سفارش <span dir="ltr" className="latin">{o.orderNumber}</span>
+                      </span>
                       <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)]">
                         {STATUS_LABELS[o.status]}
                       </span>

@@ -23,6 +23,7 @@ model User {
   sessions        Session[]
   payments        Payment[]
   supportMessages SupportMessage[]
+  notifications   Notification[]
 
   roleChangesReceived RoleChangeLog[] @relation("RoleChangeTarget")
   roleChangesMade     RoleChangeLog[] @relation("RoleChangeActor")
@@ -146,6 +147,8 @@ enum PaymentStatus {
 
 model Order {
   id             String      @id @default(cuid())
+  // شماره‌ی کوتاه و خوانا برای نمایش به کاربر/اپراتور (MJ-1001)؛ id همچنان کلید داخلی است.
+  orderNumber    Int         @unique @default(autoincrement())
   userId         String
   totalPriceRial BigInt // مجموع priceRial همه‌ی آیتم‌ها به‌علاوه‌ی کارمزد روش پرداخت؛ فقط سمت سرور محاسبه می‌شود
   paymentMethod  String // "wallet" یا "gateway"؛ نوع lib/pricing.ts#PaymentMethod
@@ -284,6 +287,20 @@ model SupportMessage {
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
+}
+
+// اعلان‌های کاربر (زنگوله‌ی هدر): آماده شدن فایل، پاسخ پشتیبانی و ...
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  text      String
+  href      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt])
 }
 
 enum SupportMessageSender {

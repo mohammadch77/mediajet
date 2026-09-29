@@ -8,6 +8,9 @@ import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
 import { STATUS_LABELS, ITEM_STATUS_LABELS, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
 import { CATEGORIES } from "@/data/categories";
 import WalletCard from "@/components/WalletCard";
+import { useVisiblePolling } from "@/lib/useVisiblePolling";
+
+const DASHBOARD_POLL_MS = 5000;
 
 type OrderItem = {
   id: string;
@@ -21,6 +24,7 @@ type OrderItem = {
 
 type Order = {
   id: string;
+  orderNumber: string;
   items: OrderItem[];
   priceLabel: string;
   status: OrderStatus;
@@ -97,7 +101,9 @@ export default function DashboardPage() {
     try {
       const res = await fetch(item.downloadUrl);
       if (!res.ok) {
-        throw new Error("دانلود فایل ناموفق بود.");
+        const data = await res.json().catch(() => null);
+        loadOrders();
+        throw new Error(data?.error ?? "دانلود فایل با خطا مواجه شد؛ دوباره تلاش کنید.");
       }
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition") ?? "";
@@ -112,8 +118,8 @@ export default function DashboardPage() {
       link.click();
       link.remove();
       URL.revokeObjectURL(objectUrl);
-    } catch {
-      setError("دانلود فایل با خطا مواجه شد؛ دوباره تلاش کنید.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "دانلود فایل با خطا مواجه شد؛ دوباره تلاش کنید.");
     } finally {
       setDownloadingItemId(null);
     }
@@ -134,6 +140,17 @@ export default function DashboardPage() {
       setWallet(walletData);
     } catch {
       setError("دریافت اطلاعات با خطا مواجه شد. دوباره تلاش کن.");
+    }
+  }
+
+  async function loadOrders() {
+    try {
+      const res = await fetch("/api/orders");
+      if (!res.ok) return;
+      const data = await res.json();
+      setOrders(data.orders);
+    } catch {
+      // خطای به‌روزرسانی دوره‌ای بی‌اثر است؛ دفعه‌ی بعد دوباره تلاش می‌شود.
     }
   }
 
@@ -215,6 +232,12 @@ export default function DashboardPage() {
     }
 
     const params = new URLSearchParams(window.location.search);
+    const requestedTab = params.get("tab");
+    if (TABS.some((t) => t.id === requestedTab)) {
+      setTab(requestedTab as TabId);
+      router.replace("/dashboard");
+    }
+
     const charge = params.get("charge");
     if (charge === "success" || charge === "failed") {
       setChargeNotice(charge);
@@ -235,45 +258,32 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user, router, openAuthModal]);
 
-  // پیام‌های پشتیبانی هر چند ثانیه یک‌بار به‌روزرسانی می‌شوند تا کاربر لازم نباشد صفحه را رفرش کند.
-  // فقط وقتی تب مرورگر باز و فعال است poll می‌شود تا درخواست بی‌مورد به سرور نرود.
-  useEffect(() => {
-    if (loading || !user) return;
-
-    const POLL_INTERVAL_MS = 5000;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-
-    function startPolling() {
-      if (intervalId) return;
-      intervalId = setInterval(loadSupportMessages, POLL_INTERVAL_MS);
-    }
-    function stopPolling() {
-      if (intervalId) clearInterval(intervalId);
-      intervalId = null;
-    }
-    function handleVisibilityChange() {
-      if (document.visibilityState === "visible") {
-        loadSupportMessages();
-        startPolling();
-      } else {
-        stopPolling();
-      }
-    }
-
-    if (document.visibilityState === "visible") startPolling();
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      stopPolling();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, user]);
+  // پیام‌ها و سفارش‌ها مرتب به‌روز می‌شوند تا فایل آماده یا پاسخ پشتیبانی بدون رفرش دیده شود.
+  useVisiblePolling(
+    () => {
+      loadSupportMessages();
+      loadOrders();
+    },
+    DASHBOARD_POLL_MS,
+    !loading && !!user,
+  );
 
   // با ورود کاربر، فیلد ویرایش نام با مقدار فعلی همگام می‌شود.
   useEffect(() => {
     setNameInput(user?.name ?? "");
   }, [user?.name]);
+
+  // با باز شدن تب سفارش‌ها/پیام‌ها، اعلان‌های زنگوله‌ی همان بخش خوانده‌شده می‌شوند.
+  useEffect(() => {
+    if (tab !== "orders" && tab !== "messages") return;
+    fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tab }),
+    }).catch(() => {
+      // بی‌اثر است؛ اعلان در زنگوله باقی می‌ماند.
+    });
+  }, [tab]);
 
   // با باز شدن تب پیام‌ها، پیام‌های خوانده‌نشده علامت خوانده‌شده می‌خورند.
   useEffect(() => {
@@ -520,6 +530,7 @@ export default function DashboardPage() {
                 >
                   <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
                     <div className="flex items-center gap-2.5 flex-wrap">
+                      <span dir="ltr" className="latin font-bold text-[.85rem]">{o.orderNumber}</span>
                       <span className="text-dim text-[.78rem]">{toJalaliDate(o.createdAt)}</span>
                       {o.items.length > 1 && (
                         <span className="text-dim text-[.78rem]">· {o.items.length} آیتم</span>

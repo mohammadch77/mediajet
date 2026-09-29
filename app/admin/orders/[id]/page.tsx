@@ -7,6 +7,7 @@ import { STATUS_LABELS, type OrderStatus } from "@/lib/orderState";
 
 type OrderDetail = {
   id: string;
+  orderNumber: string;
   category: string | null;
   sourceSite: string | null;
   productUrl: string | null;
@@ -57,7 +58,9 @@ export default function AdminOrderDetailPage() {
 
       <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-5 sm:p-6 mb-6">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-          <h1 className="font-display text-xl font-extrabold">{order.category}</h1>
+          <h1 className="font-display text-xl font-extrabold">
+            <span dir="ltr" className="latin">{order.orderNumber}</span> · {order.category}
+          </h1>
           <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)]">
             {STATUS_LABELS[order.status]}
           </span>

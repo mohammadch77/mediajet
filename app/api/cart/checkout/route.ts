@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { formatOrderNumber } from "@/lib/orderNumber";
 import { computeCartTotal } from "@/lib/pricing";
 import { rialToTomanLabel } from "@/lib/money";
 import { validateInput, cartCheckoutInput, ValidationError } from "@/lib/validation";
@@ -133,7 +134,7 @@ export async function POST(req: NextRequest) {
           userId,
           payableTotalRial,
           order.id,
-          `پرداخت سفارش ${order.id}`,
+          `پرداخت سفارش ${formatOrderNumber(order.orderNumber)}`,
           idempotencyKey,
         );
         await transitionOrder(tx, order.id, "awaiting_payment", "queued", "system");

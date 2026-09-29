@@ -41,7 +41,6 @@ export async function POST(
     await markItemLargeAndNotifyUser(tx, {
       orderId: id,
       orderItemId: itemId,
-      userId: target.order.userId,
       itemLabel: toPersianDigits(itemIndex + 1),
       fromOrderStatus: target.fromStatus,
       actor,

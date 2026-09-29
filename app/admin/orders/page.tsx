@@ -7,6 +7,7 @@ import Pagination from "@/components/admin/Pagination";
 
 type OrderRow = {
   id: string;
+  orderNumber: string;
   category: string;
   sourceSite: string;
   priceLabel: string;
@@ -77,7 +78,7 @@ export default function AdminOrdersPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="جستجو بر اساس موبایل، نام، سایت یا دسته…"
+          placeholder="جستجو بر اساس شماره سفارش، موبایل، نام، سایت یا دسته…"
           className="flex-1 min-w-[220px] max-w-[360px] bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2.5 text-[.85rem] outline-none focus:border-cyan transition"
         />
         <select
@@ -113,6 +114,7 @@ export default function AdminOrdersPage() {
             <table className="w-full text-[.85rem] min-w-[820px]">
               <thead>
                 <tr className="text-dim text-[.78rem] border-b border-[rgba(138,124,255,.14)]">
+                  <th className="text-right font-semibold px-5 py-3.5">شماره</th>
                   <th className="text-right font-semibold px-5 py-3.5">کاربر</th>
                   <th className="text-right font-semibold px-5 py-3.5">دسته</th>
                   <th className="text-right font-semibold px-5 py-3.5">سایت</th>
@@ -125,6 +127,7 @@ export default function AdminOrdersPage() {
               <tbody>
                 {data.items.map((o) => (
                   <tr key={o.id} className="border-b border-[rgba(138,124,255,.08)] last:border-0">
+                    <td dir="ltr" className="px-5 py-3.5 text-right font-bold latin whitespace-nowrap">{o.orderNumber}</td>
                     <td className="px-5 py-3.5">
                       <div dir="ltr" className="text-left font-semibold">{o.user.mobile}</div>
                       <div className="text-dim text-[.75rem]">{o.user.name ?? "بدون نام"}</div>
@@ -156,7 +159,9 @@ export default function AdminOrdersPage() {
                 className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-display font-bold">{o.category}</span>
+                  <span className="font-display font-bold">
+                    {o.category} <span dir="ltr" className="latin text-dim text-[.78rem]">{o.orderNumber}</span>
+                  </span>
                   <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgba(255,255,255,.06)]">
                     {STATUS_LABELS[o.status]}
                   </span>

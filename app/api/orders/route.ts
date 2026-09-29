@@ -9,6 +9,7 @@ import { assertTransition, type OrderStatus } from "@/lib/orderState";
 import { getCurrentUser } from "@/lib/session";
 import { notifyOrderCreated } from "@/lib/telegram";
 import { getGateway } from "@/lib/gateway";
+import { formatOrderNumber } from "@/lib/orderNumber";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 
 const FOREIGN_KEY_VIOLATION = "P2003";
@@ -41,6 +42,7 @@ export async function GET() {
   return NextResponse.json({
     orders: orders.map((order) => ({
       id: order.id,
+      orderNumber: formatOrderNumber(order.orderNumber),
       items: order.items.map((item) => {
         const isDeliverable = item.status === "ready" || item.status === "delivered";
         const delivery = item.delivery;
@@ -171,7 +173,7 @@ export async function POST(req: NextRequest) {
           userId,
           priceRial,
           order.id,
-          `پرداخت سفارش ${order.id}`,
+          `پرداخت سفارش ${formatOrderNumber(order.orderNumber)}`,
           idempotencyKey,
         );
         await transitionOrder(tx, order.id, "awaiting_payment", "queued", "system");

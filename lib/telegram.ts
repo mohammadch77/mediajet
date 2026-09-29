@@ -2,9 +2,12 @@
 // در حالت شبیه‌سازی (بدون توکن تنظیم‌شده)، پیام به‌جای ارسال واقعی در کنسول سرور چاپ می‌شود.
 // ارسال هرگز نباید فرآیند ثبت سفارش را بلاک یا fail کند؛ خطاها فقط لاگ می‌شوند.
 
-import { toPersianDigits } from "./money";
+import { toPersianDigits, rialToTomanLabel } from "./money";
+import { STATUS_LABELS, type OrderStatus } from "./orderState";
 import { getSetting } from "./settings";
 import { prisma } from "./db";
+import { formatOrderNumber } from "./orderNumber";
+import { toJalaliDateTime } from "./jalali";
 
 const TELEGRAM_API_BASE = "https://api.telegram.org";
 
@@ -22,8 +25,14 @@ export async function getTelegramConfig(
   return process.env[settingKey] || null;
 }
 
+type InlineButton = { text: string; callback_data: string };
+type SendOptions = { html?: boolean; buttons?: InlineButton[][] };
+
+/** سقف طول متن یک پیام تلگرام. */
+const TELEGRAM_TEXT_LIMIT = 4096;
+
 /** پیام متنی را به یک چت تلگرام ارسال می‌کند. در نبود توکن، در کنسول لاگ می‌شود (حالت شبیه‌سازی). */
-export async function sendMessage(chatId: string, text: string): Promise<void> {
+export async function sendMessage(chatId: string, text: string, options: SendOptions = {}): Promise<void> {
   const token = await getTelegramConfig("TELEGRAM_BOT_TOKEN");
 
   if (!token) {
@@ -35,7 +44,13 @@ export async function sendMessage(chatId: string, text: string): Promise<void> {
     const response = await fetch(`${TELEGRAM_API_BASE}/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text }),
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        ...(options.html && { parse_mode: "HTML" }),
+        ...(options.buttons && { reply_markup: { inline_keyboard: options.buttons } }),
+        link_preview_options: { is_disabled: true },
+      }),
     });
 
     if (!response.ok) {
@@ -45,6 +60,25 @@ export async function sendMessage(chatId: string, text: string): Promise<void> {
   } catch (error) {
     console.error(`[تلگرام خطا] ارسال به چت ${chatId} با خطا مواجه شد:`, error);
   }
+}
+
+/** پاسخ به کلیک دکمه‌ی inline تا حالت «در حال بارگذاری» روی دکمه تمام شود. */
+export async function answerCallbackQuery(callbackQueryId: string, text?: string): Promise<void> {
+  const token = await getTelegramConfig("TELEGRAM_BOT_TOKEN");
+  if (!token) return;
+  try {
+    await fetch(`${TELEGRAM_API_BASE}/bot${token}/answerCallbackQuery`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ callback_query_id: callbackQueryId, text }),
+    });
+  } catch (error) {
+    console.error("[تلگرام خطا] answerCallbackQuery ناموفق بود:", error);
+  }
+}
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /**
@@ -69,11 +103,13 @@ async function notifyOrderCreatedAsync(params: {
 
   const financeChatId = await getTelegramConfig("TELEGRAM_CHAT_FINANCE");
   const operatorChatId = await getTelegramConfig("TELEGRAM_CHAT_OPERATOR");
+  const { orderCode, customerLine } = await describeOrder(orderId);
 
   if (financeChatId) {
     const financeText = [
       "🧾 سفارش جدید ثبت و پرداخت شد",
-      `شماره سفارش: ${orderId}`,
+      `شماره سفارش: ${orderCode}`,
+      customerLine,
       `تعداد آیتم‌ها: ${toPersianDigits(items.length)}`,
       `مبلغ پرداختی: ${priceLabel}`,
     ].join("\n");
@@ -83,17 +119,16 @@ async function notifyOrderCreatedAsync(params: {
   }
 
   if (operatorChatId) {
-    const customerLine = await describeOrderCustomer(orderId);
     const linksText = items
       .map((item, i) => `${toPersianDigits(i + 1)}. ${item.productUrl}`)
       .join("\n");
     const instruction =
       items.length > 1
-        ? "برای تحویل هر آیتم، روی همین پیام reply کن و شماره‌ی آیتم را در متن یا کپشن بنویس، مثلاً «آیتم 2» به‌همراه فایل یا دستور /large."
-        : "برای تحویل، روی همین پیام reply کن و فایل را بفرست، یا با دستور /large آن را فایل بزرگ علامت بزن.";
+        ? "برای تحویل هر آیتم، روی همین پیام reply کن و شماره‌ی آیتم را در متن یا کپشن بنویس، مثلاً «آیتم ۲» به‌همراه فایل یا «بزرگ»."
+        : "برای تحویل، روی همین پیام reply کن و فایل را بفرست، یا «بزرگ» بنویس.";
     const operatorText = [
       "📦 سفارش جدید برای پردازش",
-      `شماره سفارش: ${orderId}`,
+      `شماره سفارش: ${orderCode}`,
       customerLine,
       linksText,
       "",
@@ -105,21 +140,23 @@ async function notifyOrderCreatedAsync(params: {
   }
 }
 
-async function describeOrderCustomer(orderId: string): Promise<string> {
+function describeUser(user: { mobile: string; name: string | null }): string {
+  return user.name ? `${user.name} (${user.mobile})` : user.mobile;
+}
+
+async function describeOrder(orderId: string): Promise<{ orderCode: string; customerLine: string }> {
   try {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      select: { user: { select: { mobile: true, name: true } } },
+      select: { orderNumber: true, user: { select: { mobile: true, name: true } } },
     });
-    if (!order) {
-      return "کاربر: نامشخص";
+    if (order) {
+      return { orderCode: formatOrderNumber(order.orderNumber), customerLine: `کاربر: ${describeUser(order.user)}` };
     }
-    const { mobile, name } = order.user;
-    return name ? `کاربر: ${name} (${mobile})` : `کاربر: ${mobile}`;
   } catch (error) {
-    console.error(`[تلگرام خطا] خواندن کاربر سفارش ${orderId} ناموفق بود:`, error);
-    return "کاربر: نامشخص";
+    console.error(`[تلگرام خطا] خواندن سفارش ${orderId} ناموفق بود:`, error);
   }
+  return { orderCode: orderId, customerLine: "کاربر: نامشخص" };
 }
 
 /** فایل را از تلگرام دانلود می‌کند. بدون TELEGRAM_BOT_TOKEN (حالت شبیه‌سازی)، محتوای جعلی تولید می‌شود. */
@@ -147,13 +184,41 @@ export async function downloadTelegramFile(fileId: string, fileName?: string): P
   return Buffer.from(await fileRes.arrayBuffer());
 }
 
-/** پیام جدید کاربر در صندوق پشتیبانی را به چت پشتیبانی اطلاع می‌دهد؛ پشتیبانی با reply روی این پیام جواب می‌دهد. */
-export function notifySupportMessage(params: { userId: string; text: string }): void {
-  void notifySupportMessageAsync(params);
+const RECENT_HISTORY_COUNT = 6;
+const RECENT_MESSAGE_MAX_CHARS = 280;
+
+export const SUPPORT_CALLBACK = { history: "hist", orders: "orders" } as const;
+
+type HistoryMessage = { sender: string; text: string; createdAt: Date };
+
+function formatHistoryEntry(m: HistoryMessage, maxChars?: number): string {
+  const who = m.sender === "user" ? "👤 کاربر" : "🎧 پشتیبانی";
+  const text = maxChars && m.text.length > maxChars ? `${m.text.slice(0, maxChars)}…` : m.text;
+  return `<blockquote><b>${who}</b> · ${toJalaliDateTime(m.createdAt)}\n${escapeHtml(text)}</blockquote>`;
 }
 
-async function notifySupportMessageAsync(params: { userId: string; text: string }): Promise<void> {
-  const { userId, text } = params;
+// خط «شناسه کاربر:» را وب‌هوک برای تشخیص reply پشتیبانی می‌خواند؛ نباید حذف یا تغییر شکل داده شود.
+const replyFooter = (userId: string) => `↩️ برای پاسخ، روی همین پیام reply کن.\n🆔 شناسه کاربر: <code>${userId}</code>`;
+
+const supportButtons = (userId: string): InlineButton[][] => [
+  [
+    { text: "📜 کل گفتگو", callback_data: `${SUPPORT_CALLBACK.history}:${userId}` },
+    { text: "📦 سفارش‌های کاربر", callback_data: `${SUPPORT_CALLBACK.orders}:${userId}` },
+  ],
+];
+
+/**
+ * پیام جدید کاربر را همراه با معرفی کاربر و چند پیام اخیر گفتگو به چت پشتیبانی می‌فرستد تا
+ * پشتیبان بدون جست‌وجو بفهمد قبلاً چه گفته شده؛ پشتیبانی با reply روی همین پیام جواب می‌دهد.
+ */
+export function notifySupportMessage(params: { userId: string; messageId: string; text: string }): void {
+  void notifySupportMessageAsync(params).catch((error) =>
+    console.error("[تلگرام خطا] اطلاع‌رسانی پیام پشتیبانی ناموفق بود:", error),
+  );
+}
+
+async function notifySupportMessageAsync(params: { userId: string; messageId: string; text: string }): Promise<void> {
+  const { userId, messageId, text } = params;
 
   const supportChatId = await getTelegramConfig("TELEGRAM_CHAT_SUPPORT");
   if (!supportChatId) {
@@ -161,6 +226,95 @@ async function notifySupportMessageAsync(params: { userId: string; text: string 
     return;
   }
 
-  const supportText = ["💬 پیام جدید از کاربر", `شناسه کاربر: ${userId}`, "", text].join("\n");
-  void sendMessage(supportChatId, supportText);
+  const [user, totalMessages, recent] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { mobile: true, name: true, _count: { select: { orders: true } } },
+    }),
+    prisma.supportMessage.count({ where: { userId } }),
+    prisma.supportMessage.findMany({
+      where: { userId, id: { not: messageId } },
+      orderBy: { createdAt: "desc" },
+      take: RECENT_HISTORY_COUNT,
+    }),
+  ]);
+  if (!user) return;
+
+  const earlier = totalMessages - 1 - recent.length;
+  const lines = [
+    "💬 <b>پیام جدید پشتیبانی</b>",
+    `👤 <b>${escapeHtml(describeUser(user))}</b>`,
+    `📊 ${toPersianDigits(totalMessages)} پیام در گفتگو · ${toPersianDigits(user._count.orders)} سفارش`,
+    "",
+  ];
+  if (recent.length > 0) {
+    lines.push("<b>━━ گفتگوی اخیر ━━</b>");
+    if (earlier > 0) lines.push(`<i>… ${toPersianDigits(earlier)} پیام قدیمی‌تر (دکمه‌ی «کل گفتگو»)</i>`);
+    lines.push(...recent.reverse().map((m) => formatHistoryEntry(m, RECENT_MESSAGE_MAX_CHARS)), "");
+  } else {
+    lines.push("<i>اولین پیام این کاربر است.</i>", "");
+  }
+  lines.push("<b>━━ پیام جدید ━━</b>", `<b>${escapeHtml(text)}</b>`, "", replyFooter(userId));
+
+  await sendMessage(supportChatId, lines.join("\n"), { html: true, buttons: supportButtons(userId) });
+}
+
+/** کل گفتگوی یک کاربر را (در چند پیام اگر طولانی باشد) به چت پشتیبانی می‌فرستد. */
+export async function sendSupportHistory(chatId: string, userId: string): Promise<void> {
+  const [user, messages] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { mobile: true, name: true } }),
+    prisma.supportMessage.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+  ]);
+  if (!user) {
+    await sendMessage(chatId, "⚠️ کاربر یافت نشد.");
+    return;
+  }
+
+  const header = `📜 <b>کل گفتگو با ${escapeHtml(describeUser(user))}</b> · ${toPersianDigits(messages.length)} پیام`;
+  const footer = replyFooter(userId);
+  const chunks: string[] = [];
+  let current = header;
+  for (const entry of messages.map((m) => formatHistoryEntry(m, TELEGRAM_TEXT_LIMIT / 2))) {
+    if (current.length + entry.length + footer.length + 2 > TELEGRAM_TEXT_LIMIT) {
+      chunks.push(current);
+      current = "";
+    }
+    current += `\n${entry}`;
+  }
+  chunks.push(`${current}\n\n${footer}`);
+
+  for (const chunk of chunks) {
+    await sendMessage(chatId, chunk, { html: true });
+  }
+}
+
+/** چند سفارش اخیر کاربر را با وضعیت هر کدام برای پشتیبانی می‌فرستد. */
+export async function sendUserOrdersSummary(chatId: string, userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      mobile: true,
+      name: true,
+      orders: {
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        select: { orderNumber: true, status: true, createdAt: true, totalPriceRial: true, _count: { select: { items: true } } },
+      },
+    },
+  });
+  if (!user) {
+    await sendMessage(chatId, "⚠️ کاربر یافت نشد.");
+    return;
+  }
+
+  const rows = user.orders.map(
+    (o) =>
+      `• <code>${formatOrderNumber(o.orderNumber)}</code> · ${STATUS_LABELS[o.status as OrderStatus] ?? o.status} · ${toPersianDigits(o._count.items)} آیتم · ${rialToTomanLabel(Number(o.totalPriceRial))} · ${toJalaliDateTime(o.createdAt)}`,
+  );
+  const text = [
+    `📦 <b>سفارش‌های اخیر ${escapeHtml(describeUser(user))}</b>`,
+    "",
+    rows.length > 0 ? rows.join("\n") : "<i>سفارشی ثبت نکرده است.</i>",
+  ].join("\n");
+  await sendMessage(chatId, text, { html: true });
 }

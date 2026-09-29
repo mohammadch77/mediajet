@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  notifySupportMessage({ userId: currentUser.id, text: input.text });
+  notifySupportMessage({ userId: currentUser.id, messageId: message.id, text: input.text });
 
   return NextResponse.json({
     id: message.id,

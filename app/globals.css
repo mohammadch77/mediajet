@@ -45,6 +45,19 @@ body {
   .mj-marquee-track { animation: none; }
 }
 
+/* تکان کوتاه زنگوله وقتی اعلان خوانده‌نشده هست */
+@keyframes mj-bell-ring {
+  0%, 70%, 100% { transform: rotate(0); }
+  74% { transform: rotate(14deg); }
+  80% { transform: rotate(-12deg); }
+  86% { transform: rotate(8deg); }
+  92% { transform: rotate(-5deg); }
+}
+.mj-bell-ring { transform-origin: 50% 10%; animation: mj-bell-ring 2.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .mj-bell-ring { animation: none; }
+}
+
 /* استایل محتوای صفحات متن‌آزاد (ویرایشگر ادمین + نمایش عمومی) */
 .prose-page { color: #EEF0FB; line-height: 1.9; }
 .prose-page h1 { font-size: 1.8rem; font-weight: 800; margin: 1.2em 0 .5em; }

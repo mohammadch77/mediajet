@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin, SessionError } from "@/lib/session";
 import { rialToTomanLabel } from "@/lib/money";
+import { formatOrderNumber } from "@/lib/orderNumber";
 
 // GET /api/admin/orders/:id
 // جزئیات کامل یک سفارش شامل تاریخچه‌ی رویدادها (audit trail) و اطلاعات تحویل. فقط admin.
@@ -34,6 +35,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   return NextResponse.json({
     order: {
       id: order.id,
+      orderNumber: formatOrderNumber(order.orderNumber),
       category: item?.category ?? null,
       sourceSite: item?.sourceSite ?? null,
       productUrl: item?.productUrl ?? null,

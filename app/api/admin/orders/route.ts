@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin, SessionError } from "@/lib/session";
-import { rialToTomanLabel } from "@/lib/money";
+import { rialToTomanLabel, toEnglishDigits } from "@/lib/money";
+import { formatOrderNumber, parseOrderNumber } from "@/lib/orderNumber";
 import { parsePageParams, paginatedResult } from "@/lib/pagination";
 import type { Prisma } from "@prisma/client";
 import type { OrderStatus } from "@/lib/orderState";
@@ -36,6 +37,7 @@ export async function GET(req: NextRequest) {
   }
 
   const search = (req.nextUrl.searchParams.get("search") ?? "").trim();
+  const searchOrderNumber = parseOrderNumber(toEnglishDigits(search));
   const params = parsePageParams(req);
 
   const where: Prisma.OrderWhereInput = {
@@ -43,6 +45,7 @@ export async function GET(req: NextRequest) {
     ...(search
       ? {
           OR: [
+            ...(searchOrderNumber !== null ? [{ orderNumber: searchOrderNumber }] : []),
             { items: { some: { sourceSite: { contains: search, mode: "insensitive" } } } },
             { items: { some: { category: { contains: search, mode: "insensitive" } } } },
             { user: { mobile: { contains: search, mode: "insensitive" } } },
@@ -68,6 +71,7 @@ export async function GET(req: NextRequest) {
     paginatedResult(
       orders.map((o) => ({
         id: o.id,
+        orderNumber: formatOrderNumber(o.orderNumber),
         category: o.items[0]?.category ?? null,
         sourceSite: o.items[0]?.sourceSite ?? null,
         priceLabel: rialToTomanLabel(Number(o.totalPriceRial)),

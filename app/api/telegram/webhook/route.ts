@@ -2,7 +2,17 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { fileStorage } from "@/lib/storage";
-import { sendMessage, downloadTelegramFile, getTelegramConfig } from "@/lib/telegram";
+import {
+  sendMessage,
+  downloadTelegramFile,
+  getTelegramConfig,
+  answerCallbackQuery,
+  sendSupportHistory,
+  sendUserOrdersSummary,
+  SUPPORT_CALLBACK,
+} from "@/lib/telegram";
+import { createSupportReply } from "@/lib/notifications";
+import { formatOrderNumber, parseOrderNumber } from "@/lib/orderNumber";
 import { type OrderStatus } from "@/lib/orderState";
 import {
   markItemReadyAndAdvanceOrder,
@@ -51,6 +61,11 @@ export async function POST(req: NextRequest) {
     return ok();
   }
 
+  if (input.callback_query) {
+    await handleCallbackQuery(input.callback_query);
+    return ok();
+  }
+
   const message = input.message;
   if (!message) {
     log("آپدیت بدون message (مثلاً edited_message)؛ نادیده گرفته شد.");
@@ -78,9 +93,9 @@ export async function POST(req: NextRequest) {
     getTelegramConfig("TELEGRAM_CHAT_SUPPORT"),
   ]);
 
-  const orderId = ORDER_ID_PATTERN.exec(repliedText)?.[1];
-  if (orderId && chatId === operatorChatId) {
-    await handleOrderReply(message, operatorChatId, orderId);
+  const orderRef = ORDER_ID_PATTERN.exec(repliedText)?.[1];
+  if (orderRef && chatId === operatorChatId) {
+    await handleOrderReply(message, operatorChatId, orderRef);
     return ok();
   }
 
@@ -90,36 +105,68 @@ export async function POST(req: NextRequest) {
     return ok();
   }
 
-  log(`reply در چت ${chatId} با هیچ جریانی تطبیق نداشت (orderId=${orderId ?? "-"}, userId=${supportUserId ?? "-"}, operatorChat=${operatorChatId ?? "-"}, supportChat=${supportChatId ?? "-"}).`);
+  log(`reply در چت ${chatId} با هیچ جریانی تطبیق نداشت (order=${orderRef ?? "-"}, userId=${supportUserId ?? "-"}, operatorChat=${operatorChatId ?? "-"}, supportChat=${supportChatId ?? "-"}).`);
   return ok();
 }
 
-async function handleOrderReply(message: TelegramMessage, operatorChatId: string, orderId: string): Promise<void> {
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: { items: { orderBy: { createdAt: "asc" } } },
-  });
-  if (!order) {
-    log(`سفارش ${orderId} یافت نشد.`);
-    await sendMessage(operatorChatId, `⚠️ سفارش با شماره ${orderId} یافت نشد.`);
+/** دکمه‌های inline پیام پشتیبانی: «کل گفتگو» و «سفارش‌های کاربر». فقط از چت پشتیبانی پذیرفته می‌شود. */
+async function handleCallbackQuery(query: NonNullable<TelegramUpdateInput["callback_query"]>): Promise<void> {
+  const chatId = query.message ? String(query.message.chat.id) : null;
+  const supportChatId = await getTelegramConfig("TELEGRAM_CHAT_SUPPORT");
+  if (!chatId || chatId !== supportChatId) {
+    log(`callback از چت غیرمجاز ${chatId ?? "-"}؛ نادیده گرفته شد.`);
+    await answerCallbackQuery(query.id);
     return;
   }
+  if (!checkRateLimit(`telegram-webhook:${chatId}`, WEBHOOK_RATE_LIMIT, WEBHOOK_RATE_WINDOW_MS).allowed) {
+    await answerCallbackQuery(query.id, "تعداد درخواست‌ها زیاد است؛ کمی صبر کن.");
+    return;
+  }
+
+  const [action, userId] = (query.data ?? "").split(":");
+  await answerCallbackQuery(query.id);
+  if (!userId) return;
+  if (action === SUPPORT_CALLBACK.history) {
+    await sendSupportHistory(chatId, userId);
+  } else if (action === SUPPORT_CALLBACK.orders) {
+    await sendUserOrdersSummary(chatId, userId);
+  }
+  log(`callback ${action} برای کاربر ${userId} پاسخ داده شد.`);
+}
+
+/** «MJ-1024» → جست‌وجو با orderNumber؛ پیام‌های قدیمی‌تر تلگرام هنوز id کامل دارند. */
+function findOrderByRef(orderRef: string) {
+  const orderNumber = parseOrderNumber(toEnglishDigits(orderRef));
+  return prisma.order.findUnique({
+    where: orderNumber !== null ? { orderNumber } : { id: orderRef },
+    include: { items: { orderBy: { createdAt: "asc" } } },
+  });
+}
+
+async function handleOrderReply(message: TelegramMessage, operatorChatId: string, orderRef: string): Promise<void> {
+  const order = await findOrderByRef(orderRef);
+  if (!order) {
+    log(`سفارش ${orderRef} یافت نشد.`);
+    await sendMessage(operatorChatId, `⚠️ سفارش با شماره ${orderRef} یافت نشد.`);
+    return;
+  }
+  const orderCode = formatOrderNumber(order.orderNumber);
   if (!DELIVERABLE_ORDER_STATUSES.includes(order.status as OrderStatus)) {
-    log(`سفارش ${orderId} در وضعیت ${order.status} است؛ تحویل ممکن نیست.`);
-    await sendMessage(operatorChatId, `⚠️ سفارش ${orderId} در وضعیت «${order.status}» است و تحویل آیتم برایش ممکن نیست.`);
+    log(`سفارش ${orderCode} در وضعیت ${order.status} است؛ تحویل ممکن نیست.`);
+    await sendMessage(operatorChatId, `⚠️ سفارش ${orderCode} در وضعیت «${order.status}» است و تحویل آیتم برایش ممکن نیست.`);
     return;
   }
 
   const markerText = toEnglishDigits(`${message.text ?? ""} ${message.caption ?? ""}`).trim();
   const item = resolveTargetItem(order.items, markerText);
   if (!item) {
-    log(`آیتم سفارش ${orderId} از متن «${markerText}» تشخیص داده نشد (${order.items.length} آیتم).`);
+    log(`آیتم سفارش ${orderCode} از متن «${markerText}» تشخیص داده نشد (${order.items.length} آیتم).`);
     const list = order.items.map((it, i) => `${toPersianDigits(i + 1)}. ${it.productUrl}`).join("\n");
     await sendMessage(
       operatorChatId,
       [
         `⚠️ این سفارش ${toPersianDigits(order.items.length)} آیتم دارد؛ شماره‌ی آیتم را در متن یا کپشن reply بنویس (مثلاً «آیتم ۲»).`,
-        `شماره سفارش: ${orderId}`,
+        `شماره سفارش: ${orderCode}`,
         list,
       ].join("\n"),
     );
@@ -131,7 +178,7 @@ async function handleOrderReply(message: TelegramMessage, operatorChatId: string
   const tooBig = (file?.file_size ?? 0) > MAX_ITEM_FILE_BYTES;
   const isLarge = LARGE_MARKER_PATTERN.test(markerText) || tooBig;
   const actor = `operator:${operatorChatId}`;
-  log(`سفارش ${orderId} آیتم ${itemLabel} (${item.id}) | بزرگ=${isLarge} | حجم=${file?.file_size ?? "-"}`);
+  log(`سفارش ${orderCode} آیتم ${itemLabel} (${item.id}) | بزرگ=${isLarge} | حجم=${file?.file_size ?? "-"}`);
 
   try {
     if (isLarge) {
@@ -139,7 +186,6 @@ async function handleOrderReply(message: TelegramMessage, operatorChatId: string
         markItemLargeAndNotifyUser(tx, {
           orderId: order.id,
           orderItemId: item.id,
-          userId: order.userId,
           itemLabel,
           fromOrderStatus: order.status as OrderStatus,
           actor,
@@ -150,8 +196,8 @@ async function handleOrderReply(message: TelegramMessage, operatorChatId: string
       await sendMessage(
         operatorChatId,
         tooBig
-          ? `✅ حجم فایل آیتم ${itemLabel} سفارش ${orderId} بیش از ۲۰ مگابایت بود؛ به‌صورت خودکار «فایل بزرگ» ثبت شد و به کاربر در صندوق پشتیبانی اطلاع داده شد. لینک را از طریق پشتیبانی برایش بفرست.`
-          : `✅ آیتم ${itemLabel} سفارش ${orderId} به‌عنوان فایل بزرگ ثبت شد و به کاربر در صندوق پشتیبانی اطلاع داده شد.`,
+          ? `✅ حجم فایل آیتم ${itemLabel} سفارش ${orderCode} بیش از ۲۰ مگابایت بود؛ به‌صورت خودکار «فایل بزرگ» ثبت شد و به کاربر در صندوق پشتیبانی اطلاع داده شد. لینک را از طریق پشتیبانی برایش بفرست.`
+          : `✅ آیتم ${itemLabel} سفارش ${orderCode} به‌عنوان فایل بزرگ ثبت شد و به کاربر در صندوق پشتیبانی اطلاع داده شد.`,
       );
       return;
     }
@@ -160,7 +206,7 @@ async function handleOrderReply(message: TelegramMessage, operatorChatId: string
       log("reply بدون فایل و بدون دستور «بزرگ»؛ راهنما برای اپراتور ارسال شد.");
       await sendMessage(
         operatorChatId,
-        `⚠️ برای تحویل آیتم ${itemLabel} سفارش ${orderId}، فایل را به‌صورت reply بفرست یا «بزرگ» بنویس.`,
+        `⚠️ برای تحویل آیتم ${itemLabel} سفارش ${orderCode}، فایل را به‌صورت reply بفرست یا «بزرگ» بنویس.`,
       );
       return;
     }
@@ -196,12 +242,12 @@ async function handleOrderReply(message: TelegramMessage, operatorChatId: string
       });
     });
     log(`آیتم ${item.id} ready شد.`);
-    await sendMessage(operatorChatId, `✅ فایل آیتم ${itemLabel} سفارش ${orderId} ذخیره شد و آماده‌ی دانلود است.`);
+    await sendMessage(operatorChatId, `✅ فایل آیتم ${itemLabel} سفارش ${orderCode} ذخیره شد و آماده‌ی دانلود است.`);
   } catch (error) {
-    console.error(`[تلگرام وب‌هوک خطا] پردازش سفارش ${orderId} با خطا مواجه شد:`, error);
+    console.error(`[تلگرام وب‌هوک خطا] پردازش سفارش ${orderCode} با خطا مواجه شد:`, error);
     await sendMessage(
       operatorChatId,
-      `⚠️ ثبت تحویل سفارش ${orderId} با خطا مواجه شد: ${error instanceof Error ? error.message : "خطای نامشخص"}`,
+      `⚠️ ثبت تحویل سفارش ${orderCode} با خطا مواجه شد: ${error instanceof Error ? error.message : "خطای نامشخص"}`,
     );
   }
 }
@@ -247,9 +293,7 @@ async function handleSupportReply(message: TelegramMessage, supportChatId: strin
     return;
   }
 
-  await prisma.supportMessage.create({
-    data: { userId, sender: "support", text, readByUser: false },
-  });
+  await prisma.$transaction((tx) => createSupportReply(tx, { userId, text }));
   log(`پاسخ پشتیبانی برای کاربر ${userId} ثبت شد.`);
 }
 

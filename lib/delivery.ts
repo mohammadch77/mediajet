@@ -4,6 +4,8 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 import { assertTransition, deriveOrderStatusFromItems, type OrderStatus, type OrderItemStatus } from "./orderState";
+import { createNotification, createSupportReply, NOTIFICATION_HREF } from "./notifications";
+import { formatOrderNumber } from "./orderNumber";
 
 /** سقف حجم فایل برای هر آیتم (نه کل سفارش) — چه از طریق پنل وب و چه بات تلگرام. */
 export const MAX_ITEM_FILE_BYTES = 20 * 1024 * 1024;
@@ -81,14 +83,32 @@ export async function advanceOrderStatusFromItems(
   }
 }
 
-/** آیتم را به‌عنوان تحویل‌شده (ready) علامت می‌زند و سپس وضعیت سفارش را متناسب با همه‌ی آیتم‌ها جلو می‌برد. */
-export async function markItemReadyAndAdvanceOrder(
-  tx: Prisma.TransactionClient,
-  params: { orderId: string; orderItemId: string; fromOrderStatus: OrderStatus; actor: string; note: string },
-): Promise<void> {
+type MarkReadyParams = {
+  orderId: string;
+  orderItemId: string;
+  fromOrderStatus: OrderStatus;
+  actor: string;
+  note: string;
+};
+
+/**
+ * آیتم را به‌عنوان تحویل‌شده (ready) علامت می‌زند، وضعیت سفارش را متناسب با همه‌ی آیتم‌ها جلو می‌برد
+ * و به کاربر اعلان «فایل آماده است» می‌دهد.
+ */
+export async function markItemReadyAndAdvanceOrder(tx: Prisma.TransactionClient, params: MarkReadyParams): Promise<void> {
+  const order = await markItemReady(tx, params);
+  await createNotification(tx, {
+    userId: order.userId,
+    text: `فایل سفارش ${formatOrderNumber(order.orderNumber)} آماده‌ی دانلود است.`,
+    href: NOTIFICATION_HREF.orders,
+  });
+}
+
+async function markItemReady(tx: Prisma.TransactionClient, params: MarkReadyParams) {
   const { orderId, orderItemId, fromOrderStatus, actor, note } = params;
   await tx.orderItem.update({ where: { id: orderItemId }, data: { status: "ready" } });
   await advanceOrderStatusFromItems(tx, orderId, fromOrderStatus, actor, note);
+  return tx.order.findUniqueOrThrow({ where: { id: orderId }, select: { userId: true, orderNumber: true } });
 }
 
 /**
@@ -98,17 +118,9 @@ export async function markItemReadyAndAdvanceOrder(
  */
 export async function markItemLargeAndNotifyUser(
   tx: Prisma.TransactionClient,
-  params: {
-    orderId: string;
-    orderItemId: string;
-    userId: string;
-    itemLabel: string;
-    fromOrderStatus: OrderStatus;
-    actor: string;
-    note: string;
-  },
+  params: MarkReadyParams & { itemLabel: string },
 ): Promise<void> {
-  const { orderId, orderItemId, userId, itemLabel, fromOrderStatus, actor, note } = params;
+  const { orderItemId, itemLabel } = params;
 
   const existing = await tx.delivery.findUnique({ where: { orderItemId }, select: { isLarge: true } });
   await tx.delivery.upsert({
@@ -116,16 +128,12 @@ export async function markItemLargeAndNotifyUser(
     create: { orderItemId, isLarge: true },
     update: { isLarge: true, fileUrl: null, storageKey: null, isOnDisk: false, deliveredAt: new Date() },
   });
-  await markItemReadyAndAdvanceOrder(tx, { orderId, orderItemId, fromOrderStatus, actor, note });
+  const order = await markItemReady(tx, params);
 
   if (!existing?.isLarge) {
-    await tx.supportMessage.create({
-      data: {
-        userId,
-        sender: "support",
-        text: `فایل آیتم ${itemLabel} سفارش ${orderId} آماده است اما حجم آن بیش از ۲۰ مگابایت است و از طریق سایت قابل دانلود نیست. برای دریافت لینک، همین‌جا به ما پیام بدهید.`,
-        readByUser: false,
-      },
+    await createSupportReply(tx, {
+      userId: order.userId,
+      text: `فایل آیتم ${itemLabel} سفارش ${formatOrderNumber(order.orderNumber)} آماده است اما حجم آن بیش از ۲۰ مگابایت است و از طریق سایت قابل دانلود نیست. برای دریافت لینک، همین‌جا به ما پیام بدهید.`,
     });
   }
 }

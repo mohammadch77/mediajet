@@ -1,3 +1,4 @@
+import { formatOrderNumber } from "@/lib/orderNumber";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { rialToTomanLabel } from "@/lib/money";
@@ -44,6 +45,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     orders: orders.map((order) => ({
       id: order.id,
+      orderNumber: formatOrderNumber(order.orderNumber),
       priceLabel: rialToTomanLabel(Number(order.totalPriceRial)),
       status: order.status,
       createdAt: order.createdAt.toISOString(),

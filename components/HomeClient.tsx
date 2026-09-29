@@ -7,6 +7,7 @@ import { useLinkDetect } from "@/lib/useLinkDetect";
 import { unsupportedSiteMessage, sitePresetEntry, type LinkEntry } from "@/lib/linkDetect";
 import OrderDrawer from "@/components/OrderDrawer";
 import AuthModal from "@/components/AuthModal";
+import NotificationBell from "@/components/NotificationBell";
 import SiteMarquee from "@/components/SiteMarquee";
 import WalletCard from "@/components/WalletCard";
 import { useAuth } from "@/lib/AuthContext";
@@ -114,6 +115,8 @@ export default function HomeClient({ content }: { content: Record<string, string
               </a>
             ))}
           </div>
+
+          {!loading && user && <NotificationBell />}
 
           {/* cart badge — همیشه دیده می‌شود تا کاربر بداند چند آیتم در سبد دارد */}
           <Link

@@ -203,6 +203,13 @@ export const telegramUpdateInput = z.object({
         .optional(),
     })
     .optional(),
+  callback_query: z
+    .object({
+      id: z.string(),
+      data: z.string().max(64).optional(),
+      message: z.object({ chat: z.object({ id: z.union([z.number(), z.string()]) }) }).optional(),
+    })
+    .optional(),
 });
 
 export type TelegramUpdateInput = z.infer<typeof telegramUpdateInput>;
@@ -216,6 +223,12 @@ export const sendSupportMessageInput = z.object({
 });
 
 export type SendSupportMessageInput = z.infer<typeof sendSupportMessageInput>;
+
+export const markNotificationsReadInput = z.union([
+  z.object({ id: z.string().min(1).max(40) }),
+  z.object({ all: z.literal(true) }),
+  z.object({ tab: z.enum(["orders", "messages"]) }),
+]);
 
 export const updateProfileNameInput = z.object({
   name: z
