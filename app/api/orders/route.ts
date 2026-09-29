@@ -10,6 +10,7 @@ import { getCurrentUser } from "@/lib/session";
 import { notifyOrderCreated } from "@/lib/telegram";
 import { getGateway } from "@/lib/gateway";
 import { formatOrderNumber } from "@/lib/orderNumber";
+import { LARGE_FILE_USER_HINT } from "@/lib/delivery";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 
 const FOREIGN_KEY_VIOLATION = "P2003";
@@ -37,8 +38,6 @@ export async function GET() {
     include: { items: { include: { delivery: true } } },
   });
 
-  const supportUsername = process.env.TELEGRAM_SUPPORT_USERNAME || "@support";
-
   return NextResponse.json({
     orders: orders.map((order) => ({
       id: order.id,
@@ -52,7 +51,7 @@ export async function GET() {
 
         if (isDeliverable && delivery) {
           if (delivery.isLarge) {
-            supportMessage = `فایل شما آماده است؛ برای دریافت به پشتیبانی (${supportUsername}) پیام دهید.`;
+            supportMessage = LARGE_FILE_USER_HINT;
           } else if (delivery.storageKey) {
             downloadUrl = `/api/orders/items/${item.id}/download`;
           } else if (delivery.fileUrl) {

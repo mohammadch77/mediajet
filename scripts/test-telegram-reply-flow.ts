@@ -5,6 +5,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../lib/db";
 import { formatOrderNumber } from "../lib/orderNumber";
+import { LARGE_FILE_USER_HINT } from "../lib/delivery";
 
 const CHAT = "8846909966";
 const SECRET = "test-secret";
@@ -131,6 +132,12 @@ async function main() {
     check("فایل ۲۵ مگ خودکار «بزرگ» ثبت شد", b.status === "ready" && b.delivery?.isLarge === true && !b.delivery?.storageKey);
     supportMsgs = await prisma.supportMessage.findMany({ where: { userId: user.id } });
     check("برای فایل ۲۵ مگ هم پیام پشتیبانی ساخته شد", supportMsgs.length === 2);
+    const bigMsg = supportMsgs.find((x) => x.text.includes(codeOf(big)))?.text ?? "";
+    check(
+      "پیام فایل بزرگ شماره‌ی کوتاه و راهنمای «پیام‌ها» را دارد، بدون شناسه‌ی بلند یا آیدی تلگرام",
+      bigMsg.includes(LARGE_FILE_USER_HINT) && !bigMsg.includes(big.id) && !bigMsg.includes("@"),
+      bigMsg,
+    );
 
     // ۷. پاسخ پشتیبانی در همان چت مشترک
     await send({ text: "سلام، لینک را فرستادیم.", reply_to_message: { text: `💬 پیام جدید از کاربر\nشناسه کاربر: ${user.id}\n\nسلام` } });

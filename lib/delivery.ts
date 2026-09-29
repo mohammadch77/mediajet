@@ -83,6 +83,9 @@ export async function advanceOrderStatusFromItems(
   }
 }
 
+/** راهنمای دریافت فایل بزرگ؛ یکسان در صفحه‌ی سفارش‌ها و صندوق پیام. کاربر فقط از صندوق پیام سایت با پشتیبانی حرف می‌زند. */
+export const LARGE_FILE_USER_HINT = "فایل شما آماده است. برای دریافت آن، لطفاً از بخش «پیام‌ها» در پنل خود به پشتیبانی پیام دهید.";
+
 type MarkReadyParams = {
   orderId: string;
   orderItemId: string;
@@ -133,7 +136,7 @@ export async function markItemLargeAndNotifyUser(
   if (!existing?.isLarge) {
     await createSupportReply(tx, {
       userId: order.userId,
-      text: `فایل آیتم ${itemLabel} سفارش ${formatOrderNumber(order.orderNumber)} آماده است اما حجم آن بیش از ۲۰ مگابایت است و از طریق سایت قابل دانلود نیست. برای دریافت لینک، همین‌جا به ما پیام بدهید.`,
+      text: `سفارش ${formatOrderNumber(order.orderNumber)} (آیتم ${itemLabel}): حجم فایل بیش از ۲۰ مگابایت است و از صفحه‌ی سفارش‌ها قابل دانلود نیست. ${LARGE_FILE_USER_HINT}`,
     });
   }
 }
