@@ -22,6 +22,36 @@ export const SETTING_DEFS = [
     label: "کلید API پنل پیامک",
     description: "کلید سرویس ارسال پیامک برای ارسال کد OTP و اطلاع‌رسانی‌ها.",
   },
+  {
+    key: "TELEGRAM_BOT_TOKEN",
+    group: "telegram",
+    label: "توکن ربات تلگرام",
+    description: "توکن ربات (از BotFather) برای ارسال و دریافت پیام. بدون این مقدار، ارسال به‌صورت شبیه‌سازی در کنسول سرور انجام می‌شود.",
+  },
+  {
+    key: "TELEGRAM_CHAT_FINANCE",
+    group: "telegram",
+    label: "چت مالی",
+    description: "شناسه‌ی چت تلگرام که اطلاع‌رسانی پرداخت هر سفارش به آن ارسال می‌شود.",
+  },
+  {
+    key: "TELEGRAM_CHAT_OPERATOR",
+    group: "telegram",
+    label: "چت اپراتور",
+    description: "شناسه‌ی چت تلگرام اپراتور که سفارش‌های جدید برای تحویل به آن ارسال می‌شود؛ اپراتور با reply روی پیام سفارش، فایل را تحویل می‌دهد.",
+  },
+  {
+    key: "TELEGRAM_CHAT_SUPPORT",
+    group: "telegram",
+    label: "چت پشتیبانی",
+    description: "شناسه‌ی چت تلگرام پشتیبانی که پیام‌های کاربران به آن ارسال می‌شود؛ پشتیبانی با reply روی پیام کاربر پاسخ می‌دهد.",
+  },
+  {
+    key: "TELEGRAM_WEBHOOK_SECRET",
+    group: "telegram",
+    label: "رمز وب‌هوک تلگرام",
+    description: "مقداری که هنگام setWebhook به تلگرام داده می‌شود تا فقط درخواست‌های واقعی تلگرام (با هدر secret token) پذیرفته شوند.",
+  },
 ] as const;
 
 /** مقدار یک تنظیم را رمزنگاری‌شده ذخیره می‌کند (ایجاد یا به‌روزرسانی). */

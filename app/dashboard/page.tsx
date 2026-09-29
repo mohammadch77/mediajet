@@ -235,6 +235,41 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user, router, openAuthModal]);
 
+  // پیام‌های پشتیبانی هر چند ثانیه یک‌بار به‌روزرسانی می‌شوند تا کاربر لازم نباشد صفحه را رفرش کند.
+  // فقط وقتی تب مرورگر باز و فعال است poll می‌شود تا درخواست بی‌مورد به سرور نرود.
+  useEffect(() => {
+    if (loading || !user) return;
+
+    const POLL_INTERVAL_MS = 5000;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    function startPolling() {
+      if (intervalId) return;
+      intervalId = setInterval(loadSupportMessages, POLL_INTERVAL_MS);
+    }
+    function stopPolling() {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = null;
+    }
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        loadSupportMessages();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    }
+
+    if (document.visibilityState === "visible") startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user]);
+
   // با ورود کاربر، فیلد ویرایش نام با مقدار فعلی همگام می‌شود.
   useEffect(() => {
     setNameInput(user?.name ?? "");

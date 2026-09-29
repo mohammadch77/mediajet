@@ -9,7 +9,7 @@ import { assertTransition, deriveOrderStatusFromItems, type OrderStatus, type Or
 export const MAX_ITEM_FILE_BYTES = 20 * 1024 * 1024;
 
 /** وضعیت‌های سفارش که تحویل یک آیتم در آن‌ها معنا دارد (سفارش وارد صف پردازش شده و هنوز delivered/cancelled/failed/refunded نیست). */
-const DELIVERABLE_ORDER_STATUSES: OrderStatus[] = ["queued", "processing", "ready"];
+export const DELIVERABLE_ORDER_STATUSES: OrderStatus[] = ["queued", "processing", "ready"];
 
 export class DeliveryTargetError extends Error {
   constructor(
@@ -89,4 +89,43 @@ export async function markItemReadyAndAdvanceOrder(
   const { orderId, orderItemId, fromOrderStatus, actor, note } = params;
   await tx.orderItem.update({ where: { id: orderItemId }, data: { status: "ready" } });
   await advanceOrderStatusFromItems(tx, orderId, fromOrderStatus, actor, note);
+}
+
+/**
+ * آیتم را «فایل بزرگ» علامت می‌زند، آن را ready می‌کند و یک پیام در صندوق پشتیبانی کاربر
+ * می‌گذارد تا کاربر بداند برای دریافت فایل باید همان‌جا پیام بدهد.
+ * علامت‌گذاری تکراری همان آیتم پیام تکراری نمی‌سازد.
+ */
+export async function markItemLargeAndNotifyUser(
+  tx: Prisma.TransactionClient,
+  params: {
+    orderId: string;
+    orderItemId: string;
+    userId: string;
+    itemLabel: string;
+    fromOrderStatus: OrderStatus;
+    actor: string;
+    note: string;
+  },
+): Promise<void> {
+  const { orderId, orderItemId, userId, itemLabel, fromOrderStatus, actor, note } = params;
+
+  const existing = await tx.delivery.findUnique({ where: { orderItemId }, select: { isLarge: true } });
+  await tx.delivery.upsert({
+    where: { orderItemId },
+    create: { orderItemId, isLarge: true },
+    update: { isLarge: true, fileUrl: null, storageKey: null, isOnDisk: false, deliveredAt: new Date() },
+  });
+  await markItemReadyAndAdvanceOrder(tx, { orderId, orderItemId, fromOrderStatus, actor, note });
+
+  if (!existing?.isLarge) {
+    await tx.supportMessage.create({
+      data: {
+        userId,
+        sender: "support",
+        text: `فایل آیتم ${itemLabel} سفارش ${orderId} آماده است اما حجم آن بیش از ۲۰ مگابایت است و از طریق سایت قابل دانلود نیست. برای دریافت لینک، همین‌جا به ما پیام بدهید.`,
+        readByUser: false,
+      },
+    });
+  }
 }

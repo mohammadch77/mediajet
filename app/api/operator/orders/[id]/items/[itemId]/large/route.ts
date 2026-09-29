@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireOperator, SessionError } from "@/lib/session";
-import { loadDeliverableItem, markItemReadyAndAdvanceOrder, DeliveryTargetError } from "@/lib/delivery";
+import { loadDeliverableItem, markItemLargeAndNotifyUser, DeliveryTargetError } from "@/lib/delivery";
+import { toPersianDigits } from "@/lib/money";
 
 // POST /api/operator/orders/[id]/items/[itemId]/large
 // یک آیتم را «فایل بزرگ» علامت می‌زند (بدون ذخیره‌ی فایل)؛ کاربر در پنل خودش به‌جای
@@ -33,15 +34,15 @@ export async function POST(
   }
 
   const actor = `operator:${operator.id}`;
+  const itemIndex = [...target.order.items]
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    .findIndex((i) => i.id === itemId);
   await prisma.$transaction(async (tx) => {
-    await tx.delivery.upsert({
-      where: { orderItemId: itemId },
-      create: { orderItemId: itemId, isLarge: true },
-      update: { isLarge: true, fileUrl: null, storageKey: null, deliveredAt: new Date() },
-    });
-    await markItemReadyAndAdvanceOrder(tx, {
+    await markItemLargeAndNotifyUser(tx, {
       orderId: id,
       orderItemId: itemId,
+      userId: target.order.userId,
+      itemLabel: toPersianDigits(itemIndex + 1),
       fromOrderStatus: target.fromStatus,
       actor,
       note: `علامت‌گذاری آیتم ${itemId} به‌عنوان فایل بزرگ`,

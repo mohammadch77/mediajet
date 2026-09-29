@@ -2,15 +2,25 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { fileStorage } from "@/lib/storage";
-import { sendMessage, downloadTelegramFile } from "@/lib/telegram";
+import { sendMessage, downloadTelegramFile, getTelegramConfig } from "@/lib/telegram";
 import { type OrderStatus } from "@/lib/orderState";
-import { markItemReadyAndAdvanceOrder, MAX_ITEM_FILE_BYTES } from "@/lib/delivery";
+import {
+  markItemReadyAndAdvanceOrder,
+  markItemLargeAndNotifyUser,
+  MAX_ITEM_FILE_BYTES,
+  DELIVERABLE_ORDER_STATUSES,
+} from "@/lib/delivery";
+import { toEnglishDigits, toPersianDigits } from "@/lib/money";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { validateInput, telegramUpdateInput, ValidationError, type TelegramUpdateInput } from "@/lib/validation";
+
+type TelegramMessage = NonNullable<TelegramUpdateInput["message"]>;
+type IncomingFile = { file_id: string; file_name?: string; mime_type?: string; file_size?: number };
 
 const ORDER_ID_PATTERN = /شماره سفارش:\s*(\S+)/;
 const SUPPORT_USER_ID_PATTERN = /شناسه کاربر:\s*(\S+)/;
 const LARGE_MARKER_PATTERN = /^\/large\b|بزرگ/i;
+// روی متنی اعمال می‌شود که قبلاً با toEnglishDigits نرمال شده؛ پس «آیتم ۲» هم مطابقت دارد.
 const ITEM_INDEX_PATTERN = /آیتم\s*(\d+)|\/item\s*(\d+)/i;
 
 // این وب‌هوک از سمت تلگرام (بدون session کاربر) فراخوانی می‌شود؛ محدودیت نرخ روی هر چت
@@ -18,158 +28,175 @@ const ITEM_INDEX_PATTERN = /آیتم\s*(\d+)|\/item\s*(\d+)/i;
 const WEBHOOK_RATE_LIMIT = 30;
 const WEBHOOK_RATE_WINDOW_MS = 60_000;
 
+const log = (msg: string) => console.log(`[تلگرام وب‌هوک] ${msg}`);
+
 // POST /api/telegram/webhook
-// دریافت آپدیت از تلگرام. فقط پیام‌های reply شده‌ی چت اپراتور یا چت پشتیبانی مجاز پذیرفته می‌شوند:
-// - چت اپراتور: reply روی پیام سفارش با فایل (کوچک) یا دستور «/large» (بزرگ) آن آیتم را به ready می‌برد.
-//   در سفارش چندآیتمی، شماره‌ی آیتم باید در متن/کپشن reply ذکر شود (مثلاً «آیتم 2»)؛ در سفارش
-//   تک‌آیتمی نیازی به ذکر شماره نیست.
-// - چت پشتیبانی: reply روی پیام اطلاع‌رسانی صندوق پشتیبانی، پیام پشتیبانی را برای همان کاربر ثبت می‌کند.
+// دریافت آپدیت از تلگرام. فقط reply روی پیام‌های خود بات در چت‌های مجاز پذیرفته می‌شود.
+// نوع reply از روی محتوای پیام reply‌شده تشخیص داده می‌شود (نه فقط شناسه‌ی چت)، تا وقتی چت
+// اپراتور و پشتیبانی یکی است هم هر دو جریان کار کنند:
+// - reply روی پیام سفارش («شماره سفارش: …») در چت اپراتور: فایل یا «بزرگ»/«/large» آیتم را ready می‌کند.
+//   در سفارش چندآیتمی شماره‌ی آیتم باید ذکر شود («آیتم ۲» یا «آیتم 2»).
+// - reply روی پیام صندوق پشتیبانی («شناسه کاربر: …») در چت پشتیبانی: پاسخ برای همان کاربر ثبت می‌شود.
 export async function POST(req: NextRequest) {
-  if (!isFromOperatorWebhook(req)) {
-    // توکن webhook نامعتبر: بدون افشای جزئیات، درخواست نادیده گرفته می‌شود.
-    return NextResponse.json({ ok: true });
+  if (!(await isFromOperatorWebhook(req))) {
+    log("secret token نامعتبر یا ناموجود؛ درخواست نادیده گرفته شد.");
+    return ok();
   }
 
   let input;
   try {
-    const body = await req.json();
-    input = validateInput(telegramUpdateInput, body);
+    input = validateInput(telegramUpdateInput, await req.json());
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ ok: true });
-    }
-    return NextResponse.json({ ok: true });
+    log(`بدنه‌ی آپدیت نامعتبر: ${error instanceof ValidationError ? error.message : String(error)}`);
+    return ok();
   }
 
   const message = input.message;
   if (!message) {
-    return NextResponse.json({ ok: true });
+    log("آپدیت بدون message (مثلاً edited_message)؛ نادیده گرفته شد.");
+    return ok();
   }
 
-  const rateKey = `telegram-webhook:${message.chat.id}`;
-  const limit = checkRateLimit(rateKey, WEBHOOK_RATE_LIMIT, WEBHOOK_RATE_WINDOW_MS);
+  const chatId = String(message.chat.id);
+  log(`پیام ${message.message_id} از چت ${chatId} | reply=${Boolean(message.reply_to_message)} | فایل=${Boolean(extractFile(message))}`);
+
+  const limit = checkRateLimit(`telegram-webhook:${chatId}`, WEBHOOK_RATE_LIMIT, WEBHOOK_RATE_WINDOW_MS);
   if (!limit.allowed) {
-    return NextResponse.json({ ok: true });
+    log(`محدودیت نرخ برای چت ${chatId}؛ نادیده گرفته شد.`);
+    return ok();
   }
 
-  const supportChatId = process.env.TELEGRAM_CHAT_SUPPORT;
-  if (supportChatId && String(message.chat.id) === supportChatId) {
-    return handleSupportReply(message, supportChatId);
+  const replied = message.reply_to_message;
+  const repliedText = replied?.text ?? replied?.caption;
+  if (!repliedText) {
+    log("پیام reply نیست (یا پیام reply‌شده متن ندارد)؛ نادیده گرفته شد.");
+    return ok();
   }
 
-  const operatorChatId = process.env.TELEGRAM_CHAT_OPERATOR;
-  if (!operatorChatId || String(message.chat.id) !== operatorChatId) {
-    // پیام از چتی غیر از اپراتور یا پشتیبانی مجاز؛ نادیده گرفته می‌شود.
-    return NextResponse.json({ ok: true });
+  const [operatorChatId, supportChatId] = await Promise.all([
+    getTelegramConfig("TELEGRAM_CHAT_OPERATOR"),
+    getTelegramConfig("TELEGRAM_CHAT_SUPPORT"),
+  ]);
+
+  const orderId = ORDER_ID_PATTERN.exec(repliedText)?.[1];
+  if (orderId && chatId === operatorChatId) {
+    await handleOrderReply(message, operatorChatId, orderId);
+    return ok();
   }
 
-  const replyText = message.reply_to_message?.text;
-  const orderId = replyText ? ORDER_ID_PATTERN.exec(replyText)?.[1] : undefined;
-  if (!orderId) {
-    return NextResponse.json({ ok: true });
+  const supportUserId = SUPPORT_USER_ID_PATTERN.exec(repliedText)?.[1];
+  if (supportUserId && chatId === supportChatId) {
+    await handleSupportReply(message, supportChatId, supportUserId);
+    return ok();
   }
 
+  log(`reply در چت ${chatId} با هیچ جریانی تطبیق نداشت (orderId=${orderId ?? "-"}, userId=${supportUserId ?? "-"}, operatorChat=${operatorChatId ?? "-"}, supportChat=${supportChatId ?? "-"}).`);
+  return ok();
+}
+
+async function handleOrderReply(message: TelegramMessage, operatorChatId: string, orderId: string): Promise<void> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { items: { orderBy: { createdAt: "asc" } } },
   });
   if (!order) {
+    log(`سفارش ${orderId} یافت نشد.`);
     await sendMessage(operatorChatId, `⚠️ سفارش با شماره ${orderId} یافت نشد.`);
-    return NextResponse.json({ ok: true });
+    return;
   }
-  if (order.items.length === 0) {
-    await sendMessage(operatorChatId, `⚠️ سفارش ${orderId} بدون آیتم است.`);
-    return NextResponse.json({ ok: true });
+  if (!DELIVERABLE_ORDER_STATUSES.includes(order.status as OrderStatus)) {
+    log(`سفارش ${orderId} در وضعیت ${order.status} است؛ تحویل ممکن نیست.`);
+    await sendMessage(operatorChatId, `⚠️ سفارش ${orderId} در وضعیت «${order.status}» است و تحویل آیتم برایش ممکن نیست.`);
+    return;
   }
 
-  const markerText = `${message.text ?? ""} ${message.caption ?? ""}`;
+  const markerText = toEnglishDigits(`${message.text ?? ""} ${message.caption ?? ""}`).trim();
   const item = resolveTargetItem(order.items, markerText);
   if (!item) {
-    if (order.items.length === 1) {
-      await sendMessage(operatorChatId, `⚠️ خطای داخلی در تشخیص آیتم سفارش ${orderId}.`);
-    } else {
-      const list = order.items.map((it, i) => `${i + 1}. ${it.productUrl}`).join("\n");
-      await sendMessage(
-        operatorChatId,
-        `⚠️ این سفارش ${order.items.length} آیتم دارد؛ شماره‌ی آیتم را در reply بنویس (مثلاً «آیتم 2»):\n${list}`,
-      );
-    }
-    return NextResponse.json({ ok: true });
+    log(`آیتم سفارش ${orderId} از متن «${markerText}» تشخیص داده نشد (${order.items.length} آیتم).`);
+    const list = order.items.map((it, i) => `${toPersianDigits(i + 1)}. ${it.productUrl}`).join("\n");
+    await sendMessage(
+      operatorChatId,
+      [
+        `⚠️ این سفارش ${toPersianDigits(order.items.length)} آیتم دارد؛ شماره‌ی آیتم را در متن یا کپشن reply بنویس (مثلاً «آیتم ۲»).`,
+        `شماره سفارش: ${orderId}`,
+        list,
+      ].join("\n"),
+    );
+    return;
   }
 
-  const isLarge = LARGE_MARKER_PATTERN.test(markerText.trim());
+  const itemLabel = toPersianDigits(order.items.findIndex((i) => i.id === item.id) + 1);
+  const file = extractFile(message);
+  const tooBig = (file?.file_size ?? 0) > MAX_ITEM_FILE_BYTES;
+  const isLarge = LARGE_MARKER_PATTERN.test(markerText) || tooBig;
   const actor = `operator:${operatorChatId}`;
+  log(`سفارش ${orderId} آیتم ${itemLabel} (${item.id}) | بزرگ=${isLarge} | حجم=${file?.file_size ?? "-"}`);
 
   try {
     if (isLarge) {
-      await prisma.$transaction(async (tx) => {
-        await tx.delivery.upsert({
-          where: { orderItemId: item.id },
-          create: { orderItemId: item.id, isLarge: true },
-          update: { isLarge: true, deliveredAt: new Date() },
-        });
-        await markItemReadyAndAdvanceOrder(tx, {
+      await prisma.$transaction((tx) =>
+        markItemLargeAndNotifyUser(tx, {
           orderId: order.id,
           orderItemId: item.id,
+          userId: order.userId,
+          itemLabel,
           fromOrderStatus: order.status as OrderStatus,
           actor,
           note: `تحویل فایل بزرگ آیتم ${item.id} از طریق بات تلگرام`,
-        });
-      });
-      await sendMessage(operatorChatId, `✅ آیتم ${orderItemLabel(order.items, item.id)} سفارش ${orderId} به‌عنوان فایل بزرگ ثبت شد.`);
-    } else if (message.document) {
-      if ((message.document.file_size ?? 0) > MAX_ITEM_FILE_BYTES) {
-        await sendMessage(
-          operatorChatId,
-          `⚠️ حجم فایل آیتم ${orderItemLabel(order.items, item.id)} سفارش ${orderId} بیش از ۲۰ مگابایت است؛ با دستور «بزرگ» علامت‌گذاری کن.`,
-        );
-        return NextResponse.json({ ok: true });
-      }
-
-      const buffer = await downloadTelegramFile(message.document.file_id, message.document.file_name);
-      const storageKey = buildStorageKey(order.id, message.document.file_name);
-      await fileStorage.save(storageKey, buffer);
-
-      await prisma.$transaction(async (tx) => {
-        const now = new Date();
-        await tx.delivery.upsert({
-          where: { orderItemId: item.id },
-          create: {
-            orderItemId: item.id,
-            storageKey,
-            fileName: message.document!.file_name ?? "file",
-            mimeType: message.document!.mime_type ?? "application/octet-stream",
-            fileSizeBytes: buffer.length,
-            isLarge: false,
-            telegramFileId: message.document!.file_id,
-            isOnDisk: true,
-            lastAccessedAt: now,
-          },
-          update: {
-            storageKey,
-            fileName: message.document!.file_name ?? "file",
-            mimeType: message.document!.mime_type ?? "application/octet-stream",
-            fileSizeBytes: buffer.length,
-            isLarge: false,
-            telegramFileId: message.document!.file_id,
-            isOnDisk: true,
-            lastAccessedAt: now,
-            deliveredAt: now,
-          },
-        });
-        await markItemReadyAndAdvanceOrder(tx, {
-          orderId: order.id,
-          orderItemId: item.id,
-          fromOrderStatus: order.status as OrderStatus,
-          actor,
-          note: `تحویل فایل آیتم ${item.id} از طریق بات تلگرام`,
-        });
-      });
+        }),
+      );
+      log(`آیتم ${item.id} به‌عنوان فایل بزرگ ثبت شد.`);
       await sendMessage(
         operatorChatId,
-        `✅ فایل آیتم ${orderItemLabel(order.items, item.id)} سفارش ${orderId} ذخیره شد و آماده‌ی دانلود شد.`,
+        tooBig
+          ? `✅ حجم فایل آیتم ${itemLabel} سفارش ${orderId} بیش از ۲۰ مگابایت بود؛ به‌صورت خودکار «فایل بزرگ» ثبت شد و به کاربر در صندوق پشتیبانی اطلاع داده شد. لینک را از طریق پشتیبانی برایش بفرست.`
+          : `✅ آیتم ${itemLabel} سفارش ${orderId} به‌عنوان فایل بزرگ ثبت شد و به کاربر در صندوق پشتیبانی اطلاع داده شد.`,
       );
+      return;
     }
+
+    if (!file) {
+      log("reply بدون فایل و بدون دستور «بزرگ»؛ راهنما برای اپراتور ارسال شد.");
+      await sendMessage(
+        operatorChatId,
+        `⚠️ برای تحویل آیتم ${itemLabel} سفارش ${orderId}، فایل را به‌صورت reply بفرست یا «بزرگ» بنویس.`,
+      );
+      return;
+    }
+
+    const buffer = await downloadTelegramFile(file.file_id, file.file_name);
+    log(`فایل دانلود شد (${buffer.length} بایت).`);
+    const storageKey = buildStorageKey(order.id, file.file_name);
+    await fileStorage.save(storageKey, buffer);
+    log(`فایل در ${storageKey} ذخیره شد.`);
+
+    const fileData = {
+      storageKey,
+      fileName: file.file_name ?? "file",
+      mimeType: file.mime_type ?? "application/octet-stream",
+      fileSizeBytes: buffer.length,
+      isLarge: false,
+      telegramFileId: file.file_id,
+      isOnDisk: true,
+    };
+    await prisma.$transaction(async (tx) => {
+      const now = new Date();
+      await tx.delivery.upsert({
+        where: { orderItemId: item.id },
+        create: { orderItemId: item.id, ...fileData, lastAccessedAt: now },
+        update: { ...fileData, fileUrl: null, lastAccessedAt: now, deliveredAt: now },
+      });
+      await markItemReadyAndAdvanceOrder(tx, {
+        orderId: order.id,
+        orderItemId: item.id,
+        fromOrderStatus: order.status as OrderStatus,
+        actor,
+        note: `تحویل فایل آیتم ${item.id} از طریق بات تلگرام`,
+      });
+    });
+    log(`آیتم ${item.id} ready شد.`);
+    await sendMessage(operatorChatId, `✅ فایل آیتم ${itemLabel} سفارش ${orderId} ذخیره شد و آماده‌ی دانلود است.`);
   } catch (error) {
     console.error(`[تلگرام وب‌هوک خطا] پردازش سفارش ${orderId} با خطا مواجه شد:`, error);
     await sendMessage(
@@ -177,17 +204,25 @@ export async function POST(req: NextRequest) {
       `⚠️ ثبت تحویل سفارش ${orderId} با خطا مواجه شد: ${error instanceof Error ? error.message : "خطای نامشخص"}`,
     );
   }
+}
 
-  return NextResponse.json({ ok: true });
+/** تلگرام عکس/ویدیو/صدا را در فیلدهای جدا می‌فرستد؛ همه به یک شکل تبدیل می‌شوند. */
+function extractFile(message: TelegramMessage): IncomingFile | undefined {
+  if (message.document) return message.document;
+  if (message.video) return { file_name: "video.mp4", ...message.video };
+  if (message.audio) return { file_name: "audio.mp3", ...message.audio };
+  if (message.animation) return { file_name: "animation.mp4", ...message.animation };
+  if (message.photo?.length) {
+    // تلگرام چند اندازه از یک عکس می‌فرستد؛ آخرین، بزرگ‌ترین است.
+    const largest = message.photo[message.photo.length - 1];
+    return { file_name: "photo.jpg", mime_type: "image/jpeg", ...largest };
+  }
+  return undefined;
 }
 
 /**
- * آیتم مقصد را از روی متن/کپشن reply تشخیص می‌دهد: اگر سفارش تک‌آیتمی است همان یک آیتم؛
- * اگر چندآیتمی است، باید شماره‌ی آیتم (۱-پایه، هم‌ترتیب با شماره‌گذاری پیام اطلاع‌رسانی)
- * با الگوی «آیتم N» یا «/item N» در متن ذکر شده باشد. این تنها راه قابل‌اطمینان تشخیص
- * آیتم از طریق reply تلگرام است چون تلگرام چیزی فراتر از متن پیام reply‌شده در اختیار ما
- * نمی‌گذارد؛ شماره‌گذاری در notifyOrderCreated دقیقاً با ترتیب order.items (createdAt asc)
- * یکسان نگه داشته می‌شود تا این تطبیق درست بماند.
+ * آیتم مقصد: در سفارش تک‌آیتمی همان یک آیتم؛ در چندآیتمی، شماره‌ی ۱-پایه با الگوی «آیتم N»
+ * یا «/item N» که با ترتیب order.items (createdAt asc) در پیام notifyOrderCreated یکسان است.
  */
 function resolveTargetItem<T extends { id: string }>(items: T[], markerText: string): T | undefined {
   if (items.length === 1) {
@@ -195,58 +230,46 @@ function resolveTargetItem<T extends { id: string }>(items: T[], markerText: str
   }
   const match = ITEM_INDEX_PATTERN.exec(markerText);
   const indexStr = match?.[1] ?? match?.[2];
-  if (!indexStr) {
-    return undefined;
-  }
-  const index = Number(indexStr) - 1;
-  return items[index];
+  return indexStr ? items[Number(indexStr) - 1] : undefined;
 }
 
-function orderItemLabel(items: { id: string }[], itemId: string): string {
-  const index = items.findIndex((i) => i.id === itemId);
-  return index === -1 ? itemId : String(index + 1);
-}
-
-/** پیام reply در چت پشتیبانی را به یک SupportMessage برای کاربر مرجع تبدیل می‌کند. */
-async function handleSupportReply(
-  message: NonNullable<TelegramUpdateInput["message"]>,
-  supportChatId: string,
-): Promise<NextResponse> {
-  const replyText = message.reply_to_message?.text;
-  const userId = replyText ? SUPPORT_USER_ID_PATTERN.exec(replyText)?.[1] : undefined;
-  if (!userId) {
-    return NextResponse.json({ ok: true });
-  }
-
+async function handleSupportReply(message: TelegramMessage, supportChatId: string, userId: string): Promise<void> {
   const text = message.text ?? message.caption;
   if (!text) {
-    return NextResponse.json({ ok: true });
+    log("پاسخ پشتیبانی بدون متن؛ نادیده گرفته شد.");
+    await sendMessage(supportChatId, "⚠️ پاسخ پشتیبانی فعلاً فقط به‌صورت متن پذیرفته می‌شود.");
+    return;
   }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     await sendMessage(supportChatId, `⚠️ کاربر با شناسه ${userId} یافت نشد.`);
-    return NextResponse.json({ ok: true });
+    return;
   }
 
   await prisma.supportMessage.create({
     data: { userId, sender: "support", text, readByUser: false },
   });
-
-  return NextResponse.json({ ok: true });
+  log(`پاسخ پشتیبانی برای کاربر ${userId} ثبت شد.`);
 }
 
-function isFromOperatorWebhook(req: NextRequest): boolean {
-  const expected = process.env.TELEGRAM_WEBHOOK_SECRET;
+async function isFromOperatorWebhook(req: NextRequest): Promise<boolean> {
+  const expected = await getTelegramConfig("TELEGRAM_WEBHOOK_SECRET");
   if (!expected) {
     // در محیط توسعه بدون secret تنظیم‌شده، بررسی رد نمی‌شود تا تست محلی ممکن باشد.
     return true;
   }
-  const received = req.headers.get("x-telegram-bot-api-secret-token");
-  return received === expected;
+  const received = req.headers.get("x-telegram-bot-api-secret-token") ?? "";
+  const a = Buffer.from(received);
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 function buildStorageKey(orderId: string, fileName?: string): string {
   const ext = fileName?.includes(".") ? fileName.slice(fileName.lastIndexOf(".")) : "";
   return `deliveries/${orderId}/${crypto.randomUUID()}${ext}`;
+}
+
+function ok() {
+  return NextResponse.json({ ok: true });
 }

@@ -176,6 +176,13 @@ export type OperatorItemDeliverInput = z.infer<typeof operatorItemDeliverInput>;
 
 // فقط فیلدهایی از آپدیت تلگرام که در webhook استفاده می‌شوند اعتبارسنجی می‌شوند؛
 // بدنه‌ی واقعی تلگرام فیلدهای بسیار بیشتری دارد که برای ما اهمیتی ندارند.
+const telegramFileInput = z.object({
+  file_id: z.string(),
+  file_name: z.string().optional(),
+  mime_type: z.string().optional(),
+  file_size: z.number().optional(),
+});
+
 export const telegramUpdateInput = z.object({
   message: z
     .object({
@@ -183,17 +190,15 @@ export const telegramUpdateInput = z.object({
       chat: z.object({ id: z.union([z.number(), z.string()]) }),
       text: z.string().optional(),
       caption: z.string().optional(),
-      document: z
-        .object({
-          file_id: z.string(),
-          file_name: z.string().optional(),
-          mime_type: z.string().optional(),
-          file_size: z.number().optional(),
-        })
-        .optional(),
+      document: telegramFileInput.optional(),
+      video: telegramFileInput.optional(),
+      audio: telegramFileInput.optional(),
+      animation: telegramFileInput.optional(),
+      photo: z.array(telegramFileInput).optional(),
       reply_to_message: z
         .object({
           text: z.string().optional(),
+          caption: z.string().optional(),
         })
         .optional(),
     })
@@ -232,7 +237,15 @@ export const changeUserRoleInput = z.object({
 
 export type ChangeUserRoleInput = z.infer<typeof changeUserRoleInput>;
 
-const settingKeyValues = ["ZARINPAL_MERCHANT_ID", "SMS_PANEL_API_KEY"] as const;
+const settingKeyValues = [
+  "ZARINPAL_MERCHANT_ID",
+  "SMS_PANEL_API_KEY",
+  "TELEGRAM_BOT_TOKEN",
+  "TELEGRAM_CHAT_FINANCE",
+  "TELEGRAM_CHAT_OPERATOR",
+  "TELEGRAM_CHAT_SUPPORT",
+  "TELEGRAM_WEBHOOK_SECRET",
+] as const;
 
 export const updateSettingInput = z.object({
   key: z.enum(settingKeyValues, {

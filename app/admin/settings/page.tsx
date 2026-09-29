@@ -15,6 +15,7 @@ type SettingRow = {
 const GROUP_LABELS: Record<string, string> = {
   gateway: "درگاه پرداخت",
   sms: "پنل پیامک",
+  telegram: "تلگرام",
 };
 
 function StatusDot({ configured }: { configured: boolean }) {
