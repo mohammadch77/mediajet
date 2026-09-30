@@ -3,13 +3,23 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
-export type AuthUser = { id: string; mobile: string; name: string | null; role: "user" | "operator" | "admin"; walletBalanceRial: string };
+export type AuthUser = {
+  id: string;
+  mobile: string;
+  name: string | null;
+  email: string | null;
+  hasPassword: boolean;
+  role: "user" | "operator" | "admin";
+  walletBalanceRial: string;
+};
 
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
   refresh: () => Promise<void>;
   login: (user: AuthUser) => void;
+  /** کاربر را بدون بستن مودال به‌روز می‌کند (مثلاً بعد از OTP که هنوز مرحله‌ی ایمیل/رمز مانده). */
+  setUser: (user: AuthUser) => void;
   logout: () => Promise<void>;
   setWalletBalance: (walletBalanceRial: string) => void;
   setUserName: (name: string) => void;
@@ -87,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         refresh,
         login,
+        setUser,
         logout,
         setWalletBalance,
         setUserName,

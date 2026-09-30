@@ -145,6 +145,55 @@ export const verifyOtpInput = z.object({
 
 export type VerifyOtpInput = z.infer<typeof verifyOtpInput>;
 
+// bcrypt فقط ۷۲ بایت اول رمز را در نظر می‌گیرد؛ رمز طولانی‌تر رد می‌شود تا بی‌صدا کوتاه نشود.
+const BCRYPT_MAX_BYTES = 72;
+
+const emailField = z
+  .string({ error: "ایمیل الزامی است." })
+  .trim()
+  .toLowerCase()
+  .max(254, "ایمیل بیش از حد طولانی است.")
+  .pipe(z.email({ error: "ایمیل معتبر نیست." }));
+
+const newPasswordField = z
+  .string({ error: "رمز عبور الزامی است." })
+  .min(8, "رمز عبور باید حداقل ۸ نویسه باشد.")
+  .refine((p) => Buffer.byteLength(p, "utf8") <= BCRYPT_MAX_BYTES, "رمز عبور بیش از حد طولانی است.")
+  .refine((p) => /\p{L}/u.test(p) && /\p{Nd}/u.test(p), "رمز عبور باید هم حرف و هم عدد داشته باشد.")
+  .refine((p) => p.trim() === p, "رمز عبور نباید با فاصله شروع یا تمام شود.");
+
+// رمز فعلی فقط مقایسه می‌شود؛ قوانین رمز جدید روی آن اعمال نمی‌شود، فقط سقف طول.
+const currentPasswordField = z
+  .string({ error: "رمز عبور الزامی است." })
+  .min(1, "رمز عبور الزامی است.")
+  .refine((p) => Buffer.byteLength(p, "utf8") <= BCRYPT_MAX_BYTES, "رمز عبور بیش از حد طولانی است.");
+
+export const passwordLoginInput = z.object({
+  email: emailField,
+  password: currentPasswordField,
+});
+
+export const setCredentialsInput = z.object({
+  email: emailField,
+  newPassword: newPasswordField,
+  currentPassword: currentPasswordField.optional(),
+});
+
+export const requestPasswordResetInput = z.object({
+  mobile: mobileField,
+});
+
+export const confirmResetByTokenInput = z.object({
+  token: z.string().regex(/^[A-Za-z0-9_-]{16,64}$/, "لینک بازیابی نامعتبر است."),
+  newPassword: newPasswordField,
+});
+
+export const confirmResetByCodeInput = z.object({
+  mobile: mobileField,
+  code: z.string({ error: "کد بازیابی الزامی است." }).regex(/^\d{6}$/, "کد بازیابی باید ۶ رقم باشد."),
+  newPassword: newPasswordField,
+});
+
 const orderStatusValues = [
   "draft",
   "awaiting_payment",
@@ -253,6 +302,7 @@ export type ChangeUserRoleInput = z.infer<typeof changeUserRoleInput>;
 const settingKeyValues = [
   "ZARINPAL_MERCHANT_ID",
   "SMS_PANEL_API_KEY",
+  "PASSWORD_RESET_SMS_MODE",
   "TELEGRAM_BOT_TOKEN",
   "TELEGRAM_CHAT_FINANCE",
   "TELEGRAM_CHAT_OPERATOR",
@@ -269,7 +319,10 @@ export const updateSettingInput = z.object({
     .trim()
     .min(1, "مقدار نمی‌تواند خالی باشد.")
     .max(2000, "مقدار نباید بیشتر از ۲۰۰۰ نویسه باشد."),
-});
+}).refine(
+  (s) => s.key !== "PASSWORD_RESET_SMS_MODE" || ["code", "link", "both"].includes(s.value.toLowerCase()),
+  { message: "روش بازیابی باید یکی از code، link یا both باشد.", path: ["value"] },
+);
 
 export type UpdateSettingInput = z.infer<typeof updateSettingInput>;
 

@@ -8,6 +8,7 @@ import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
 import { STATUS_LABELS, ITEM_STATUS_LABELS, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
 import { CATEGORIES } from "@/data/categories";
 import WalletCard from "@/components/WalletCard";
+import CredentialsForm from "@/components/CredentialsForm";
 import { useVisiblePolling } from "@/lib/useVisiblePolling";
 
 const DASHBOARD_POLL_MS = 5000;
@@ -72,7 +73,7 @@ function categoryTitle(id: string): string {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, loading, openAuthModal, setUserName } = useAuth();
+  const { user, loading, openAuthModal, setUserName, setUser: setAuthUser } = useAuth();
   const [tab, setTab] = useState<TabId>("wallet");
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [wallet, setWallet] = useState<WalletData | null>(null);
@@ -385,6 +386,19 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {!user.hasPassword && tab !== "profile" && (
+        <div className="flex items-center justify-between flex-wrap gap-3 bg-[rgba(107,91,255,.1)] border border-[rgba(138,124,255,.3)] rounded-2xl p-4 mb-6">
+          <span className="text-[.88rem]">برای ورود سریع‌تر بدون پیامک، ایمیل و رمز عبور تنظیم کن.</span>
+          <button
+            type="button"
+            onClick={() => setTab("profile")}
+            className="font-body cursor-pointer border-none font-bold text-[.85rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-2 rounded-full whitespace-nowrap"
+          >
+            تنظیم ایمیل و رمز
+          </button>
+        </div>
+      )}
+
       {/* TABS */}
       <div className="flex gap-2 overflow-x-auto pb-1 mb-8 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((t) => (
@@ -692,6 +706,24 @@ export default function DashboardPage() {
                 <div className="text-cyan text-[.82rem] mt-2">نام با موفقیت ذخیره شد.</div>
               )}
             </div>
+          </div>
+
+          <div
+            id="login-credentials"
+            className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-[24px_26px] max-w-[480px] mt-5"
+          >
+            <h2 className="font-display text-[1.05rem] font-bold mb-1">ورود با ایمیل و رمز عبور</h2>
+            <p className="text-dim text-[.82rem] mb-4">
+              {user.hasPassword
+                ? "برای تغییر ایمیل یا رمز، رمز فعلی را وارد کن. بعد از تغییر رمز، از بقیه‌ی دستگاه‌ها خارج می‌شوی."
+                : "هنوز ایمیل و رمز نداری و هر بار با کد پیامکی وارد می‌شوی. با تنظیم آن‌ها، بدون انتظار برای پیامک وارد شو."}
+            </p>
+            <CredentialsForm
+              key={user.hasPassword ? "change" : "set"}
+              user={user}
+              submitLabel={user.hasPassword ? "تغییر ایمیل / رمز" : "فعال‌سازی ورود با ایمیل"}
+              onSaved={setAuthUser}
+            />
           </div>
         </section>
       )}

@@ -13,6 +13,11 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   mobile    String   @unique
+  // ورود بدون پیامک: هر دو اختیاری‌اند تا کاربرانی که فقط با OTP ثبت‌نام کرده‌اند قفل نشوند.
+  // email همیشه lowercase ذخیره می‌شود؛ passwordHash فقط هش bcrypt است.
+  email             String?   @unique
+  passwordHash      String?
+  passwordUpdatedAt DateTime?
   name      String?
   role      Role     @default(user)
   createdAt DateTime @default(now())
@@ -24,6 +29,7 @@ model User {
   payments        Payment[]
   supportMessages SupportMessage[]
   notifications   Notification[]
+  passwordResets  PasswordReset[]
 
   roleChangesReceived RoleChangeLog[] @relation("RoleChangeTarget")
   roleChangesMade     RoleChangeLog[] @relation("RoleChangeActor")
@@ -63,6 +69,23 @@ model OtpCode {
   createdAt DateTime  @default(now())
 
   @@index([mobile])
+}
+
+// درخواست بازیابی رمز: هم توکن لینک و هم کد پیامکی فقط به‌صورت هش SHA-256 ذخیره می‌شوند؛
+// یک‌بارمصرف (usedAt)، منقضی‌شونده، و درخواست جدید درخواست‌های قبلی را باطل می‌کند.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  codeHash  String
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 // نشست ورود کاربر. توکن خام فقط در کوکی کلاینت است؛ در دیتابیس فقط هش آن ذخیره می‌شود.

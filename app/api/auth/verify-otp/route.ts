@@ -2,20 +2,28 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateInput, verifyOtpInput, ValidationError } from "@/lib/validation";
 import { verifyOtp, OtpError } from "@/lib/otp";
 import { findOrCreateUserByMobile, createSession } from "@/lib/session";
-import { prisma } from "@/lib/db";
+import { authUserPayload } from "@/lib/authUser";
+import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/clientIp";
+
+const IP_LIMIT = 20;
+const WINDOW_MS = 15 * 60_000;
 
 // POST /api/auth/verify-otp
 // تأیید کد OTP؛ در صورت موفقیت کاربر را (در صورت نبود) می‌سازد و نشست ورود ایجاد می‌کند.
+// needsCredentials=true یعنی کاربر هنوز ایمیل/رمز ندارد و باید از او خواسته شود (ثبت‌نام جدید یا کاربر قدیمی).
 export async function POST(req: NextRequest) {
+  const limit = checkRateLimit(`verify-otp:ip:${getClientIp(req)}`, IP_LIMIT, WINDOW_MS);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: rateLimitMessage(limit.retryAfterSeconds) }, { status: 429 });
+  }
+
   let input;
   try {
-    const body = await req.json();
-    input = validateInput(verifyOtpInput, body);
+    input = validateInput(verifyOtpInput, await req.json());
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: "بدنه‌ی درخواست نامعتبر است." }, { status: 400 });
+    const message = error instanceof ValidationError ? error.message : "بدنه‌ی درخواست نامعتبر است.";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   try {
@@ -30,13 +38,6 @@ export async function POST(req: NextRequest) {
   const user = await findOrCreateUserByMobile(input.mobile);
   await createSession(user.id);
 
-  const wallet = await prisma.wallet.findUnique({ where: { userId: user.id } });
-
-  return NextResponse.json({
-    userId: user.id,
-    mobile: user.mobile,
-    name: user.name,
-    role: user.role,
-    walletBalanceRial: (wallet?.balanceRial ?? 0n).toString(),
-  });
+  const payload = await authUserPayload(user);
+  return NextResponse.json({ user: payload, needsCredentials: !payload.hasPassword });
 }

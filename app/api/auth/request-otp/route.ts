@@ -1,19 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateInput, requestOtpInput, ValidationError } from "@/lib/validation";
 import { requestOtp, OtpError } from "@/lib/otp";
+import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/clientIp";
+
+// هر پیامک هزینه دارد: علاوه بر فاصله‌ی ۶۰ ثانیه‌ای هر شماره (lib/otp.ts)، هر IP سقف دارد.
+const IP_LIMIT = 10;
+const WINDOW_MS = 15 * 60_000;
 
 // POST /api/auth/request-otp
 // ارسال کد تأیید برای موبایل داده‌شده (در حالت شبیه‌سازی، کد در کنسول سرور چاپ می‌شود).
 export async function POST(req: NextRequest) {
+  const limit = checkRateLimit(`request-otp:ip:${getClientIp(req)}`, IP_LIMIT, WINDOW_MS);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: rateLimitMessage(limit.retryAfterSeconds) }, { status: 429 });
+  }
+
   let input;
   try {
-    const body = await req.json();
-    input = validateInput(requestOtpInput, body);
+    input = validateInput(requestOtpInput, await req.json());
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: "بدنه‌ی درخواست نامعتبر است." }, { status: 400 });
+    const message = error instanceof ValidationError ? error.message : "بدنه‌ی درخواست نامعتبر است.";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   try {

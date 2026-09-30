@@ -23,6 +23,13 @@ export const SETTING_DEFS = [
     description: "کلید سرویس ارسال پیامک برای ارسال کد OTP و اطلاع‌رسانی‌ها.",
   },
   {
+    key: "PASSWORD_RESET_SMS_MODE",
+    group: "sms",
+    label: "روش پیامک بازیابی رمز",
+    description:
+      "یکی از code (فقط کد ۶ رقمی — سازگار با همه‌ی پنل‌ها)، link (فقط لینک کوتاه) یا both (هر دو در یک پیامک). برای لینک، APP_BASE_URL باید در env تنظیم باشد؛ وگرنه کد ارسال می‌شود. پیش‌فرض: code.",
+  },
+  {
     key: "TELEGRAM_BOT_TOKEN",
     group: "telegram",
     label: "توکن ربات تلگرام",

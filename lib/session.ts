@@ -80,6 +80,15 @@ export async function destroySession(): Promise<void> {
   store.delete(SESSION_COOKIE);
 }
 
+/** همه‌ی نشست‌های کاربر به‌جز نشست جاری (همین مرورگر) را باطل می‌کند؛ بعد از تغییر رمز. */
+export async function revokeOtherSessions(userId: string): Promise<void> {
+  const store = await cookies();
+  const token = store.get(SESSION_COOKIE)?.value;
+  await prisma.session.deleteMany({
+    where: { userId, ...(token && { tokenHash: { not: hashToken(token) } }) },
+  });
+}
+
 /** برای مسیرهای محافظت‌شده: کاربر جاری را برمی‌گرداند یا خطا پرتاب می‌کند. */
 export async function requireCurrentUser(): Promise<User> {
   const user = await getCurrentUser();
