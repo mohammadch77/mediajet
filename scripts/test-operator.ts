@@ -1,135 +1,90 @@
-// تست پنل اپراتور: صف سفارش‌ها، تغییر وضعیت طبق state machine، ثبت تحویل، و کنترل دسترسی.
-// برای سادگی، session به‌جای جریان OTP کامل، مستقیم در دیتابیس ساخته می‌شود (همان هش‌سازی lib/session.ts).
+// تست پنل اپراتور: صف سفارش‌ها، تغییر وضعیت طبق state machine، تحویل آیتم، و کنترل دسترسی.
+// تحویل از قدم ۵ به‌صورت per-item است: POST /api/operator/orders/:id/items/:itemId/deliver.
 // نیازمند اجرای سرور dev (BASE_URL قابل تنظیم).
 
-import crypto from "crypto";
 import { prisma } from "../lib/db";
+import { BASE_URL, check, run, makeSessionCookie, randomMobile, readJson } from "./testUtils";
 
-const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
-const SESSION_COOKIE = "mediajet_session";
-
-function hashToken(token: string): string {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
-
-async function makeSessionCookie(userId: string): Promise<string> {
-  const token = crypto.randomBytes(32).toString("hex");
-  await prisma.session.create({
-    data: { userId, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 3600_000) },
-  });
-  return `${SESSION_COOKIE}=${token}`;
-}
-
-async function main() {
-  // اپراتور
-  const operatorMobile = "0938" + Math.floor(1000000 + Math.random() * 8999999);
-  const operator = await prisma.user.create({
-    data: { mobile: operatorMobile, role: "operator", wallet: { create: { balanceRial: 0n } } },
-  });
-  const operatorCookie = await makeSessionCookie(operator.id);
-  console.log("اپراتور ساخته شد:", operator.id);
-
-  // کاربر عادی + کیف پول
-  const userMobile = "0937" + Math.floor(1000000 + Math.random() * 8999999);
-  const user = await prisma.user.create({
-    data: { mobile: userMobile, wallet: { create: { balanceRial: 5_000_000n } } },
-  });
-  const userCookie = await makeSessionCookie(user.id);
-  console.log("کاربر عادی ساخته شد:", user.id);
-
-  // سفارش در وضعیت‌های مختلف (مستقیم در دیتابیس، برای شبیه‌سازی صف)
-  const orderQueued = await prisma.order.create({
+function createOrder(userId: string, status: "queued" | "processing", productUrl: string) {
+  return prisma.order.create({
     data: {
-      userId: user.id,
+      userId,
       totalPriceRial: 700000n,
       paymentMethod: "wallet",
-      status: "queued",
-      items: { create: { sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/a", priceRial: 700000n } },
+      status,
+      items: { create: { sourceSite: "Freepik", category: "vector", productUrl, priceRial: 700000n } },
     },
+    include: { items: true },
   });
-  const orderProcessing = await prisma.order.create({
-    data: {
-      userId: user.id,
-      totalPriceRial: 1200000n,
-      paymentMethod: "wallet",
-      status: "processing",
-      items: { create: { sourceSite: "Envato", category: "video", productUrl: "https://envato.com/b", priceRial: 1200000n } },
-    },
+}
+
+run(async () => {
+  const operator = await prisma.user.create({
+    data: { mobile: randomMobile("0938"), role: "operator", wallet: { create: { balanceRial: 0n } } },
   });
-  console.log("سفارش‌های تست ساخته شدند:", orderQueued.id, orderProcessing.id);
+  const operatorCookie = await makeSessionCookie(operator.id);
+  const user = await prisma.user.create({ data: { mobile: randomMobile("0937"), wallet: { create: { balanceRial: 5_000_000n } } } });
+  const userCookie = await makeSessionCookie(user.id);
+
+  const setStatus = (orderId: string, toStatus: string, cookie = operatorCookie) =>
+    fetch(`${BASE_URL}/api/operator/orders/${orderId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookie },
+      body: JSON.stringify({ toStatus }),
+    });
+
+  const orderQueued = await createOrder(user.id, "queued", "https://freepik.com/a");
+  const orderProcessing = await createOrder(user.id, "processing", "https://freepik.com/b");
 
   // [۱] دیدن صف توسط اپراتور
   const r1 = await fetch(`${BASE_URL}/api/operator/orders?status=queued`, { headers: { Cookie: operatorCookie } });
-  const d1 = await r1.json();
-  console.log("\n[۱] صف queued برای اپراتور:", r1.status, "تعداد:", d1.orders?.length);
+  const d1 = await readJson(r1);
+  check(
+    "[۱] صف queued برای اپراتور شامل سفارش تست",
+    r1.status === 200 && Boolean(d1?.orders?.some((o: { id: string }) => o.id === orderQueued.id)),
+    r1.status,
+  );
 
   // [۲] queued → processing (مجاز)
-  const r2 = await fetch(`${BASE_URL}/api/operator/orders/${orderQueued.id}/status`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Cookie: operatorCookie },
-    body: JSON.stringify({ toStatus: "processing" }),
-  });
-  console.log("[۲] queued → processing:", r2.status, await r2.json());
+  const r2 = await setStatus(orderQueued.id, "processing");
+  check("[۲] queued → processing → 200", r2.status === 200, await readJson(r2));
 
   // [۳] انتقال نامعتبر: queued → delivered مستقیم (باید رد شود)
-  const orderInvalid = await prisma.order.create({
-    data: {
-      userId: user.id,
-      totalPriceRial: 300000n,
-      paymentMethod: "wallet",
-      status: "queued",
-      items: { create: { sourceSite: "Flaticon", category: "icon", productUrl: "https://flaticon.com/c", priceRial: 300000n } },
-    },
-  });
-  const r3 = await fetch(`${BASE_URL}/api/operator/orders/${orderInvalid.id}/status`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Cookie: operatorCookie },
-    body: JSON.stringify({ toStatus: "delivered" }),
-  });
-  console.log("[۳] انتقال نامعتبر queued → delivered (انتظار 422):", r3.status, await r3.json());
+  const orderInvalid = await createOrder(user.id, "queued", "https://freepik.com/c");
+  const r3 = await setStatus(orderInvalid.id, "delivered");
+  check("[۳] انتقال نامعتبر queued → delivered → 422", r3.status === 422, await readJson(r3));
 
-  // [۴] ثبت تحویل روی سفارش processing → ready
-  const r4 = await fetch(`${BASE_URL}/api/operator/orders/${orderProcessing.id}/deliver`, {
+  // [۴] تحویل تنها آیتم سفارش processing با لینک → سفارش ready
+  const item = orderProcessing.items[0];
+  const r4 = await fetch(`${BASE_URL}/api/operator/orders/${orderProcessing.id}/items/${item.id}/deliver`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Cookie: operatorCookie },
     body: JSON.stringify({ fileUrl: "https://cdn.example.com/delivery/file.zip" }),
   });
-  console.log("[۴] ثبت تحویل processing → ready:", r4.status, await r4.json());
+  check("[۴] تحویل آیتم → 200", r4.status === 200, await readJson(r4));
+  const afterDeliver = await prisma.order.findUnique({ where: { id: orderProcessing.id } });
+  check("[۴] سفارش processing → ready", afterDeliver?.status === "ready", afterDeliver?.status);
 
   // [۵] ready → delivered
-  const r5 = await fetch(`${BASE_URL}/api/operator/orders/${orderProcessing.id}/status`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Cookie: operatorCookie },
-    body: JSON.stringify({ toStatus: "delivered" }),
-  });
-  console.log("[۵] ready → delivered:", r5.status, await r5.json());
+  const r5 = await setStatus(orderProcessing.id, "delivered");
+  check("[۵] ready → delivered → 200", r5.status === 200, await readJson(r5));
 
-  // [۶] کاربر عادی به endpoint اپراتور دسترسی ندارد (انتظار 403)
+  // [۶] و [۷] کاربر عادی به endpointهای اپراتور دسترسی ندارد
   const r6 = await fetch(`${BASE_URL}/api/operator/orders`, { headers: { Cookie: userCookie } });
-  console.log("[۶] کاربر عادی → GET صف اپراتور (انتظار 403):", r6.status, await r6.json());
-
-  const r7 = await fetch(`${BASE_URL}/api/operator/orders/${orderQueued.id}/status`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Cookie: userCookie },
-    body: JSON.stringify({ toStatus: "processing" }),
-  });
-  console.log("[۷] کاربر عادی → تغییر وضعیت (انتظار 403):", r7.status, await r7.json());
+  check("[۶] کاربر عادی → GET صف اپراتور → 403", r6.status === 403, r6.status);
+  const r7 = await setStatus(orderQueued.id, "processing", userCookie);
+  check("[۷] کاربر عادی → تغییر وضعیت → 403", r7.status === 403, r7.status);
 
   // بازبینی نهایی
   const finalOrder = await prisma.order.findUnique({
     where: { id: orderProcessing.id },
     include: { events: true, items: { include: { delivery: true } } },
   });
-  console.log("\nوضعیت نهایی سفارش:", finalOrder?.status, "(انتظار: delivered)");
-  console.log("لینک تحویل:", finalOrder?.items[0]?.delivery?.fileUrl);
-  console.log("رویدادها:", finalOrder?.events.map((e: { fromStatus: string | null; toStatus: string; actor: string }) => `${e.fromStatus} → ${e.toStatus} (${e.actor})`));
-}
-
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  check("[۸] وضعیت نهایی delivered", finalOrder?.status === "delivered", finalOrder?.status);
+  check("[۸] لینک تحویل ثبت شد", finalOrder?.items[0].delivery?.fileUrl === "https://cdn.example.com/delivery/file.zip", finalOrder?.items[0].delivery);
+  check(
+    "[۸] رویدادهای audit: ready و delivered توسط اپراتور",
+    ["ready", "delivered"].every((s) => finalOrder?.events.some((e) => e.toStatus === s && e.actor === `operator:${operator.id}`)),
+    finalOrder?.events.map((e) => `${e.fromStatus} → ${e.toStatus} (${e.actor})`),
+  );
+});
