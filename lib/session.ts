@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { cookies } from "next/headers";
 import type { User } from "@prisma/client";
 import { prisma } from "./db";
+import { REF_COOKIE, findAffiliateIdByCode, normalizeReferralCode } from "./affiliate";
 
 const SESSION_COOKIE = "mediajet_session";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // ۳۰ روز
@@ -21,8 +22,17 @@ export async function findOrCreateUserByMobile(mobile: string): Promise<User> {
     return existing;
   }
 
+  // کاربر جدیدی که از لینک ?ref= آمده، برای همیشه زیرمجموعه‌ی همان همکار می‌شود.
+  // فقط همین لحظه (ساخت کاربر) خوانده می‌شود؛ کاربر موجود هرگز معرفش عوض نمی‌شود.
+  const store = await cookies();
+  const referredById = await findAffiliateIdByCode(normalizeReferralCode(store.get(REF_COOKIE)?.value));
+
   return prisma.user.create({
-    data: { mobile, wallet: { create: { balanceRial: 0n } } },
+    data: {
+      mobile,
+      ...(referredById && { referredById }),
+      wallet: { create: { balanceRial: 0n } },
+    },
   });
 }
 

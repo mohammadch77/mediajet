@@ -31,9 +31,22 @@ model User {
   notifications   Notification[]
   passwordResets  PasswordReset[]
 
+  // همکاری در فروش: کد یکتا فقط بعد از ثبت‌نام در برنامه ساخته می‌شود.
+  // referredById فقط یک‌بار، لحظه‌ی ساخت کاربر، از کوکی ?ref= پر می‌شود و بعد از آن هرگز تغییر نمی‌کند.
+  referralCode      String?   @unique
+  affiliateJoinedAt DateTime?
+  referredById      String?
+  referredBy        User?     @relation("Referral", fields: [referredById], references: [id])
+  referrals         User[]    @relation("Referral")
+  affiliateAccount  AffiliateAccount?
+  affiliatePayouts  AffiliatePayout[] @relation("PayoutOwner")
+  payoutsReviewed   AffiliatePayout[] @relation("PayoutReviewer")
+
   roleChangesReceived RoleChangeLog[] @relation("RoleChangeTarget")
   roleChangesMade     RoleChangeLog[] @relation("RoleChangeActor")
   blogPosts           BlogPost[]
+
+  @@index([referredById])
 }
 
 // لاگ append-only از تغییرات نقش کاربر توسط ادمین (چه کسی، چه زمانی، از چه نقشی به چه نقشی).
@@ -387,4 +400,75 @@ model BlogPost {
   author User @relation(fields: [authorId], references: [id])
 
   @@index([published, publishedAt])
+}
+
+// ---------------------------------------------------------------------------
+// همکاری در فروش (افیلیت)
+// ---------------------------------------------------------------------------
+
+// موجودی کمیسیون همکار؛ جدا از کیف پول خرید، چون این پول قابل برداشت نقدی است.
+// balanceRial هرگز مستقیم دستکاری نشود؛ فقط از طریق lib/affiliate.ts با ثبت ردیف در AffiliateLedger.
+model AffiliateAccount {
+  id          String @id @default(cuid())
+  userId      String @unique
+  balanceRial BigInt @default(0)
+
+  user    User              @relation(fields: [userId], references: [id])
+  entries AffiliateLedger[]
+}
+
+// دفتر کمیسیون: append-only، هر ردیف با balanceAfter.
+// idempotencyKey یکتا تضمین می‌کند که هر سفارش حداکثر یک‌بار کمیسیون بسازد.
+model AffiliateLedger {
+  id             String              @id @default(cuid())
+  accountId      String
+  type           AffiliateEntryType
+  amountRial     BigInt // همیشه مثبت؛ جهت با type مشخص می‌شود
+  balanceAfter   BigInt
+  orderId        String?
+  payoutId       String?
+  sourceUserId   String? // زیرمجموعه‌ای که پرداختش این کمیسیون را ساخت
+  baseRial       BigInt? // مبنای محاسبه‌ی کمیسیون (قیمت پایه‌ی آیتم‌ها، بدون کارمزد روش پرداخت)
+  percent        Int? // درصد کمیسیون در لحظه‌ی ثبت (تغییر بعدی تنظیمات روی این ردیف اثر ندارد)
+  idempotencyKey String              @unique
+  note           String?
+  createdAt      DateTime            @default(now())
+
+  account AffiliateAccount @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+}
+
+enum AffiliateEntryType {
+  commission // کمیسیون خرید زیرمجموعه (افزایش)
+  payout_hold // کسر موجودی هنگام ثبت درخواست تسویه (کاهش)
+  payout_release // بازگشت موجودی وقتی درخواست تسویه رد شود (افزایش)
+}
+
+// درخواست تسویه‌ی کارت‌به‌کارت. مبلغ در لحظه‌ی درخواست از موجودی کسر (hold) می‌شود تا
+// نتوان یک موجودی را دوبار درخواست داد؛ رد درخواست آن را برمی‌گرداند، پرداخت آن را نهایی می‌کند.
+model AffiliatePayout {
+  id           String                @id @default(cuid())
+  userId       String
+  amountRial   BigInt
+  cardNumber   String
+  cardHolder   String
+  status       AffiliatePayoutStatus @default(requested)
+  adminNote    String?
+  bankRef      String? // شماره پیگیری واریز
+  reviewedById String?
+  reviewedAt   DateTime?
+  createdAt    DateTime              @default(now())
+
+  user       User  @relation("PayoutOwner", fields: [userId], references: [id])
+  reviewedBy User? @relation("PayoutReviewer", fields: [reviewedById], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum AffiliatePayoutStatus {
+  requested
+  paid
+  rejected
 }

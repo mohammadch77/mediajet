@@ -46,6 +46,25 @@ export const PAYMENT_SETTING_DEFS = [
     min: 1,
     max: 1_000_000_000,
   },
+  {
+    key: "affiliate.commission_percent",
+    label: "درصد کمیسیون همکاری در فروش",
+    description:
+      "درصدی از قیمت پایه‌ی سفارشِ پرداخت‌شده‌ی زیرمجموعه که به همکار معرف می‌رسد. شارژ کیف پول کمیسیون ندارد. تغییر آن روی کمیسیون‌های قبلی اثر ندارد.",
+    unit: "درصد",
+    defaultValue: 5,
+    min: 0,
+    max: 50,
+  },
+  {
+    key: "affiliate.min_payout_rial",
+    label: "حداقل مبلغ تسویه‌ی همکاری (ریال)",
+    description: "کمترین موجودی کمیسیون که همکار می‌تواند برای آن درخواست واریز بدهد.",
+    unit: "ریال",
+    defaultValue: 2_000_000,
+    min: 10_000,
+    max: 1_000_000_000,
+  },
 ] as const;
 
 const DEF_BY_KEY = new Map(PAYMENT_SETTING_DEFS.map((d) => [d.key as string, d]));
@@ -57,6 +76,10 @@ export type PaymentSettings = {
   walletSurchargePercent: number;
   /** حداقل مبلغ شارژ کیف پول، به ریال */
   walletMinChargeRial: bigint;
+  /** درصد کمیسیون همکاری در فروش (مثلاً ۵) */
+  affiliateCommissionPercent: number;
+  /** حداقل مبلغ درخواست تسویه‌ی همکاری، به ریال */
+  affiliateMinPayoutRial: bigint;
 };
 
 /** مقدار ذخیره‌شده را به عدد تبدیل می‌کند؛ اگر نبود یا خراب بود، مقدار پیش‌فرض. */
@@ -91,6 +114,13 @@ export async function getPaymentSettings(): Promise<PaymentSettings> {
     ),
     walletMinChargeRial: BigInt(
       parseValue("payment.wallet_min_charge_rial", byKey.get("payment.wallet_min_charge_rial")),
+    ),
+    affiliateCommissionPercent: parseValue(
+      "affiliate.commission_percent",
+      byKey.get("affiliate.commission_percent"),
+    ),
+    affiliateMinPayoutRial: BigInt(
+      parseValue("affiliate.min_payout_rial", byKey.get("affiliate.min_payout_rial")),
     ),
   };
 }

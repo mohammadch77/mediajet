@@ -109,6 +109,8 @@ const paymentSettingKeyValues = [
   "payment.gateway_surcharge_percent",
   "payment.wallet_surcharge_percent",
   "payment.wallet_min_charge_rial",
+  "affiliate.commission_percent",
+  "affiliate.min_payout_rial",
 ] as const;
 
 const paymentSettingFieldInput = z.object({
@@ -455,3 +457,65 @@ export const createBlogPostInput = z.object({
 });
 
 export type CreateBlogPostInput = z.infer<typeof createBlogPostInput>;
+
+// ---------------------------------------------------------------------------
+// همکاری در فروش
+// ---------------------------------------------------------------------------
+
+/** اعتبارسنجی شماره کارت بانکی با الگوریتم Luhn (کارت‌های شتاب از آن پیروی می‌کنند). */
+function isValidCardNumber(digits: string): boolean {
+  let sum = 0;
+  for (let i = 0; i < digits.length; i++) {
+    let d = Number(digits[digits.length - 1 - i]);
+    if (i % 2 === 1) {
+      d *= 2;
+      if (d > 9) d -= 9;
+    }
+    sum += d;
+  }
+  return sum % 10 === 0;
+}
+
+const persianToLatinDigits = (v: unknown) =>
+  typeof v === "string"
+    ? v
+        .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+        .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+        .replace(/[\s-]/g, "")
+    : v;
+
+export const affiliatePayoutRequestInput = z.object({
+  // مبلغ به ریال، به‌صورت رشته‌ی عددی تا بدون float به BigInt تبدیل شود.
+  amountRial: z
+    .string({ error: "مبلغ الزامی است." })
+    .regex(/^[1-9]\d{0,15}$/, "مبلغ نامعتبر است."),
+  cardNumber: z.preprocess(
+    persianToLatinDigits,
+    z
+      .string({ error: "شماره کارت الزامی است." })
+      .regex(/^\d{16}$/, "شماره کارت باید ۱۶ رقم باشد.")
+      .refine(isValidCardNumber, "شماره کارت معتبر نیست."),
+  ),
+  cardHolder: z
+    .string({ error: "نام صاحب کارت الزامی است." })
+    .trim()
+    .min(3, "نام صاحب کارت را کامل وارد کن.")
+    .max(60, "نام صاحب کارت بیش از حد طولانی است."),
+  idempotencyKey: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/, "کلید یکتای درخواست نامعتبر است."),
+});
+
+export type AffiliatePayoutRequestInput = z.infer<typeof affiliatePayoutRequestInput>;
+
+export const affiliatePayoutReviewInput = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("paid"),
+    bankRef: z.string().trim().min(3, "شماره پیگیری واریز را وارد کن.").max(64, "شماره پیگیری طولانی است."),
+    note: z.string().trim().max(300).optional(),
+  }),
+  z.object({
+    action: z.literal("rejected"),
+    note: z.string().trim().min(3, "دلیل رد را بنویس.").max(300, "دلیل رد طولانی است."),
+  }),
+]);
+
+export type AffiliatePayoutReviewInput = z.infer<typeof affiliatePayoutReviewInput>;

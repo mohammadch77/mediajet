@@ -5,6 +5,7 @@ import { prisma } from "./db";
 import { getGateway } from "./gateway";
 import { creditWalletInTx } from "./wallet";
 import { clearCartInTx } from "./cart";
+import { accrueOrderCommissionInTx } from "./affiliate";
 import { assertTransition, type OrderStatus } from "./orderState";
 
 export class PaymentError extends Error {
@@ -211,6 +212,9 @@ export async function confirmOrderPayment(
         note: "پرداخت مستقیم از درگاه تأیید شد.",
       },
     });
+
+    // کمیسیون همکار معرف فقط روی خرج واقعی؛ شارژ کیف پول (confirmCharge) عمداً کمیسیون ندارد.
+    await accrueOrderCommissionInTx(tx, order.id);
 
     // فقط سفارش‌هایی که از تسویه‌ی سبد خرید ساخته شده‌اند سبد کاربر را خالی می‌کنند؛
     // سفارش تکی اصلاً از سبد عبور نکرده، پس نباید سبدِ نامرتبط کاربر را پاک کند.

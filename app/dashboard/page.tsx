@@ -353,9 +353,17 @@ export default function DashboardPage() {
             سلام، {displayName}
           </h1>
         </div>
-        <Link href="/" className="text-dim text-[.9rem] hover:text-text transition">
-          ← بازگشت به صفحه‌ی اصلی
-        </Link>
+        <div className="flex items-center gap-4 flex-wrap">
+          <Link
+            href="/affiliate"
+            className="text-cyan text-[.9rem] font-semibold border border-[rgba(56,225,255,.3)] rounded-full px-3.5 py-1.5 hover:bg-[rgba(56,225,255,.08)] transition"
+          >
+            همکاری در فروش
+          </Link>
+          <Link href="/" className="text-dim text-[.9rem] hover:text-text transition">
+            ← بازگشت به صفحه‌ی اصلی
+          </Link>
+        </div>
       </div>
 
       {error && (

@@ -5,6 +5,7 @@ import { computePriceForPaymentMethod } from "@/lib/pricing";
 import { rialToTomanLabel } from "@/lib/money";
 import { validateInput, createOrderInput, ValidationError } from "@/lib/validation";
 import { debitWalletInTx, WalletError } from "@/lib/wallet";
+import { accrueOrderCommissionInTx } from "@/lib/affiliate";
 import { assertTransition, type OrderStatus } from "@/lib/orderState";
 import { getCurrentUser } from "@/lib/session";
 import { notifyOrderCreated } from "@/lib/telegram";
@@ -176,6 +177,7 @@ export async function POST(req: NextRequest) {
           idempotencyKey,
         );
         await transitionOrder(tx, order.id, "awaiting_payment", "queued", "system");
+        await accrueOrderCommissionInTx(tx, order.id);
         return;
       }
 
