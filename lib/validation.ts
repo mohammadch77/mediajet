@@ -519,3 +519,13 @@ export const affiliatePayoutReviewInput = z.discriminatedUnion("action", [
 ]);
 
 export type AffiliatePayoutReviewInput = z.infer<typeof affiliatePayoutReviewInput>;
+
+export const refundOrderInput = z.object({
+  reason: z
+    .string({ error: "دلیل بازگشت وجه الزامی است." })
+    .trim()
+    .min(3, "دلیل بازگشت وجه را بنویس.")
+    .max(300, "دلیل بازگشت وجه طولانی است."),
+});
+
+export type RefundOrderInput = z.infer<typeof refundOrderInput>;

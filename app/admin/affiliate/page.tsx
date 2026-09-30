@@ -31,7 +31,115 @@ const STATUS: Record<PayoutStatus, { label: string; cls: string }> = {
 const inputCls =
   "w-full font-body text-[.88rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[10px_12px] focus:border-primary outline-none";
 
+const tabCls = (active: boolean) =>
+  "px-4 py-2 rounded-xl text-[.88rem] font-bold border transition " +
+  (active
+    ? "bg-[rgba(56,225,255,.1)] border-[rgba(56,225,255,.4)] text-cyan"
+    : "bg-transparent border-[rgba(138,124,255,.2)] text-dim hover:text-text");
+
 export default function AdminAffiliatePage() {
+  const [tab, setTab] = useState<"payouts" | "affiliates">("payouts");
+  return (
+    <div>
+      <div className="mb-6">
+        <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Affiliate</div>
+        <h1 className="font-display text-[clamp(1.5rem,3.5vw,2.1rem)] font-extrabold mt-2">همکاری در فروش</h1>
+        <p className="text-dim text-[.85rem] mt-2">
+          درصد کمیسیون و حداقل تسویه از <Link href="/admin/settings" className="text-cyan hover:underline">تنظیمات</Link> قابل تغییر است.
+          بازگشت وجه سفارش (از صفحه‌ی هر سفارش) کمیسیون همان سفارش را خودکار برگشت می‌زند.
+        </p>
+      </div>
+      <div className="flex gap-2 mb-5">
+        <button onClick={() => setTab("payouts")} className={tabCls(tab === "payouts")}>درخواست‌های تسویه</button>
+        <button onClick={() => setTab("affiliates")} className={tabCls(tab === "affiliates")}>همکاران</button>
+      </div>
+      {tab === "payouts" ? <PayoutsTab /> : <AffiliatesTab />}
+    </div>
+  );
+}
+
+type AffiliateRow = {
+  id: string;
+  mobile: string;
+  name: string | null;
+  code: string;
+  joinedAt: string;
+  referralsCount: number;
+  balanceLabel: string;
+  netEarnedLabel: string;
+  paidLabel: string;
+};
+
+function AffiliatesTab() {
+  const [data, setData] = useState<{ items: AffiliateRow[]; total: number; page: number; totalPages: number } | null>(null);
+  const [q, setQ] = useState("");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      setError(null);
+      try {
+        const res = await fetch(`/api/admin/affiliate/affiliates?page=${page}${query ? `&q=${encodeURIComponent(query)}` : ""}`);
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? "خطا در دریافت همکاران.");
+        setData(json);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "خطا در دریافت همکاران.");
+      }
+    })();
+  }, [page, query]);
+
+  return (
+    <div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          setPage(1);
+          setQuery(q.trim());
+        }}
+        className="flex gap-2 mb-5"
+      >
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="جست‌وجو: موبایل، نام یا کد" className={inputCls} />
+        <button className="font-bold rounded-xl px-4 text-[.88rem] bg-gradient-to-br from-primary to-primary2 text-white shrink-0">جست‌وجو</button>
+      </form>
+
+      {error && <div className="text-accent2 mb-4">{error}</div>}
+      {!data ? (
+        <div className="text-dim">در حال بارگذاری...</div>
+      ) : data.items.length === 0 ? (
+        <div className="text-dim text-[.9rem]">همکاری پیدا نشد.</div>
+      ) : (
+        <>
+          <div className="grid gap-3 md:grid-cols-2">
+            {data.items.map((a) => (
+              <div key={a.id} className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4">
+                <div className="flex items-center justify-between gap-2 flex-wrap mb-2.5">
+                  <div className="min-w-0">
+                    <Link href={`/admin/users/${a.id}`} className="text-cyan font-bold hover:underline" dir="ltr">{a.mobile}</Link>
+                    {a.name && <span className="text-dim text-[.82rem]"> · {a.name}</span>}
+                  </div>
+                  <span className="latin text-[.78rem] font-bold px-2.5 py-1 rounded-full bg-[rgba(255,255,255,.05)] border border-[rgba(138,124,255,.2)]">{a.code}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[.82rem]">
+                  <div><span className="text-dim">زیرمجموعه: </span>{a.referralsCount.toLocaleString("fa-IR")} نفر</div>
+                  <div><span className="text-dim">موجودی: </span><span className="font-semibold">{a.balanceLabel}</span></div>
+                  <div><span className="text-dim">کمیسیون خالص: </span>{a.netEarnedLabel}</div>
+                  <div><span className="text-dim">واریزشده: </span>{a.paidLabel}</div>
+                  <div className="col-span-2 text-dim text-[.75rem]">عضویت: {toJalaliDateTime(a.joinedAt)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onPageChange={setPage} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function PayoutsTab() {
   const [data, setData] = useState<ListResponse | null>(null);
   const [status, setStatus] = useState<"" | PayoutStatus>("requested");
   const [page, setPage] = useState(1);
@@ -55,14 +163,6 @@ export default function AdminAffiliatePage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Affiliate</div>
-        <h1 className="font-display text-[clamp(1.5rem,3.5vw,2.1rem)] font-extrabold mt-2">تسویه‌ی همکاری در فروش</h1>
-        <p className="text-dim text-[.85rem] mt-2">
-          درصد کمیسیون و حداقل تسویه از <Link href="/admin/settings" className="text-cyan hover:underline">تنظیمات</Link> قابل تغییر است.
-        </p>
-      </div>
-
       <div className="flex items-center gap-2.5 flex-wrap mb-5">
         {(["requested", "paid", "rejected", ""] as const).map((s) => (
           <button

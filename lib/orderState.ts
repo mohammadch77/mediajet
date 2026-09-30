@@ -35,6 +35,21 @@ export function assertTransition(from: OrderStatus, to: OrderStatus): void {
   }
 }
 
+/**
+ * مسیر بازگشت وجه برای هر وضعیتِ پرداخت‌شده‌ی قابل بازگشت (هر گام همچنان با assertTransition چک می‌شود).
+ * سفارش پرداخت‌نشده یا تحویل‌شده (delivered) بازگشت وجه ندارد.
+ */
+export const REFUND_PATHS: Partial<Record<OrderStatus, OrderStatus[]>> = {
+  queued: ["cancelled"],
+  processing: ["failed", "refunded"],
+  ready: ["failed", "refunded"],
+  failed: ["refunded"],
+};
+
+export function isRefundable(status: OrderStatus): boolean {
+  return status in REFUND_PATHS;
+}
+
 export const STATUS_LABELS: Record<OrderStatus, string> = {
   draft: "پیش‌نویس",
   awaiting_payment: "در انتظار پرداخت",

@@ -205,7 +205,7 @@ function Dashboard({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           ["موجودی قابل برداشت", d.balanceLabel, "text-[#3ddc84]"],
-          ["کل کمیسیون", d.totalEarnedLabel, "text-cyan"],
+          ["کل کمیسیون (خالص)", d.totalEarnedLabel, "text-cyan"],
           ["واریزشده", d.totalPaidLabel, "text-primary2"],
           ["زیرمجموعه‌ها", `${toPersianDigits(d.referralsCount)} نفر`, "text-text"],
         ].map(([label, value, cls]) => (
@@ -226,6 +226,7 @@ function Dashboard({
 
       <section>
         <h2 className="font-display text-[1.1rem] font-bold mb-3">کمیسیون‌های اخیر</h2>
+        <p className="text-dim text-[.8rem] mb-3">اگر سفارشی بازگشت وجه شود، کمیسیون همان سفارش از موجودی کم می‌شود.</p>
         {d.commissions.length === 0 ? (
           <div className={`${card} p-4 text-dim text-[.9rem]`}>هنوز کمیسیونی ثبت نشده. لینکت را به اشتراک بگذار!</div>
         ) : (
@@ -239,7 +240,9 @@ function Dashboard({
                     {toJalaliDateTime(c.createdAt)}
                   </div>
                 </div>
-                <div className="font-bold text-[#3ddc84]">+ {c.amountLabel}</div>
+                <div className={`font-bold ${c.reversal ? "text-accent2" : "text-[#3ddc84]"}`}>
+                  {c.reversal ? "−" : "+"} {c.amountLabel}
+                </div>
               </div>
             ))}
           </div>

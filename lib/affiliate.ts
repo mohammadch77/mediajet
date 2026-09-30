@@ -16,6 +16,7 @@ import { Prisma, type AffiliateEntryType, type AffiliatePayout } from "@prisma/c
 import { prisma } from "./db";
 import { getPaymentSettings } from "./paymentSettings";
 import { rialToTomanLabel } from "./money";
+import { formatOrderNumber } from "./orderNumber";
 
 export { REF_COOKIE, normalizeReferralCode } from "./referralCode";
 
@@ -121,7 +122,11 @@ async function appendEntryInTx(
   const account = await lockAccount(tx, userId);
   const delta = INCREASING.includes(entry.type) ? entry.amountRial : -entry.amountRial;
   const balanceAfter = account.balanceRial + delta;
-  if (balanceAfter < 0n) throw new AffiliateError("موجودی کمیسیون کافی نیست.");
+  // برگشت کمیسیون تنها ردیفی است که می‌تواند موجودی را منفی کند: اگر کمیسیون قبلاً تسویه شده
+  // باشد، بدهی همکار از کمیسیون‌های بعدی کسر می‌شود. بقیه‌ی کاهش‌ها (تسویه) هرگز منفی نمی‌کنند.
+  if (balanceAfter < 0n && entry.type !== "commission_reversal") {
+    throw new AffiliateError("موجودی کمیسیون کافی نیست.");
+  }
 
   const row = await tx.affiliateLedger.create({
     data: { accountId: account.id, balanceAfter, ...entry },
@@ -172,7 +177,34 @@ export async function accrueOrderCommissionInTx(tx: Prisma.TransactionClient, or
     sourceUserId: order.userId,
     baseRial,
     percent,
-    note: `کمیسیون سفارش MJ-${order.orderNumber}`,
+    note: `کمیسیون سفارش ${formatOrderNumber(order.orderNumber)}`,
+  });
+}
+
+/**
+ * وقتی سفارشی بازگشت وجه می‌شود، داخل همان تراکنش صدا زده می‌شود و کمیسیونِ همان سفارش را
+ * (با همان مبلغی که ثبت شده بود، نه با درصد فعلی) از موجودی همکار کم می‌کند.
+ * idempotent؛ اگر سفارش کمیسیونی نساخته بود، کاری نمی‌کند.
+ */
+export async function reverseOrderCommissionInTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
+  const original = await tx.affiliateLedger.findUnique({
+    where: { idempotencyKey: `commission:order:${orderId}` },
+    include: { account: { select: { userId: true } } },
+  });
+  if (!original) return;
+
+  const idempotencyKey = `commission_reversal:order:${orderId}`;
+  if (await tx.affiliateLedger.findUnique({ where: { idempotencyKey } })) return;
+
+  await appendEntryInTx(tx, original.account.userId, {
+    type: "commission_reversal",
+    amountRial: original.amountRial,
+    idempotencyKey,
+    orderId,
+    sourceUserId: original.sourceUserId ?? undefined,
+    baseRial: original.baseRial ?? undefined,
+    percent: original.percent ?? undefined,
+    note: `برگشت ${original.note ?? "کمیسیون"} (بازگشت وجه)`,
   });
 }
 

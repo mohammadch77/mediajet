@@ -11,11 +11,26 @@ npm run db:push           # ساخت جدول‌ها روی PostgreSQL
 npm run dev               # اجرای محیط توسعه روی http://localhost:3000
 ```
 
-برای بیلد پroduction:
+برای بیلد production:
 
 ```bash
 npm run build && npm start
 ```
+
+### به‌روزرسانی سرور production (هر بار که `prisma/schema.prisma` تغییر کرده)
+
+ترتیب مهم است: **اول دیتابیس، بعد کد جدید.** اگر کد جدید روی دیتابیس قدیمی اجرا شود، هر مسیری که به جدول/ستون جدید نیاز دارد خطا می‌دهد.
+
+```bash
+pg_dump "$DATABASE_URL" > backup-$(date +%F).sql   # ۱) پشتیبان قبل از هر تغییر اسکیمایی
+git pull                                            # ۲) کد جدید
+npm ci
+npx prisma db push                                  # ۳) اعمال اسکیمای جدید (سؤال می‌پرسد اگر خطر داده باشد)
+npm run build && <ری‌استارت سرویس>                 # ۴) بیلد و اجرای دوباره
+```
+
+- اگر `prisma db push` پیام «data loss» داد، **اول متنش را بخوان**. برای step 17 (همکاری در فروش) تنها هشدار، ستون یکتای `User.referralCode` است که برای همه‌ی کاربران موجود خالی است؛ پس `npx prisma db push --accept-data-loss` امن است و داده‌ای پاک نمی‌شود. برای هر هشدار دیگری بدون بررسی این فلگ را نزن.
+- step 17 و بعد از آن: جدول‌های `AffiliateAccount`، `AffiliateLedger`، `AffiliatePayout` و ستون‌های همکاری روی `User` اضافه می‌شوند؛ هیچ داده‌ی موجودی تغییر نمی‌کند.
 
 ## ساختار
 

@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toJalaliDateTime } from "@/lib/jalali";
-import { STATUS_LABELS, type OrderStatus } from "@/lib/orderState";
+import { STATUS_LABELS, isRefundable, type OrderStatus } from "@/lib/orderState";
 
 type OrderDetail = {
   id: string;
@@ -20,23 +20,77 @@ type OrderDetail = {
   events: { id: string; fromStatus: string | null; toStatus: string; actor: string; note: string | null; createdAt: string }[];
 };
 
+function RefundBox({ orderId, priceLabel, onDone }: { orderId: string; priceLabel: string; onDone: () => Promise<void> }) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function refund() {
+    if (!confirm(`مبلغ ${priceLabel} به کیف پول کاربر برگردد؟ این کار قابل برگشت نیست.`)) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "بازگشت وجه ناموفق بود.");
+      await onDone();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "بازگشت وجه ناموفق بود.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="bg-[rgba(255,107,53,.06)] border border-[rgba(255,107,53,.25)] rounded-2xl p-5 mb-6">
+      <h2 className="font-display font-bold mb-1">بازگشت وجه</h2>
+      <p className="text-dim text-[.82rem] mb-3 leading-[1.9]">
+        کل مبلغ سفارش ({priceLabel}) به کیف پول کاربر برمی‌گردد و اگر این سفارش برای همکار معرف کمیسیون ساخته بود،
+        همان کمیسیون هم برگشت می‌خورد.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-2.5">
+        <input
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="دلیل بازگشت وجه (به کاربر نمایش داده نمی‌شود)"
+          className="flex-1 min-w-0 font-body text-[.9rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[10px_12px] focus:border-primary outline-none"
+        />
+        <button
+          onClick={refund}
+          disabled={busy}
+          className="font-bold rounded-xl px-5 py-2.5 text-[.9rem] bg-[rgba(255,107,53,.16)] text-accent2 border border-[rgba(255,107,53,.35)] hover:bg-[rgba(255,107,53,.26)] disabled:opacity-60 shrink-0"
+        >
+          {busy ? "در حال انجام..." : "بازگشت وجه"}
+        </button>
+      </div>
+      {err && <div className="text-accent2 text-[.82rem] mt-2">{err}</div>}
+    </div>
+  );
+}
+
 export default function AdminOrderDetailPage() {
   const params = useParams<{ id: string }>();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`/api/admin/orders/${params.id}`);
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? "خطا در دریافت سفارش.");
-        setOrder(json.order);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "خطا در دریافت سفارش.");
-      }
-    })();
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/admin/orders/${params.id}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "خطا در دریافت سفارش.");
+      setOrder(json.order);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطا در دریافت سفارش.");
+    }
   }, [params.id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (error) {
     return (
@@ -105,6 +159,8 @@ export default function AdminOrderDetailPage() {
           </div>
         )}
       </div>
+
+      {isRefundable(order.status) && <RefundBox orderId={order.id} priceLabel={order.priceLabel} onDone={load} />}
 
       <h2 className="font-display font-bold mb-3">تاریخچه‌ی رویدادها</h2>
       {order.events.length === 0 ? (

@@ -36,11 +36,15 @@ export async function getAffiliateDashboard(userId: string) {
   const [referralsCount, earned, commissions, payouts] = await Promise.all([
     prisma.user.count({ where: { referredById: userId } }),
     accountId
-      ? prisma.affiliateLedger.aggregate({ where: { accountId, type: "commission" }, _sum: { amountRial: true } })
-      : null,
+      ? prisma.affiliateLedger.groupBy({
+          by: ["type"],
+          where: { accountId, type: { in: ["commission", "commission_reversal"] } },
+          _sum: { amountRial: true },
+        })
+      : [],
     accountId
       ? prisma.affiliateLedger.findMany({
-          where: { accountId, type: "commission" },
+          where: { accountId, type: { in: ["commission", "commission_reversal"] } },
           orderBy: { createdAt: "desc" },
           take: 20,
         })
@@ -55,7 +59,9 @@ export async function getAffiliateDashboard(userId: string) {
   const mobileById = new Map(sources.map((u) => [u.id, u.mobile]));
 
   const balance = user.affiliateAccount?.balanceRial ?? 0n;
-  const totalEarned = earned?._sum.amountRial ?? 0n;
+  const sumOf = (type: string) => earned.find((g) => g.type === type)?._sum.amountRial ?? 0n;
+  // کمیسیون خالص: کمیسیون‌ها منهای برگشتی‌های ناشی از بازگشت وجه.
+  const totalEarned = sumOf("commission") - sumOf("commission_reversal");
   const totalPaid = payouts.filter((p) => p.status === "paid").reduce((s, p) => s + p.amountRial, 0n);
 
   return {
@@ -69,6 +75,7 @@ export async function getAffiliateDashboard(userId: string) {
     hasOpenPayout: payouts.some((p) => p.status === "requested"),
     commissions: commissions.map((c) => ({
       id: c.id,
+      reversal: c.type === "commission_reversal",
       amountLabel: rialToTomanLabel(Number(c.amountRial)),
       baseLabel: c.baseRial !== null ? rialToTomanLabel(Number(c.baseRial)) : null,
       percent: c.percent,

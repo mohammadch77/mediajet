@@ -241,12 +241,78 @@ async function main(): Promise<void> {
   check("درخواست جدید ثبت و «واریز شد»", paid.json?.status === "paid");
   check("موجودی بعد از واریز صفر است", (await balanceOf(affiliate.userId)) === 0n);
 
-  console.log("\n۹) سازگاری دفتر");
+  console.log("\n۹) بازگشت وجه و برگشت کمیسیون");
+  const walletOf = async (userId: string) => (await prisma.wallet.findUnique({ where: { userId } }))!.balanceRial;
+  const refundKey = crypto.randomUUID();
+  await api("/api/orders", buyerCookie, { ...orderBody, idempotencyKey: refundKey, productUrl: "https://www.freepik.com/x-refund" });
+  const refundOrder = (await prisma.order.findUnique({ where: { idempotencyKey: refundKey } }))!;
+  const refundCommission = await prisma.affiliateLedger.findUnique({ where: { idempotencyKey: `commission:order:${refundOrder.id}` } });
+  check("سفارش جدید کمیسیون ساخت", !!refundCommission, String(refundCommission?.amountRial));
+  const affBefore = await balanceOf(affiliate.userId);
+  const buyerWalletBefore = await walletOf(buyer.id);
+
+  const userRefund = await api(`/api/admin/orders/${refundOrder.id}/refund`, buyerCookie, { reason: "تست" });
+  check("کاربر عادی نمی‌تواند بازگشت وجه بزند (۴۰۳)", userRefund.status === 403);
+  const noReason = await api(`/api/admin/orders/${refundOrder.id}/refund`, admin.cookie, {});
+  check("بازگشت وجه بدون دلیل رد می‌شود", noReason.status === 400);
+
+  const r1 = await api(`/api/admin/orders/${refundOrder.id}/refund`, admin.cookie, { reason: "فایل در سایت مبدأ حذف شده بود" });
+  check("سفارش در صف → لغوشده", r1.status === 200 && r1.json?.status === "cancelled", JSON.stringify(r1.json));
+  check("کل مبلغ پرداختی (با کارمزد) به کیف پول برگشت", (await walletOf(buyer.id)) - buyerWalletBefore === refundOrder.totalPriceRial, `${refundOrder.totalPriceRial}`);
+  const reversal = await prisma.affiliateLedger.findUnique({ where: { idempotencyKey: `commission_reversal:order:${refundOrder.id}` } });
+  check("کمیسیون همان سفارش با همان مبلغ برگشت خورد", reversal?.amountRial === refundCommission?.amountRial);
+  check("موجودی همکار به همان اندازه کم شد", (await balanceOf(affiliate.userId)) === affBefore - (refundCommission?.amountRial ?? 0n));
+
+  const r2 = await api(`/api/admin/orders/${refundOrder.id}/refund`, admin.cookie, { reason: "دوباره" });
+  check("بازگشت وجه دوم رد می‌شود و پولی جابه‌جا نمی‌شود", r2.status === 422 && (await walletOf(buyer.id)) - buyerWalletBefore === refundOrder.totalPriceRial);
+  const events = await prisma.orderEvent.findMany({ where: { orderId: refundOrder.id, actor: `admin:${admin.userId}` } });
+  check("رویداد audit با actor ادمین ثبت شد", events.length === 1 && events[0].toStatus === "cancelled");
+
+  // سفارشی که قبلاً کمیسیونش تسویه شده: برگشت کمیسیون موجودی را منفی (بدهی) می‌کند.
+  const paidOrderId = list[0].orderId!;
+  await prisma.order.update({ where: { id: paidOrderId }, data: { status: "processing" } });
+  const balBeforeDebt = await balanceOf(affiliate.userId);
+  const r3 = await api(`/api/admin/orders/${paidOrderId}/refund`, admin.cookie, { reason: "خطای اپراتور" });
+  check("سفارش در حال پردازش → failed → refunded", r3.json?.status === "refunded");
+  const r3Events = await prisma.orderEvent.findMany({ where: { orderId: paidOrderId, actor: `admin:${admin.userId}` }, orderBy: { createdAt: "asc" } });
+  check("هر دو گام state machine ثبت شد", r3Events.map((e) => e.toStatus).join(",") === "failed,refunded");
+  const debt = await balanceOf(affiliate.userId);
+  check("کمیسیونِ تسویه‌شده برگشت خورد و موجودی منفی (بدهی) شد", debt === balBeforeDebt - list[0].amountRial && debt < 0n, `${debt}`);
+  const debtPayout = await api("/api/affiliate/payouts", affiliate.cookie, { ...payoutBody, amountRial: "10000", idempotencyKey: crypto.randomUUID() });
+  check("با موجودی منفی درخواست تسویه ممکن نیست", debtPayout.status === 422);
+
+  const deliveredKey = crypto.randomUUID();
+  await api("/api/orders", buyerCookie, { ...orderBody, idempotencyKey: deliveredKey, productUrl: "https://www.freepik.com/x-delivered" });
+  const delivered = (await prisma.order.findUnique({ where: { idempotencyKey: deliveredKey } }))!;
+  await prisma.order.update({ where: { id: delivered.id }, data: { status: "delivered" } });
+  const r4 = await api(`/api/admin/orders/${delivered.id}/refund`, admin.cookie, { reason: "تست" });
+  check("سفارش تحویل‌شده قابل بازگشت وجه نیست", r4.status === 422);
+
+  const plainKey = crypto.randomUUID();
+  const plainCookie = (await sessionFor(existingMobile)).cookie;
+  await creditWallet(existing.userId, 5_000_000n, null, "شارژ تست");
+  await api("/api/orders", plainCookie, { ...orderBody, idempotencyKey: plainKey, productUrl: "https://www.freepik.com/x-plain" });
+  const plain = (await prisma.order.findUnique({ where: { idempotencyKey: plainKey } }))!;
+  const ledgerCountBefore = await prisma.affiliateLedger.count();
+  const r5 = await api(`/api/admin/orders/${plain.id}/refund`, admin.cookie, { reason: "کاربر بدون معرف" });
+  check("بازگشت وجه سفارش کاربرِ بدون معرف، بدون ردیف کمیسیون", r5.status === 200 && (await prisma.affiliateLedger.count()) === ledgerCountBefore);
+
+  const dashAfter = await api("/api/affiliate", affiliate.cookie);
+  check("داشبورد همکار ردیف برگشتی را نشان می‌دهد", dashAfter.json?.dashboard?.commissions?.some((c: any) => c.reversal === true));
+
+  console.log("\n۱۰) مدیریت همکاران در پنل ادمین");
+  const affList = await api(`/api/admin/affiliate/affiliates?q=${code}`, admin.cookie);
+  const row = affList.json?.items?.[0];
+  check("ادمین همکار را با کد پیدا می‌کند", affList.json?.total === 1 && row?.code === code && row?.referralsCount === 1);
+  const affListUser = await api("/api/admin/affiliate/affiliates", affiliate.cookie);
+  check("کاربر عادی لیست همکاران را نمی‌بیند (۴۰۳)", affListUser.status === 403);
+
+  console.log("\n۱۱) سازگاری دفتر");
   const entries = await prisma.affiliateLedger.findMany({ where: { account: { userId: affiliate.userId } }, orderBy: { createdAt: "asc" } });
   let running = 0n;
   let consistent = true;
   for (const e of entries) {
-    running += e.type === "payout_hold" ? -e.amountRial : e.amountRial;
+    running += e.type === "payout_hold" || e.type === "commission_reversal" ? -e.amountRial : e.amountRial;
     if (running !== e.balanceAfter) consistent = false;
   }
   check("هر ردیف balanceAfter درست دارد و مجموع = موجودی", consistent && running === (await balanceOf(affiliate.userId)), `${entries.length} ردیف`);
