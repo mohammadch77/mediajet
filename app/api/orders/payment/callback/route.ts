@@ -28,6 +28,7 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
     if (result.queued) {
       const items = await prisma.orderItem.findMany({
         where: { orderId: result.queued.orderId },
+        orderBy: { position: "asc" },
         select: { productUrl: true },
       });
       notifyOrderCreated({

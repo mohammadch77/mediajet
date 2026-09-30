@@ -1,6 +1,6 @@
 // تست end-to-end همکاری در فروش.
-// اجرا: سرور dev با خروجی هدایت‌شده به فایل لاگ بالا باشد، سپس
-//   LOG_FILE=<مسیر لاگ> npx tsx scripts/test-affiliate.ts
+// اجرا: سرور dev با TRUST_PROXY=true بالا باشد (برای تست تشخیص تقلب با IP)، سپس
+//   npx tsx --env-file=.env scripts/test-affiliate.ts
 //
 // پوشش: عضویت و کد یکتا، ثبت زیرمجموعه فقط هنگام ساخت کاربر، نبودِ کمیسیون روی شارژ کیف پول،
 // کمیسیون روی سفارش کیف پول و درگاه (فقط یک‌بار، مبنای بدون کارمزد)، ثابت ماندن درصد ردیف‌های قبلی،
@@ -8,13 +8,11 @@
 // و سازگاری دفتر با موجودی.
 
 import crypto from "crypto";
-import { readFileSync } from "fs";
 import { prisma } from "../lib/db";
 import { creditWallet } from "../lib/wallet";
 import { setPaymentSetting } from "../lib/paymentSettings";
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
-const LOG_FILE = process.env.LOG_FILE;
 
 let passed = 0;
 let failed = 0;
@@ -37,27 +35,28 @@ async function sessionFor(mobile: string, role: "user" | "admin" | "operator" = 
   return { userId: user.id, cookie: `mediajet_session=${token}` };
 }
 
-function otpFromLog(mobile: string): string {
-  if (!LOG_FILE) throw new Error("LOG_FILE تنظیم نشده است.");
-  const lines = readFileSync(LOG_FILE, "utf-8").split("\n").filter((l) => l.includes(mobile) && l.includes("پیامک شبیه‌سازی"));
-  const match = lines[lines.length - 1]?.match(/(\d{6})\s*$/);
-  if (!match) throw new Error(`کد OTP برای ${mobile} در لاگ نیست.`);
-  return match[1];
+/** معادل رسیدن پیامک OTP: آخرین کد معتبر این شماره را با همان هش lib/otp.ts می‌گذارد (بدون وابستگی به لاگ سرور). */
+async function plantOtp(mobile: string): Promise<string> {
+  const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
+  await prisma.otpCode.updateMany({ where: { mobile, usedAt: null }, data: { usedAt: new Date() } });
+  await prisma.otpCode.create({
+    data: {
+      mobile,
+      codeHash: crypto.createHash("sha256").update(`${mobile}:${code}`).digest("hex"),
+      expiresAt: new Date(Date.now() + 120_000),
+    },
+  });
+  return code;
 }
 
 /** ثبت‌نام/ورود واقعی با OTP، با کوکی دلخواه (مثلاً mj_ref). */
 /** ip: با TRUST_PROXY=true روی سرور، به‌عنوان X-Forwarded-For فرستاده می‌شود (برای تست تشخیص تقلب). */
 async function otpLogin(mobile: string, extraCookie = "", ip = "127.0.0.1"): Promise<string> {
-  await fetch(`${BASE_URL}/api/auth/request-otp`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Forwarded-For": ip },
-    body: JSON.stringify({ mobile }),
-  });
-  await new Promise((r) => setTimeout(r, 400));
+  const code = await plantOtp(mobile);
   const res = await fetch(`${BASE_URL}/api/auth/verify-otp`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Cookie: extraCookie, "X-Forwarded-For": ip },
-    body: JSON.stringify({ mobile, code: otpFromLog(mobile) }),
+    body: JSON.stringify({ mobile, code }),
   });
   const m = res.headers.get("set-cookie")?.match(/mediajet_session=[^;]+/);
   if (!m) throw new Error(`ورود ${mobile} ناموفق بود: ${res.status}`);
@@ -391,7 +390,7 @@ async function main(): Promise<void> {
     await api("/api/orders", holdBuyerCookie, { ...orderBody, idempotencyKey: k, productUrl: `https://www.freepik.com/${tag}` });
     return (await prisma.order.findUnique({ where: { idempotencyKey: k } }))!;
   };
-  const cron = async () => (await fetch(`${BASE_URL}/api/cron/affiliate`, { method: "POST" })).json();
+  const cron = async () => (await fetch(`${BASE_URL}/api/cron/affiliate`, { method: "POST", headers: { Authorization: `Bearer ${process.env.CRON_SECRET ?? ""}` } })).json();
 
   const h1 = await placeOrder("hold-1");
   const p1Row = await prisma.affiliatePendingCommission.findUnique({ where: { orderId: h1.id } });

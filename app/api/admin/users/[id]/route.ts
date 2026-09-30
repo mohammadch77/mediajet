@@ -38,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       orderBy: { createdAt: "desc" },
       skip: ordersPageParams.skip,
       take: ordersPageParams.take,
-      include: { items: true },
+      include: { items: { orderBy: { position: "asc" } } },
     }),
     user.wallet
       ? prisma.walletTransaction.count({ where: { walletId: user.wallet.id } })

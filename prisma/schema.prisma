@@ -227,6 +227,9 @@ model OrderItem {
   category   String
   productUrl String
   priceRial  BigInt // قیمت پایه‌ی همین آیتم (پیش از کارمزد روش پرداخت که روی کل سفارش اعمال می‌شود)
+  // جایگاه ۰-پایه‌ی آیتم در سفارش. «آیتم N» در تلگرام و پنل‌ها = position N-1. createdAt برای این کار
+  // قابل اعتماد نیست چون آیتم‌های یک سفارش در یک دستور و با زمان یکسان ساخته می‌شوند.
+  position   Int             @default(0)
   status     OrderItemStatus @default(pending)
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
@@ -234,6 +237,7 @@ model OrderItem {
   order    Order     @relation(fields: [orderId], references: [id])
   delivery Delivery?
 
+  @@unique([orderId, position])
   @@index([orderId])
 }
 

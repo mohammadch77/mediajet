@@ -44,8 +44,8 @@ async function main() {
       items: {
         create: [
           { sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/x1", priceRial: BigInt(item1Price.finalPriceRial) },
-          { sourceSite: "Flaticon", category: "icon", productUrl: "https://flaticon.com/x2", priceRial: BigInt(item2Price.finalPriceRial) },
-          { sourceSite: "Shutterstock", category: "photo", productUrl: "https://shutterstock.com/x3", priceRial: BigInt(item3Price.finalPriceRial) },
+          { position: 1, sourceSite: "Flaticon", category: "icon", productUrl: "https://flaticon.com/x2", priceRial: BigInt(item2Price.finalPriceRial) },
+          { position: 2, sourceSite: "Shutterstock", category: "photo", productUrl: "https://shutterstock.com/x3", priceRial: BigInt(item3Price.finalPriceRial) },
         ],
       },
     },

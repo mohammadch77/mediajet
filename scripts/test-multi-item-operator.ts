@@ -26,7 +26,7 @@ function orderNotifyText(orderId: string): string {
 function loadOrder(id: string) {
   return prisma.order.findUnique({
     where: { id },
-    include: { items: { include: { delivery: true }, orderBy: { createdAt: "asc" } }, events: true },
+    include: { items: { include: { delivery: true }, orderBy: { position: "asc" } }, events: true },
   });
 }
 
@@ -51,11 +51,11 @@ run(() =>
         items: {
           create: [
             { sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/web-1", priceRial: 1_000_000n },
-            { sourceSite: "Envato", category: "video", productUrl: "https://envato.com/web-2", priceRial: 1_500_000n },
+            { position: 1, sourceSite: "Envato", category: "video", productUrl: "https://envato.com/web-2", priceRial: 1_500_000n },
           ],
         },
       },
-      include: { items: { orderBy: { createdAt: "asc" } } },
+      include: { items: { orderBy: { position: "asc" } } },
     });
     const [webItem1, webItem2] = orderWeb.items;
     const itemUrl = (itemId: string, action: string) => `${BASE_URL}/api/operator/orders/${orderWeb.id}/items/${itemId}/${action}`;
@@ -112,7 +112,7 @@ run(() =>
         items: {
           create: [
             { sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/tg-1", priceRial: 800_000n },
-            { sourceSite: "Shutterstock", category: "photo", productUrl: "https://shutterstock.com/tg-2", priceRial: 1_200_000n },
+            { position: 1, sourceSite: "Shutterstock", category: "photo", productUrl: "https://shutterstock.com/tg-2", priceRial: 1_200_000n },
           ],
         },
       },

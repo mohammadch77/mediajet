@@ -11,7 +11,7 @@
     {
       "name": "mediajet-test",
       "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "set TELEGRAM_BOT_TOKEN=disabled-for-tests&& npm run dev"],
+      "runtimeArgs": ["/c", "set TELEGRAM_BOT_TOKEN=disabled-for-tests&& set TRUST_PROXY=true&& npm run dev"],
       "port": 3000,
       "autoPort": true
     }

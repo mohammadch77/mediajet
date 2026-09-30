@@ -139,7 +139,7 @@ function findOrderByRef(orderRef: string) {
   const orderNumber = parseOrderNumber(toEnglishDigits(orderRef));
   return prisma.order.findUnique({
     where: orderNumber !== null ? { orderNumber } : { id: orderRef },
-    include: { items: { orderBy: { createdAt: "asc" } } },
+    include: { items: { orderBy: { position: "asc" } } },
   });
 }
 

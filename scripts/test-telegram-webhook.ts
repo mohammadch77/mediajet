@@ -152,12 +152,12 @@ run(() =>
         items: {
           create: [
             { sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/multi-ready", priceRial: 1_000_000n, status: "ready" },
-            { sourceSite: "Envato", category: "video", productUrl: "https://envato.com/multi-large", priceRial: 1_500_000n, status: "ready" },
-            { sourceSite: "Shutterstock", category: "photo", productUrl: "https://shutterstock.com/multi-pending", priceRial: 500_000n, status: "pending" },
+            { position: 1, sourceSite: "Envato", category: "video", productUrl: "https://envato.com/multi-large", priceRial: 1_500_000n, status: "ready" },
+            { position: 2, sourceSite: "Shutterstock", category: "photo", productUrl: "https://shutterstock.com/multi-pending", priceRial: 500_000n, status: "pending" },
           ],
         },
       },
-      include: { items: { orderBy: { createdAt: "asc" } } },
+      include: { items: { orderBy: { position: "asc" } } },
     });
     const [multiReadyItem, multiLargeItem] = orderMulti.items;
     // فایل واقعاً روی دیسک نوشته می‌شود؛ وگرنه endpoint دانلود (به‌درستی) ۴۰۴ «فایل روی سرور یافت نشد» می‌دهد.

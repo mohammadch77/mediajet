@@ -51,16 +51,16 @@ async function createOrder(userId: string, urls: string[]) {
   const order = await prisma.order.create({
     data: { userId, totalPriceRial: 1_000_000n, paymentMethod: "wallet", status: "queued" },
   });
-  for (const url of urls) {
+  for (const [position, url] of urls.entries()) {
     await prisma.orderItem.create({
-      data: { orderId: order.id, sourceSite: "Freepik", category: "vector", productUrl: url, priceRial: 500_000n },
+      data: { orderId: order.id, position, sourceSite: "Freepik", category: "vector", productUrl: url, priceRial: 500_000n },
     });
   }
   return order;
 }
 
 const itemsOf = (orderId: string) =>
-  prisma.orderItem.findMany({ where: { orderId }, orderBy: { createdAt: "asc" }, include: { delivery: true } });
+  prisma.orderItem.findMany({ where: { orderId }, orderBy: { position: "asc" }, include: { delivery: true } });
 
 async function main() {
   const user = await prisma.user.create({
