@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { CATEGORIES, categoryHasSite, categoryById, type Category } from "@/data/categories";
 import { detectSite } from "@/lib/detectSite";
@@ -256,7 +256,10 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
                 <div className="text-3xl">{activeCat?.icon}</div>
                 <h3 className="font-display text-[1.4rem] mb-1">{activeCat?.title}</h3>
                 <div className="text-dim text-[.82rem] leading-[1.7]">
-                  سایت‌ها: {activeCat?.sites.join(" · ")}
+                  سایت‌ها:{" "}
+                  {activeCat?.sites.map((s, i) => (
+                    <Fragment key={s}>{i > 0 && " · "}<bdi className="whitespace-nowrap">{s}</bdi></Fragment>
+                  ))}
                 </div>
               </div>
             )}

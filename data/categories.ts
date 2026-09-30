@@ -4,7 +4,8 @@
 /** نام‌های رسمی سایت‌ها — هر جای کد فقط از این‌ها استفاده کند تا نام ناهماهنگ پیش نیاید. */
 export const SITES = {
   adobeStock: "Adobe Stock",
-  freepik: "Freepik",
+  // Freepik به Magnific تغییر نام داده؛ هر دو دامنه پشتیبانی می‌شوند.
+  freepik: "Freepik (Magnific)",
   envatoElements: "Envato Elements",
   pikbest: "Pikbest",
   lovepik: "Lovepik",
@@ -113,18 +114,29 @@ export function categoryById(id: string): Category | undefined {
   return CATEGORIES.find((c) => c.id === id);
 }
 
+/** نام‌های قدیمی سایت (مثلاً در سبدهای ذخیره‌شده) → نام رسمی فعلی. */
+const LEGACY_SITE_NAMES: Record<string, SiteName> = {
+  Freepik: S.freepik,
+  Envato: S.envatoElements,
+};
+
+/** نام سایت را به نام رسمی فعلی تبدیل می‌کند (نام‌های قدیمی هم پذیرفته می‌شوند). */
+export function canonicalSiteName(site: string): string {
+  return LEGACY_SITE_NAMES[site] ?? site;
+}
+
 /** قیمت ریالی یک جفت (دسته، سایت)؛ اگر سایت در آن دسته نباشد undefined. */
 export function sitePriceRial(categoryId: string, site: string): number | undefined {
   const cat = categoryById(categoryId);
   if (!cat || !categoryHasSite(cat, site)) return undefined;
-  return cat.sitePricesRial[site as SiteName];
+  return cat.sitePricesRial[canonicalSiteName(site) as SiteName];
 }
 
 // نگاشت کلیدواژه‌ی دامنه به نام رسمی سایت، برای تشخیص سایت از روی لینک.
 // ترتیب مهم است: کلیدهای خاص‌تر قبل از کلیدهای عمومی‌تر.
 export const SITE_KEYS: Record<string, SiteName> = {
   envato: S.envatoElements, // elements.envato.com و envato.com همه یک سایت‌اند
-  freepik: S.freepik, "stock.adobe": S.adobeStock, adobe: S.adobeStock,
+  freepik: S.freepik, magnific: S.freepik, "stock.adobe": S.adobeStock, adobe: S.adobeStock,
   shutterstock: S.shutterstock, vecteezy: S.vecteezy, motionarray: S.motionArray,
   pngtree: S.pngtree, flaticon: S.flaticon, iconscout: S.iconscout, ui8: S.ui8,
   pikbest: S.pikbest, "123rf": S.rf123, istock: S.istock, dreamstime: S.dreamstime,
@@ -143,5 +155,5 @@ export const SITE_KEYS: Record<string, SiteName> = {
 
 /** آیا این سایت (نام دلخواه، مثلاً از ورودی کاربر) در این دسته پشتیبانی می‌شود؟ */
 export function categoryHasSite(cat: Category, site: string): boolean {
-  return Object.prototype.hasOwnProperty.call(cat.sitePricesRial, site);
+  return Object.prototype.hasOwnProperty.call(cat.sitePricesRial, canonicalSiteName(site));
 }

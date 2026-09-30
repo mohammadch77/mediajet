@@ -17,10 +17,10 @@ function check(name: string, condition: boolean, detail = ""): void {
 
 // [دسته، سایت، قیمت مورد انتظار به تومان]
 const EXPECTED: [string, string, number][] = [
-  ["vector", "Freepik", 20000],
+  ["vector", "Freepik (Magnific)", 20000],
   ["font", "UI8", 170000],
   ["video", "Shutterstock", 860000],
-  ["video", "Freepik", 45000],
+  ["video", "Freepik (Magnific)", 45000],
   ["psd", "Designi Premium", 79000],
   ["3d", "Designi Premium", 69000],
   ["mockup", "Yellow Images", 900000],
@@ -60,7 +60,12 @@ async function main(): Promise<void> {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ categoryId: "wp", site: "Envato" }),
   });
-  check("نام قدیمی «Envato» دیگر سایت معتبر نیست", bad.status === 422 || bad.status === 400, `status=${bad.status}`);
+  const badBody = await bad.json();
+  check("نام قدیمی «Envato» به «Envato Elements» نگاشت می‌شود", bad.ok && badBody.site === "Envato Elements", `status=${bad.status} site=${badBody.site}`);
+  check("سایت ناشناخته رد شود", computePrice("wp", "Unknown") === null);
+
+  const legacy = computePrice("vector", "Freepik");
+  check("نام قدیمی Freepik (سبدهای ذخیره‌شده) هنوز قیمت می‌گیرد", legacy?.finalPriceRial === 200000 && legacy.site === "Freepik (Magnific)");
 
   console.log("\n۳) تشخیص سایت از لینک");
   const links: [string, string][] = [
@@ -74,6 +79,8 @@ async function main(): Promise<void> {
     ["https://www.vectorstock.com/x", "VectorStock"],
     ["https://yellowimages.com/x", "Yellow Images"],
     ["https://depositphotos.com/x", "Depositphotos"],
+    ["https://www.freepik.com/x", "Freepik (Magnific)"],
+    ["https://www.magnific.com/x", "Freepik (Magnific)"],
   ];
   for (const [url, site] of links) check(url, detectSite(url) === site, detectSite(url));
 

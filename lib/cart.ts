@@ -41,7 +41,7 @@ export async function addCartItem(
     data: {
       cartId: cart.id,
       category: input.categoryId,
-      sourceSite: input.site,
+      sourceSite: price.site,
       productUrl: input.productUrl,
       priceRial: BigInt(price.finalPriceRial),
     },

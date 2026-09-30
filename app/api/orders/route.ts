@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
           idempotencyKey,
           items: {
             create: {
-              sourceSite: site,
+              sourceSite: price.site,
               category: categoryId,
               productUrl,
               priceRial: BigInt(price.finalPriceRial),

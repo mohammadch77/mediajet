@@ -1,4 +1,4 @@
-import { sitePriceRial } from "@/data/categories";
+import { canonicalSiteName, sitePriceRial } from "@/data/categories";
 import { getPaymentSettings } from "@/lib/paymentSettings";
 
 export interface PriceResult {
@@ -15,7 +15,7 @@ export interface PriceResult {
 export function computePrice(categoryId: string, site: string): PriceResult | null {
   const finalPriceRial = sitePriceRial(categoryId, site);
   if (finalPriceRial === undefined) return null;
-  return { categoryId, site, finalPriceRial };
+  return { categoryId, site: canonicalSiteName(site), finalPriceRial };
 }
 
 export type PaymentMethod = "wallet" | "gateway";
@@ -79,7 +79,7 @@ export async function computeDualPrice(
 
   return {
     categoryId,
-    site,
+    site: base.site,
     walletPriceRial: applySurcharge(base.finalPriceRial, settings.walletSurchargePercent),
     gatewayPriceRial: applySurcharge(base.finalPriceRial, settings.gatewaySurchargePercent),
   };

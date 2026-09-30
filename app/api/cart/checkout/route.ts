@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
           cartCheckout: true,
           items: {
             create: cartItems.map((item, i) => ({
-              sourceSite: item.sourceSite,
+              sourceSite: cartPrice.items[i].site,
               category: item.category,
               productUrl: item.productUrl,
               priceRial: BigInt(cartPrice.items[i].finalPriceRial),
