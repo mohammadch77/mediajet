@@ -529,3 +529,37 @@ export const refundOrderInput = z.object({
 });
 
 export type RefundOrderInput = z.infer<typeof refundOrderInput>;
+
+const adminReason = z
+  .string({ error: "دلیل الزامی است." })
+  .trim()
+  .min(3, "دلیل را بنویس.")
+  .max(300, "دلیل طولانی است.");
+
+export const affiliateAdminActionInput = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("suspend"), reason: adminReason }),
+  z.object({ action: z.literal("unsuspend"), reason: adminReason }),
+  z.object({
+    action: z.literal("adjust"),
+    direction: z.enum(["credit", "debit"], { error: "نوع اصلاح نامعتبر است." }),
+    // ریال به‌صورت رشته‌ی عددی، بدون float.
+    amountRial: z.string({ error: "مبلغ الزامی است." }).regex(/^[1-9]\d{0,15}$/, "مبلغ نامعتبر است."),
+    reason: adminReason,
+    idempotencyKey: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/, "کلید یکتای درخواست نامعتبر است."),
+  }),
+]);
+
+export type AffiliateAdminActionInput = z.infer<typeof affiliateAdminActionInput>;
+
+export const setReferrerInput = z.object({
+  // null یعنی حذف معرف.
+  code: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z0-9]{5,12}$/, "کد همکاری نامعتبر است.")
+    .nullable(),
+  reason: adminReason,
+});
+
+export type SetReferrerInput = z.infer<typeof setReferrerInput>;

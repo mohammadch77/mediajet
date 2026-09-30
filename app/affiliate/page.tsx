@@ -184,10 +184,16 @@ function Dashboard({
     }
   }
 
-  const canRequest = BigInt(d.balanceRial) >= BigInt(program.minPayoutRial) && !d.hasOpenPayout;
+  const canRequest = BigInt(d.balanceRial) >= BigInt(program.minPayoutRial) && !d.hasOpenPayout && !d.suspended;
 
   return (
     <div className="grid gap-5">
+      {d.suspended && (
+        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 text-[.9rem] leading-[1.9]">
+          حساب همکاری‌ات معلق است؛ تا رفع تعلیق، لینکت زیرمجموعه‌ی جدید ثبت نمی‌کند، کمیسیون جدید نمی‌گیری و امکان تسویه نداری.
+          {d.suspendReason && <> دلیل: {d.suspendReason}</>} برای پیگیری از بخش «پیام‌ها» به پشتیبانی پیام بده.
+        </div>
+      )}
       <div className={`${card} p-5`}>
         <div className="text-dim text-[.85rem] mb-2">لینک اختصاصی تو</div>
         <div className="flex flex-col sm:flex-row gap-2.5">

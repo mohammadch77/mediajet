@@ -37,10 +37,101 @@ type DetailResponse = {
     role: Role;
     createdAt: string;
     walletBalanceRial: string;
+    referrer: { id: string; mobile: string; referralCode: string | null } | null;
+    isAffiliate: boolean;
   };
   orders: Paginated<OrderRow>;
   transactions: Paginated<TxRow>;
 };
+
+/** معرفِ کاربر (همکاری در فروش) و فرم تغییر/حذف آن؛ هر تغییر با دلیل در لاگ ادمین ثبت می‌شود. */
+function ReferrerBox({
+  userId,
+  referrer,
+  isAffiliate,
+  onChange,
+}: {
+  userId: string;
+  referrer: DetailResponse["user"]["referrer"];
+  isAffiliate: boolean;
+  onChange: () => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [code, setCode] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save(remove: boolean) {
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/referrer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: remove ? null : code, reason }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "تغییر معرف ناموفق بود.");
+      setEditing(false);
+      setCode("");
+      setReason("");
+      await onChange();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "تغییر معرف ناموفق بود.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const input =
+    "w-full min-w-0 font-body text-[.88rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[10px_12px] focus:border-primary outline-none";
+
+  return (
+    <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-5 mb-6">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="text-[.88rem]">
+          <span className="text-dim">معرف (همکاری در فروش): </span>
+          {referrer ? (
+            <Link href={`/admin/affiliate/${referrer.id}`} className="text-cyan hover:underline">
+              <span dir="ltr">{referrer.mobile}</span> · <span className="latin">{referrer.referralCode}</span>
+            </Link>
+          ) : (
+            <span className="text-dim">ندارد</span>
+          )}
+          {isAffiliate && (
+            <Link href={`/admin/affiliate/${userId}`} className="mr-3 text-[.8rem] text-primary2 hover:underline">
+              این کاربر خودش همکار است ←
+            </Link>
+          )}
+        </div>
+        <button onClick={() => setEditing((v) => !v)} className="text-[.82rem] font-bold text-cyan hover:underline">
+          {editing ? "انصراف" : "تغییر معرف"}
+        </button>
+      </div>
+      {editing && (
+        <div className="mt-3 grid gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="کد همکاری معرف جدید" dir="ltr" className={`${input} latin text-left`} />
+            <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="دلیل تغییر (الزامی)" className={input} />
+          </div>
+          <p className="text-dim text-[.78rem]">فقط روی کمیسیون خریدهای بعدی اثر دارد؛ کمیسیون‌های قبلی تغییر نمی‌کنند.</p>
+          {err && <div className="text-accent2 text-[.82rem]">{err}</div>}
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => save(false)} disabled={busy} className="font-bold rounded-xl px-4 py-2 text-[.85rem] bg-gradient-to-br from-primary to-primary2 text-white disabled:opacity-60">
+              ثبت معرف جدید
+            </button>
+            {referrer && (
+              <button onClick={() => save(true)} disabled={busy} className="font-bold rounded-xl px-4 py-2 text-[.85rem] bg-[rgba(255,107,53,.12)] text-accent2 border border-[rgba(255,107,53,.3)] disabled:opacity-60">
+                حذف معرف
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminUserDetailPage() {
   const params = useParams<{ id: string }>();
@@ -104,6 +195,8 @@ export default function AdminUserDetailPage() {
           <span className="font-bold">{rialToTomanLabel(Number(user.walletBalanceRial))}</span>
         </div>
       </div>
+
+      <ReferrerBox userId={user.id} referrer={user.referrer} isAffiliate={user.isAffiliate} onChange={load} />
 
       <h2 className="font-display font-bold mb-3">سفارش‌ها</h2>
       {orders.items.length === 0 ? (

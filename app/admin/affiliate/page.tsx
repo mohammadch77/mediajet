@@ -68,6 +68,7 @@ type AffiliateRow = {
   balanceLabel: string;
   netEarnedLabel: string;
   paidLabel: string;
+  suspended: boolean;
 };
 
 function AffiliatesTab() {
@@ -120,14 +121,20 @@ function AffiliatesTab() {
                     <Link href={`/admin/users/${a.id}`} className="text-cyan font-bold hover:underline" dir="ltr">{a.mobile}</Link>
                     {a.name && <span className="text-dim text-[.82rem]"> · {a.name}</span>}
                   </div>
-                  <span className="latin text-[.78rem] font-bold px-2.5 py-1 rounded-full bg-[rgba(255,255,255,.05)] border border-[rgba(138,124,255,.2)]">{a.code}</span>
+                  <span className="flex items-center gap-1.5">
+                    {a.suspended && <span className="text-[.72rem] font-bold px-2 py-1 rounded-full bg-[rgba(255,107,53,.14)] text-accent2">معلق</span>}
+                    <span className="latin text-[.78rem] font-bold px-2.5 py-1 rounded-full bg-[rgba(255,255,255,.05)] border border-[rgba(138,124,255,.2)]">{a.code}</span>
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[.82rem]">
                   <div><span className="text-dim">زیرمجموعه: </span>{a.referralsCount.toLocaleString("fa-IR")} نفر</div>
                   <div><span className="text-dim">موجودی: </span><span className="font-semibold">{a.balanceLabel}</span></div>
                   <div><span className="text-dim">کمیسیون خالص: </span>{a.netEarnedLabel}</div>
                   <div><span className="text-dim">واریزشده: </span>{a.paidLabel}</div>
-                  <div className="col-span-2 text-dim text-[.75rem]">عضویت: {toJalaliDateTime(a.joinedAt)}</div>
+                  <div className="col-span-2 flex items-center justify-between gap-2 text-[.75rem] mt-1">
+                    <span className="text-dim">عضویت: {toJalaliDateTime(a.joinedAt)}</span>
+                    <Link href={`/admin/affiliate/${a.id}`} className="text-cyan font-bold hover:underline">مدیریت ←</Link>
+                  </div>
                 </div>
               </div>
             ))}
@@ -239,7 +246,7 @@ function PayoutCard({ payout: p, onReviewed }: { payout: PayoutRow; onReviewed: 
       <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
         <div className="min-w-0">
           <div className="font-display text-[1.2rem] font-extrabold">{p.amountLabel}</div>
-          <Link href={`/admin/users/${p.user.id}`} className="text-cyan text-[.85rem] hover:underline" dir="ltr">
+          <Link href={`/admin/affiliate/${p.user.id}`} className="text-cyan text-[.85rem] hover:underline" dir="ltr">
             {p.user.mobile}
           </Link>
           {p.user.name && <span className="text-dim text-[.82rem]"> · {p.user.name}</span>}

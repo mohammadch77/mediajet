@@ -18,7 +18,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const user = await prisma.user.findUnique({
     where: { id: params.id },
-    include: { wallet: true },
+    include: {
+      wallet: true,
+      referredBy: { select: { id: true, mobile: true, referralCode: true } },
+    },
   });
 
   if (!user) {
@@ -58,6 +61,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       role: user.role,
       createdAt: user.createdAt.toISOString(),
       walletBalanceRial: (user.wallet?.balanceRial ?? 0n).toString(),
+      // همکاری در فروش: معرفِ این کاربر، و اگر خودش همکار است لینک به صفحه‌ی همکاری‌اش.
+      referrer: user.referredBy,
+      isAffiliate: !!user.affiliateJoinedAt,
     },
     orders: paginatedResult(
       orders.map((o) => ({

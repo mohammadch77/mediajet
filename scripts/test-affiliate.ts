@@ -307,12 +307,79 @@ async function main(): Promise<void> {
   const affListUser = await api("/api/admin/affiliate/affiliates", affiliate.cookie);
   check("کاربر عادی لیست همکاران را نمی‌بیند (۴۰۳)", affListUser.status === 403);
 
-  console.log("\n۱۱) سازگاری دفتر");
+  console.log("\n۱۱) اعلان‌های خودکار");
+  const notes = await prisma.notification.findMany({ where: { userId: affiliate.userId } });
+  const has = (t: string) => notes.some((n) => n.text.includes(t) && n.href === "/affiliate");
+  check("اعلان زیرمجموعه‌ی جدید", has("با لینک تو ثبت‌نام کرد"));
+  check("اعلان کمیسیون", has("به حساب همکاری‌ات اضافه شد"));
+  check("اعلان برگشت کمیسیون", has("برگشت خورد"));
+  check("اعلان واریز و رد تسویه", has("به کارتت واریز شد") && has("رد شد"));
+
+  console.log("\n۱۲) تعلیق همکار");
+  const affPath = `/api/admin/affiliate/affiliates/${affiliate.userId}`;
+  const suspUser = await api(affPath, affiliate.cookie, { action: "suspend", reason: "تست" });
+  check("کاربر عادی نمی‌تواند تعلیق کند (۴۰۳)", suspUser.status === 403);
+  const susp = await api(affPath, admin.cookie, { action: "suspend", reason: "تقلب احتمالی در ثبت‌نام‌ها" });
+  check("ادمین همکار را معلق کرد", susp.status === 200);
+  check("تعلیق دوباره خطا می‌دهد", (await api(affPath, admin.cookie, { action: "suspend", reason: "دوباره" })).status === 422);
+
+  const suspMobile = randomMobile();
+  await otpLogin(suspMobile, refCookie);
+  check("لینک همکار معلق زیرمجموعه ثبت نمی‌کند", (await prisma.user.findUnique({ where: { mobile: suspMobile } }))?.referredById === null);
+  const cBefore = (await commissions(affiliate.userId)).length;
+  await api("/api/orders", buyerCookie, { ...orderBody, idempotencyKey: crypto.randomUUID(), productUrl: "https://www.freepik.com/x-susp" });
+  check("خرید زیرمجموعه‌ی همکار معلق کمیسیون نمی‌سازد", (await commissions(affiliate.userId)).length === cBefore);
+  const suspDash = await api("/api/affiliate", affiliate.cookie);
+  check("داشبورد همکار وضعیت تعلیق و دلیل را نشان می‌دهد", suspDash.json?.dashboard?.suspended === true && suspDash.json?.dashboard?.suspendReason?.includes("تقلب"));
+
+  const unsusp = await api(affPath, admin.cookie, { action: "unsuspend", reason: "بررسی شد، مشکلی نبود" });
+  check("رفع تعلیق", unsusp.status === 200);
+  await api("/api/orders", buyerCookie, { ...orderBody, idempotencyKey: crypto.randomUUID(), productUrl: "https://www.freepik.com/x-unsusp" });
+  check("بعد از رفع تعلیق کمیسیون دوباره ثبت می‌شود", (await commissions(affiliate.userId)).length === cBefore + 1);
+
+  console.log("\n۱۳) اصلاح دستی موجودی");
+  const balBeforeAdj = await balanceOf(affiliate.userId);
+  const adjKey = crypto.randomUUID();
+  const adj = { action: "adjust", direction: "credit", amountRial: "500000", reason: "جایزه‌ی کمپین", idempotencyKey: adjKey };
+  check("کاربر عادی نمی‌تواند موجودی اصلاح کند (۴۰۳)", (await api(affPath, affiliate.cookie, adj)).status === 403);
+  await api(affPath, admin.cookie, adj);
+  await api(affPath, admin.cookie, adj);
+  check("افزایش دستی یک‌بار اعمال شد (idempotent)", (await balanceOf(affiliate.userId)) === balBeforeAdj + 500_000n);
+  const bigDebit = await api(affPath, admin.cookie, { ...adj, direction: "debit", amountRial: "999999999", idempotencyKey: crypto.randomUUID() });
+  check("کاهش بیشتر از موجودی رد می‌شود", bigDebit.status === 422);
+  const debit = await api(affPath, admin.cookie, { ...adj, direction: "debit", amountRial: "100000", reason: "اصلاح خطا", idempotencyKey: crypto.randomUUID() });
+  check("کاهش دستی اعمال شد", debit.status === 200 && (await balanceOf(affiliate.userId)) === balBeforeAdj + 400_000n);
+  check("مبلغ اعشاری رد می‌شود", (await api(affPath, admin.cookie, { ...adj, amountRial: "10.5", idempotencyKey: crypto.randomUUID() })).status === 400);
+
+  console.log("\n۱۴) تغییر معرف توسط ادمین");
+  const aff2 = await sessionFor(randomMobile());
+  const code2: string = (await api("/api/affiliate/join", aff2.cookie, {})).json.code;
+  const refPath = (id: string) => `/api/admin/users/${id}/referrer`;
+  check("کاربر عادی نمی‌تواند معرف را عوض کند (۴۰۳)", (await api(refPath(buyer.id), buyerCookie, { code: code2, reason: "تست" })).status === 403);
+  check("معرف نمی‌تواند خودِ کاربر باشد", (await api(refPath(affiliate.userId), admin.cookie, { code, reason: "تست" })).status === 422);
+  check("کد ناموجود رد می‌شود", (await api(refPath(buyer.id), admin.cookie, { code: "ZZZZZZZ", reason: "تست" })).status === 422);
+  const move = await api(refPath(buyer.id), admin.cookie, { code: code2, reason: "درخواست کتبی کاربر" });
+  check("معرف زیرمجموعه عوض شد", move.status === 200 && (await prisma.user.findUnique({ where: { id: buyer.id } }))?.referredById === aff2.userId);
+  const c2Before = (await commissions(aff2.userId)).length;
+  await api("/api/orders", buyerCookie, { ...orderBody, idempotencyKey: crypto.randomUUID(), productUrl: "https://www.freepik.com/x-moved" });
+  check("کمیسیون خرید بعدی به معرف جدید رسید", (await commissions(aff2.userId)).length === c2Before + 1);
+  await api(refPath(affiliate.userId), admin.cookie, { code: code2, reason: "زنجیره" });
+  check("حلقه‌ی معرف (A←B و B←A) رد می‌شود", (await api(refPath(aff2.userId), admin.cookie, { code, reason: "حلقه" })).status === 422);
+  const removed = await api(refPath(buyer.id), admin.cookie, { code: null, reason: "حذف معرف" });
+  check("حذف معرف", removed.status === 200 && (await prisma.user.findUnique({ where: { id: buyer.id } }))?.referredById === null);
+  const logs = await prisma.affiliateAdminLog.findMany({ where: { targetUserId: { in: [affiliate.userId, buyer.id] } } });
+  check("همه‌ی اقدامات ادمین در لاگ ثبت شدند", ["suspend", "unsuspend", "adjust_balance", "set_referrer"].every((a) => logs.some((l) => l.action === a)), `${logs.length} ردیف`);
+
+  const detail = await api(affPath, admin.cookie);
+  check("صفحه‌ی جزئیات همکار: دفتر، زیرمجموعه، تسویه و لاگ", detail.json?.ledger?.length > 0 && detail.json?.logs?.length > 0 && Array.isArray(detail.json?.referrals) && detail.json?.payouts?.length > 0);
+  check("کاربر عادی جزئیات همکار را نمی‌بیند (۴۰۳)", (await api(affPath, affiliate.cookie)).status === 403);
+
+  console.log("\n۱۵) سازگاری دفتر");
   const entries = await prisma.affiliateLedger.findMany({ where: { account: { userId: affiliate.userId } }, orderBy: { createdAt: "asc" } });
   let running = 0n;
   let consistent = true;
   for (const e of entries) {
-    running += e.type === "payout_hold" || e.type === "commission_reversal" ? -e.amountRial : e.amountRial;
+    running += ["payout_hold", "commission_reversal", "adjustment_debit"].includes(e.type) ? -e.amountRial : e.amountRial;
     if (running !== e.balanceAfter) consistent = false;
   }
   check("هر ردیف balanceAfter درست دارد و مجموع = موجودی", consistent && running === (await balanceOf(affiliate.userId)), `${entries.length} ردیف`);

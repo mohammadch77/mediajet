@@ -7,6 +7,7 @@ type Db = Prisma.TransactionClient;
 export const NOTIFICATION_HREF = {
   orders: "/dashboard?tab=orders",
   messages: "/dashboard?tab=messages",
+  affiliate: "/affiliate",
 } as const;
 
 export async function createNotification(

@@ -6,7 +6,7 @@ import crypto from "crypto";
 import { cookies } from "next/headers";
 import type { User } from "@prisma/client";
 import { prisma } from "./db";
-import { REF_COOKIE, findAffiliateIdByCode, normalizeReferralCode } from "./affiliate";
+import { REF_COOKIE, findAffiliateIdByCode, normalizeReferralCode, notifyNewReferral } from "./affiliate";
 
 const SESSION_COOKIE = "mediajet_session";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // ۳۰ روز
@@ -27,13 +27,15 @@ export async function findOrCreateUserByMobile(mobile: string): Promise<User> {
   const store = await cookies();
   const referredById = await findAffiliateIdByCode(normalizeReferralCode(store.get(REF_COOKIE)?.value));
 
-  return prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       mobile,
       ...(referredById && { referredById }),
       wallet: { create: { balanceRial: 0n } },
     },
   });
+  if (referredById) await notifyNewReferral(referredById);
+  return user;
 }
 
 /** نشست جدید می‌سازد و توکن خام را در کوکی httpOnly می‌گذارد. */

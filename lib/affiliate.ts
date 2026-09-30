@@ -17,6 +17,8 @@ import { prisma } from "./db";
 import { getPaymentSettings } from "./paymentSettings";
 import { rialToTomanLabel } from "./money";
 import { formatOrderNumber } from "./orderNumber";
+import { createNotification, NOTIFICATION_HREF } from "./notifications";
+import { getTelegramConfig, sendMessage } from "./telegram";
 
 export { REF_COOKIE, normalizeReferralCode } from "./referralCode";
 
@@ -74,14 +76,27 @@ export async function joinAffiliate(userId: string): Promise<string> {
   throw new AffiliateError("ساخت کد همکاری ناموفق بود؛ دوباره تلاش کن.");
 }
 
-/** شناسه‌ی همکارِ صاحب این کد، فقط اگر واقعاً عضو برنامه باشد. */
+/** شناسه‌ی همکارِ صاحب این کد، فقط اگر واقعاً عضو برنامه و تعلیق‌نشده باشد. */
 export async function findAffiliateIdByCode(code: string | null): Promise<string | null> {
   if (!code) return null;
   const user = await prisma.user.findUnique({
     where: { referralCode: code },
-    select: { id: true, affiliateJoinedAt: true },
+    select: { id: true, affiliateJoinedAt: true, affiliateSuspendedAt: true },
   });
-  return user?.affiliateJoinedAt ? user.id : null;
+  return user?.affiliateJoinedAt && !user.affiliateSuspendedAt ? user.id : null;
+}
+
+/** بعد از ساخت کاربرِ زیرمجموعه صدا زده می‌شود تا همکار خبردار شود (غیرمسدودکننده). */
+export async function notifyNewReferral(affiliateId: string): Promise<void> {
+  try {
+    await createNotification(prisma, {
+      userId: affiliateId,
+      text: "یک نفر با لینک تو ثبت‌نام کرد و زیرمجموعه‌ات شد 🎉",
+      href: NOTIFICATION_HREF.affiliate,
+    });
+  } catch (error) {
+    console.error("[همکاری] ثبت اعلان زیرمجموعه‌ی جدید ناموفق بود:", error);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -99,7 +114,7 @@ async function lockAccount(tx: Prisma.TransactionClient, userId: string): Promis
   return rows[0];
 }
 
-const INCREASING: AffiliateEntryType[] = ["commission", "payout_release"];
+const INCREASING: AffiliateEntryType[] = ["commission", "payout_release", "adjustment_credit"];
 
 /** تنها مسیر تغییر موجودی همکار: یک ردیف دفتر + balanceAfter، زیر قفل ردیف. */
 async function appendEntryInTx(
@@ -153,12 +168,14 @@ export async function accrueOrderCommissionInTx(tx: Prisma.TransactionClient, or
       id: true,
       orderNumber: true,
       userId: true,
-      user: { select: { referredById: true } },
+      user: { select: { referredById: true, referredBy: { select: { affiliateSuspendedAt: true } } } },
       items: { select: { priceRial: true } },
     },
   });
   const referrerId = order?.user.referredById;
   if (!order || !referrerId || referrerId === order.userId) return;
+  // همکار تعلیق‌شده کمیسیون جدید نمی‌گیرد (زیرمجموعه‌هایش حذف نمی‌شوند؛ با رفع تعلیق دوباره می‌گیرد).
+  if (order.user.referredBy?.affiliateSuspendedAt) return;
 
   const idempotencyKey = `commission:order:${order.id}`;
   const existing = await tx.affiliateLedger.findUnique({ where: { idempotencyKey } });
@@ -178,6 +195,11 @@ export async function accrueOrderCommissionInTx(tx: Prisma.TransactionClient, or
     baseRial,
     percent,
     note: `کمیسیون سفارش ${formatOrderNumber(order.orderNumber)}`,
+  });
+  await createNotification(tx, {
+    userId: referrerId,
+    text: `کمیسیون ${rialToTomanLabel(Number(amountRial))} از خرید زیرمجموعه‌ات به حساب همکاری‌ات اضافه شد.`,
+    href: NOTIFICATION_HREF.affiliate,
   });
 }
 
@@ -206,6 +228,11 @@ export async function reverseOrderCommissionInTx(tx: Prisma.TransactionClient, o
     percent: original.percent ?? undefined,
     note: `برگشت ${original.note ?? "کمیسیون"} (بازگشت وجه)`,
   });
+  await createNotification(tx, {
+    userId: original.account.userId,
+    text: `یک سفارش زیرمجموعه‌ات بازگشت وجه شد و کمیسیون ${rialToTomanLabel(Number(original.amountRial))} آن برگشت خورد.`,
+    href: NOTIFICATION_HREF.affiliate,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -223,14 +250,16 @@ export async function requestPayout(
   const ledgerKey = `payout_hold:${userId}:${input.idempotencyKey}`;
   const { affiliateMinPayoutRial } = await getPaymentSettings();
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const previous = await tx.affiliateLedger.findUnique({ where: { idempotencyKey: ledgerKey } });
     if (previous?.payoutId) {
-      return tx.affiliatePayout.findUniqueOrThrow({ where: { id: previous.payoutId } });
+      return { payout: await tx.affiliatePayout.findUniqueOrThrow({ where: { id: previous.payoutId } }), created: false };
     }
-
     const user = await tx.user.findUniqueOrThrow({ where: { id: userId } });
     if (!user.affiliateJoinedAt) throw new AffiliateError("اول باید در برنامه‌ی همکاری ثبت‌نام کنی.");
+    if (user.affiliateSuspendedAt) {
+      throw new AffiliateError("حساب همکاری‌ات معلق است و فعلاً امکان تسویه نداری. برای پیگیری به پشتیبانی پیام بده.");
+    }
 
     // قفل حساب قبل از بررسی درخواست باز، تا دو درخواست همزمان هر دو رد نشوند/هر دو ثبت نشوند.
     const account = await lockAccount(tx, userId);
@@ -258,8 +287,37 @@ export async function requestPayout(
       payoutId: payout.id,
       note: "درخواست تسویه",
     });
-    return payout;
+    return { payout, created: true };
   });
+
+  if (result.created) notifyFinanceOfPayout(result.payout.id);
+  return result.payout;
+}
+
+/** اطلاع درخواست تسویه‌ی جدید به چت مالی تلگرام؛ هرگز درخواست کاربر را fail نمی‌کند. */
+function notifyFinanceOfPayout(payoutId: string): void {
+  void (async () => {
+    try {
+      const chatId = await getTelegramConfig("TELEGRAM_CHAT_FINANCE");
+      if (!chatId) return;
+      const p = await prisma.affiliatePayout.findUniqueOrThrow({
+        where: { id: payoutId },
+        include: { user: { select: { mobile: true, name: true } } },
+      });
+      await sendMessage(
+        chatId,
+        [
+          "💸 درخواست تسویه‌ی همکاری در فروش",
+          `همکار: ${p.user.name ? `${p.user.name} — ` : ""}${p.user.mobile}`,
+          `مبلغ: ${rialToTomanLabel(Number(p.amountRial))}`,
+          `کارت: ${p.cardNumber.replace(/(\d{4})(?=\d)/g, "$1-")} (${p.cardHolder})`,
+          "بررسی و ثبت نتیجه: پنل ادمین ← همکاری در فروش",
+        ].join("\n"),
+      );
+    } catch (error) {
+      console.error("[تلگرام خطا] اطلاع درخواست تسویه ناموفق بود:", error);
+    }
+  })();
 }
 
 type PayoutRow = { id: string; userId: string; amountRial: bigint; status: string };
@@ -292,6 +350,16 @@ export async function reviewPayout(
       });
     }
 
+    const amountLabel = rialToTomanLabel(Number(payout.amountRial));
+    await createNotification(tx, {
+      userId: payout.userId,
+      text:
+        decision.action === "paid"
+          ? `تسویه‌ی ${amountLabel} به کارتت واریز شد (پیگیری: ${decision.bankRef}).`
+          : `درخواست تسویه‌ی ${amountLabel} رد شد و مبلغ به موجودی همکاری‌ات برگشت. دلیل: ${decision.note}`,
+      href: NOTIFICATION_HREF.affiliate,
+    });
+
     return tx.affiliatePayout.update({
       where: { id: payout.id },
       data: {
@@ -301,6 +369,122 @@ export async function reviewPayout(
         reviewedById: adminId,
         reviewedAt: new Date(),
       },
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// مدیریت ادمین (هر اقدام در AffiliateAdminLog ثبت می‌شود)
+// ---------------------------------------------------------------------------
+
+async function logAdminAction(
+  tx: Prisma.TransactionClient,
+  targetUserId: string,
+  actorId: string,
+  action: "suspend" | "unsuspend" | "set_referrer" | "adjust_balance",
+  detail: string,
+): Promise<void> {
+  await tx.affiliateAdminLog.create({ data: { targetUserId, actorId, action, detail } });
+}
+
+/** تعلیق یا رفع تعلیق همکار. تعلیق، درخواست تسویه‌ی بازِ همکار را دست نمی‌زند (ادمین جدا بررسی می‌کند). */
+export async function setAffiliateSuspended(
+  adminId: string,
+  userId: string,
+  suspended: boolean,
+  reason: string,
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId } });
+    if (!user?.affiliateJoinedAt) throw new AffiliateError("این کاربر عضو برنامه‌ی همکاری نیست.");
+    if (!!user.affiliateSuspendedAt === suspended) {
+      throw new AffiliateError(suspended ? "این همکار از قبل معلق است." : "این همکار معلق نیست.");
+    }
+    await tx.user.update({
+      where: { id: userId },
+      data: suspended
+        ? { affiliateSuspendedAt: new Date(), affiliateSuspendReason: reason }
+        : { affiliateSuspendedAt: null, affiliateSuspendReason: null },
+    });
+    await logAdminAction(tx, userId, adminId, suspended ? "suspend" : "unsuspend", reason);
+    await createNotification(tx, {
+      userId,
+      text: suspended
+        ? `حساب همکاری در فروش تو معلق شد. دلیل: ${reason}`
+        : "حساب همکاری در فروش تو دوباره فعال شد.",
+      href: NOTIFICATION_HREF.affiliate,
+    });
+  });
+}
+
+/**
+ * تغییر یا حذف معرفِ یک کاربر توسط ادمین. معرف جدید باید همکار فعال باشد، خودِ کاربر نباشد و
+ * زنجیره‌ی معرف‌ها حلقه نسازد. فقط روی کمیسیون‌های بعدی اثر دارد؛ کمیسیون‌های قبلی دست نمی‌خورند.
+ */
+export async function setReferrer(
+  adminId: string,
+  userId: string,
+  referrerCode: string | null,
+  reason: string,
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId }, include: { referredBy: true } });
+    if (!user) throw new AffiliateError("کاربر پیدا نشد.");
+
+    let newReferrerId: string | null = null;
+    if (referrerCode) {
+      const referrer = await tx.user.findUnique({ where: { referralCode: referrerCode } });
+      if (!referrer?.affiliateJoinedAt) throw new AffiliateError("همکاری با این کد پیدا نشد.");
+      if (referrer.affiliateSuspendedAt) throw new AffiliateError("این همکار معلق است.");
+      if (referrer.id === userId) throw new AffiliateError("کاربر نمی‌تواند معرف خودش باشد.");
+      // جلوگیری از حلقه: معرف جدید نباید (مستقیم یا غیرمستقیم) زیرمجموعه‌ی همین کاربر باشد.
+      let cursor: string | null = referrer.referredById;
+      for (let depth = 0; cursor && depth < 1000; depth++) {
+        if (cursor === userId) throw new AffiliateError("این تغییر حلقه‌ی معرف می‌سازد.");
+        cursor = (await tx.user.findUnique({ where: { id: cursor }, select: { referredById: true } }))?.referredById ?? null;
+      }
+      newReferrerId = referrer.id;
+    }
+
+    if (newReferrerId === user.referredById) throw new AffiliateError("معرف فعلی همین است.");
+    await tx.user.update({ where: { id: userId }, data: { referredById: newReferrerId } });
+    await logAdminAction(
+      tx,
+      userId,
+      adminId,
+      "set_referrer",
+      `${user.referredBy?.referralCode ?? "بدون معرف"} ← ${referrerCode ?? "بدون معرف"} | ${reason}`,
+    );
+  });
+}
+
+/**
+ * اصلاح دستی موجودی همکار با دلیل (مثلاً جبران خطا یا جایزه). کاهش، موجودی را منفی نمی‌کند.
+ * idempotent با idempotencyKey کلاینت.
+ */
+export async function adjustAffiliateBalance(
+  adminId: string,
+  userId: string,
+  input: { direction: "credit" | "debit"; amountRial: bigint; reason: string; idempotencyKey: string },
+): Promise<void> {
+  const key = `adjustment:${userId}:${input.idempotencyKey}`;
+  await prisma.$transaction(async (tx) => {
+    if (await tx.affiliateLedger.findUnique({ where: { idempotencyKey: key } })) return;
+    const user = await tx.user.findUnique({ where: { id: userId } });
+    if (!user?.affiliateJoinedAt) throw new AffiliateError("این کاربر عضو برنامه‌ی همکاری نیست.");
+
+    await appendEntryInTx(tx, userId, {
+      type: input.direction === "credit" ? "adjustment_credit" : "adjustment_debit",
+      amountRial: input.amountRial,
+      idempotencyKey: key,
+      note: `اصلاح دستی: ${input.reason}`,
+    });
+    const label = rialToTomanLabel(Number(input.amountRial));
+    await logAdminAction(tx, userId, adminId, "adjust_balance", `${input.direction === "credit" ? "+" : "−"}${label} | ${input.reason}`);
+    await createNotification(tx, {
+      userId,
+      text: `موجودی همکاری‌ات ${input.direction === "credit" ? "افزایش" : "کاهش"} یافت (${label}). توضیح: ${input.reason}`,
+      href: NOTIFICATION_HREF.affiliate,
     });
   });
 }

@@ -35,12 +35,17 @@ model User {
   // referredById فقط یک‌بار، لحظه‌ی ساخت کاربر، از کوکی ?ref= پر می‌شود و بعد از آن هرگز تغییر نمی‌کند.
   referralCode      String?   @unique
   affiliateJoinedAt DateTime?
+  // تعلیق همکار توسط ادمین: لینکش دیگر زیرمجموعه ثبت نمی‌کند، کمیسیون جدید نمی‌گیرد و تسویه نمی‌تواند بدهد.
+  affiliateSuspendedAt     DateTime?
+  affiliateSuspendReason   String?
   referredById      String?
   referredBy        User?     @relation("Referral", fields: [referredById], references: [id])
   referrals         User[]    @relation("Referral")
   affiliateAccount  AffiliateAccount?
   affiliatePayouts  AffiliatePayout[] @relation("PayoutOwner")
   payoutsReviewed   AffiliatePayout[] @relation("PayoutReviewer")
+  affiliateLogsAbout AffiliateAdminLog[] @relation("AffiliateLogTarget")
+  affiliateLogsMade  AffiliateAdminLog[] @relation("AffiliateLogActor")
 
   roleChangesReceived RoleChangeLog[] @relation("RoleChangeTarget")
   roleChangesMade     RoleChangeLog[] @relation("RoleChangeActor")
@@ -444,6 +449,24 @@ enum AffiliateEntryType {
   payout_hold // کسر موجودی هنگام ثبت درخواست تسویه (کاهش)
   payout_release // بازگشت موجودی وقتی درخواست تسویه رد شود (افزایش)
   commission_reversal // برگشت کمیسیون وقتی سفارش زیرمجموعه بازگشت وجه شود (کاهش؛ ممکن است موجودی را منفی کند)
+  adjustment_credit // اصلاح دستی ادمین با دلیل (افزایش)
+  adjustment_debit // اصلاح دستی ادمین با دلیل (کاهش؛ موجودی را منفی نمی‌کند)
+}
+
+// لاگ append-only اقدامات ادمین روی همکاری در فروش (تعلیق، فعال‌سازی، تغییر معرف، اصلاح موجودی).
+// immutable: فقط insert می‌شود.
+model AffiliateAdminLog {
+  id           String   @id @default(cuid())
+  targetUserId String
+  actorId      String
+  action       String // suspend | unsuspend | set_referrer | adjust_balance
+  detail       String
+  createdAt    DateTime @default(now())
+
+  targetUser User @relation("AffiliateLogTarget", fields: [targetUserId], references: [id])
+  actor      User @relation("AffiliateLogActor", fields: [actorId], references: [id])
+
+  @@index([targetUserId])
 }
 
 // درخواست تسویه‌ی کارت‌به‌کارت. مبلغ در لحظه‌ی درخواست از موجودی کسر (hold) می‌شود تا

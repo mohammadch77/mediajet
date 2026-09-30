@@ -28,7 +28,13 @@ function maskMobile(mobile: string): string {
 export async function getAffiliateDashboard(userId: string) {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { referralCode: true, affiliateJoinedAt: true, affiliateAccount: true },
+    select: {
+      referralCode: true,
+      affiliateJoinedAt: true,
+      affiliateSuspendedAt: true,
+      affiliateSuspendReason: true,
+      affiliateAccount: true,
+    },
   });
   if (!user.referralCode || !user.affiliateJoinedAt) return null;
 
@@ -44,7 +50,7 @@ export async function getAffiliateDashboard(userId: string) {
       : [],
     accountId
       ? prisma.affiliateLedger.findMany({
-          where: { accountId, type: { in: ["commission", "commission_reversal"] } },
+          where: { accountId, type: { in: ["commission", "commission_reversal", "adjustment_credit", "adjustment_debit"] } },
           orderBy: { createdAt: "desc" },
           take: 20,
         })
@@ -67,6 +73,8 @@ export async function getAffiliateDashboard(userId: string) {
   return {
     code: user.referralCode,
     joinedAt: user.affiliateJoinedAt.toISOString(),
+    suspended: !!user.affiliateSuspendedAt,
+    suspendReason: user.affiliateSuspendReason,
     referralsCount,
     balanceRial: balance.toString(),
     balanceLabel: rialToTomanLabel(Number(balance)),
@@ -75,7 +83,7 @@ export async function getAffiliateDashboard(userId: string) {
     hasOpenPayout: payouts.some((p) => p.status === "requested"),
     commissions: commissions.map((c) => ({
       id: c.id,
-      reversal: c.type === "commission_reversal",
+      reversal: c.type === "commission_reversal" || c.type === "adjustment_debit",
       amountLabel: rialToTomanLabel(Number(c.amountRial)),
       baseLabel: c.baseRial !== null ? rialToTomanLabel(Number(c.baseRial)) : null,
       percent: c.percent,
