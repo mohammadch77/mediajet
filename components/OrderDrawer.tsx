@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { CATEGORIES, categoryById, type Category } from "@/data/categories";
+import { CATEGORIES, categoryHasSite, categoryById, type Category } from "@/data/categories";
 import { detectSite } from "@/lib/detectSite";
 import type { LinkEntry } from "@/lib/linkDetect";
 import { useAuth } from "@/lib/AuthContext";
@@ -128,7 +128,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
     setLink(v);
     const d = detectSite(v);
     setDetected(d);
-    if (d && activeCat?.sites.includes(d)) {
+    if (d && activeCat && categoryHasSite(activeCat, d)) {
       setSelectedSite(d);
       fetchQuote(selectedCatId, d);
     }
@@ -138,7 +138,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
   const onCategoryChange = (id: string) => {
     setSelectedCatId(id);
     const cat = categoryById(id);
-    const site = cat && cat.sites.includes(selectedSite) ? selectedSite : "";
+    const site = cat && categoryHasSite(cat, selectedSite) ? selectedSite : "";
     setSelectedSite(site);
     fetchQuote(id, site);
   };

@@ -1,4 +1,4 @@
-import { CATEGORIES, ALL_SITES, type Category } from "@/data/categories";
+import { CATEGORIES, categoryHasSite, ALL_SITES, type Category } from "@/data/categories";
 import { detectSite } from "./detectSite";
 
 export interface LinkDetection {
@@ -17,7 +17,7 @@ export interface LinkEntry {
 
 /** ورودی دراور وقتی کاربر از روی کارتِ یک سایت مشخص شروع می‌کند (لینک هنوز خالی است). */
 export function sitePresetEntry(site: string): LinkEntry {
-  return { link: "", site, candidates: CATEGORIES.filter((c) => c.sites.includes(site)) };
+  return { link: "", site, candidates: CATEGORIES.filter((c) => categoryHasSite(c, site)) };
 }
 
 export function unsupportedSiteMessage(): string {
@@ -35,6 +35,6 @@ export function detectFromLink(url: string): LinkDetection {
     return { supported: false, site: "", candidates: [] };
   }
 
-  const candidates = CATEGORIES.filter((c) => c.sites.includes(site));
+  const candidates = CATEGORIES.filter((c) => categoryHasSite(c, site));
   return { supported: true, site, candidates };
 }

@@ -1,19 +1,10 @@
-import { categoryById } from "@/data/categories";
+import { sitePriceRial } from "@/data/categories";
 import { getPaymentSettings } from "@/lib/paymentSettings";
-
-// ضریب قیمت بر اساس سایت مبدأ (سایت‌های گران‌تر ضریب بالاتر).
-const SITE_MULTIPLIER: Record<string, number> = {
-  Shutterstock: 1.3,
-  "Adobe Stock": 1.25,
-  iStock: 1.2,
-  Storyblocks: 1.15,
-};
 
 export interface PriceResult {
   categoryId: string;
   site: string;
-  basePriceRial: number;
-  multiplier: number;
+  /** قیمت مستقیم این سایت در این دسته (ریال). ضریب سایت دیگر وجود ندارد. */
   finalPriceRial: number;
 }
 
@@ -22,20 +13,9 @@ export interface PriceResult {
  * خروجی به ریال و integer است.
  */
 export function computePrice(categoryId: string, site: string): PriceResult | null {
-  const cat = categoryById(categoryId);
-  if (!cat) return null;
-  if (!cat.sites.includes(site)) return null;
-
-  const multiplier = SITE_MULTIPLIER[site] ?? 1;
-  const finalPriceRial = Math.round(cat.basePriceRial * multiplier);
-
-  return {
-    categoryId,
-    site,
-    basePriceRial: cat.basePriceRial,
-    multiplier,
-    finalPriceRial,
-  };
+  const finalPriceRial = sitePriceRial(categoryId, site);
+  if (finalPriceRial === undefined) return null;
+  return { categoryId, site, finalPriceRial };
 }
 
 export type PaymentMethod = "wallet" | "gateway";
