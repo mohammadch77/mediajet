@@ -46,7 +46,9 @@ export async function GET(req: NextRequest) {
         affiliateJoinedAt: true,
         affiliateSuspendedAt: true,
         affiliateAccount: { select: { id: true, balanceRial: true } },
-        _count: { select: { referrals: true } },
+        _count: {
+          select: { referrals: true, fraudFlags: { where: { resolvedAt: null } } },
+        },
       },
     }),
   ]);
@@ -87,6 +89,7 @@ export async function GET(req: NextRequest) {
           code: u.referralCode,
           joinedAt: u.affiliateJoinedAt!.toISOString(),
           suspended: !!u.affiliateSuspendedAt,
+          openFlags: u._count.fraudFlags,
           referralsCount: u._count.referrals,
           balanceLabel: rialToTomanLabel(Number(u.affiliateAccount?.balanceRial ?? 0n)),
           netEarnedLabel: rialToTomanLabel(Number(net)),

@@ -35,7 +35,15 @@ export async function GET(req: NextRequest) {
       skip: params.skip,
       take: params.take,
       include: {
-        user: { select: { id: true, mobile: true, name: true, affiliateAccount: { select: { balanceRial: true } } } },
+        user: {
+          select: {
+            id: true,
+            mobile: true,
+            name: true,
+            affiliateAccount: { select: { balanceRial: true } },
+            _count: { select: { fraudFlags: { where: { resolvedAt: null } } } },
+          },
+        },
         reviewedBy: { select: { mobile: true } },
       },
     }),
@@ -59,6 +67,7 @@ export async function GET(req: NextRequest) {
           mobile: p.user.mobile,
           name: p.user.name,
           balanceLabel: rialToTomanLabel(Number(p.user.affiliateAccount?.balanceRial ?? 0n)),
+          openFlags: p.user._count.fraudFlags,
         },
       })),
       total,

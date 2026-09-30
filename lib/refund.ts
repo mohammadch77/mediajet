@@ -17,7 +17,9 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 import { assertTransition, REFUND_PATHS, type OrderStatus } from "./orderState";
 import { creditWalletInTx } from "./wallet";
-import { reverseOrderCommissionInTx } from "./affiliate";
+import { reverseOrderCommissionInTx, type CommissionReversalResult } from "./affiliate";
+import { getTelegramConfig, sendMessage } from "./telegram";
+import { rialToTomanLabel } from "./money";
 import { createNotification, NOTIFICATION_HREF } from "./notifications";
 import { formatOrderNumber } from "./orderNumber";
 
@@ -31,7 +33,7 @@ export class RefundError extends Error {
 type OrderRow = { id: string; userId: string; orderNumber: number; status: OrderStatus; totalPriceRial: bigint };
 
 export async function refundOrder(adminId: string, orderId: string, reason: string): Promise<OrderStatus> {
-  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const outcome = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const rows = await tx.$queryRaw<OrderRow[]>`
       SELECT id, "userId", "orderNumber", status::text AS status, "totalPriceRial"
       FROM "Order" WHERE id = ${orderId} FOR UPDATE
@@ -62,7 +64,7 @@ export async function refundOrder(adminId: string, orderId: string, reason: stri
       `بازگشت وجه سفارش ${orderNumber}`,
       `refund:order:${order.id}`,
     );
-    await reverseOrderCommissionInTx(tx, order.id);
+    const reversal = await reverseOrderCommissionInTx(tx, order.id);
 
     await createNotification(tx, {
       userId: order.userId,
@@ -70,6 +72,54 @@ export async function refundOrder(adminId: string, orderId: string, reason: stri
       href: NOTIFICATION_HREF.orders,
     });
 
-    return current;
+    return { status: current, orderNumber, userId: order.userId, amountRial: order.totalPriceRial, reversal };
   });
+
+  notifyFinanceOfRefund(adminId, reason, outcome);
+  return outcome.status;
+}
+
+/** اطلاع بازگشت وجه (و اگر همکار بدهکار شد، هشدار بدهی) به چت مالی تلگرام؛ هرگز بازگشت وجه را fail نمی‌کند. */
+function notifyFinanceOfRefund(
+  adminId: string,
+  reason: string,
+  o: { orderNumber: string; userId: string; amountRial: bigint; reversal: CommissionReversalResult },
+): void {
+  void (async () => {
+    try {
+      const chatId = await getTelegramConfig("TELEGRAM_CHAT_FINANCE");
+      if (!chatId) return;
+      const [customer, admin] = await Promise.all([
+        prisma.user.findUnique({ where: { id: o.userId }, select: { mobile: true } }),
+        prisma.user.findUnique({ where: { id: adminId }, select: { mobile: true } }),
+      ]);
+      const lines = [
+        "↩️ بازگشت وجه سفارش",
+        `سفارش: ${o.orderNumber} · مشتری: ${customer?.mobile ?? "—"}`,
+        `مبلغ برگشتی به کیف پول: ${rialToTomanLabel(Number(o.amountRial))}`,
+        `دلیل: ${reason} · توسط: ${admin?.mobile ?? adminId}`,
+      ];
+      if (o.reversal.kind === "cancelled_pending") {
+        lines.push(`کمیسیون در انتظار همکار (${rialToTomanLabel(Number(o.reversal.amountRial))}) لغو شد.`);
+      } else if (o.reversal.kind === "reversed") {
+        lines.push(`کمیسیون همکار (${rialToTomanLabel(Number(o.reversal.amountRial))}) برگشت خورد.`);
+      }
+      await sendMessage(chatId, lines.join("\n"));
+
+      if (o.reversal.kind === "reversed" && o.reversal.balanceAfter < 0n) {
+        const aff = await prisma.user.findUnique({ where: { id: o.reversal.affiliateId }, select: { mobile: true, referralCode: true } });
+        await sendMessage(
+          chatId,
+          [
+            "⚠️ همکار بدهکار شد",
+            `همکار: ${aff?.mobile ?? "—"} (${aff?.referralCode ?? "—"})`,
+            `موجودی فعلی: ${rialToTomanLabel(Number(o.reversal.balanceAfter))}`,
+            "کمیسیونِ تسویه‌شده‌ی یک سفارش برگشت خورد؛ بدهی از کمیسیون‌های بعدی کسر می‌شود و تا صاف شدن امکان تسویه ندارد.",
+          ].join("\n"),
+        );
+      }
+    } catch (error) {
+      console.error("[تلگرام خطا] اطلاع بازگشت وجه ناموفق بود:", error);
+    }
+  })();
 }

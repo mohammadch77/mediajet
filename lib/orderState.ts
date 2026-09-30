@@ -46,6 +46,14 @@ export const REFUND_PATHS: Partial<Record<OrderStatus, OrderStatus[]>> = {
   failed: ["refunded"],
 };
 
+/** وضعیت‌هایی که پول جابه‌جا می‌کنند؛ فقط از مسیر بازگشت وجه ادمین (lib/refund.ts)، نه تغییر وضعیت اپراتور. */
+export const ADMIN_ONLY_STATUSES: OrderStatus[] = ["cancelled", "refunded"];
+
+/** انتقال مجاز برای اپراتور: همان state machine، منهای وضعیت‌های مالیِ مخصوص ادمین. */
+export function operatorCanTransition(from: OrderStatus, to: OrderStatus): boolean {
+  return canTransition(from, to) && !ADMIN_ONLY_STATUSES.includes(to);
+}
+
 export function isRefundable(status: OrderStatus): boolean {
   return status in REFUND_PATHS;
 }

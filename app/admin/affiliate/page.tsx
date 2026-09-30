@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { toJalaliDateTime } from "@/lib/jalali";
 import Pagination from "@/components/admin/Pagination";
+import AffiliateReport from "@/components/admin/AffiliateReport";
+import AffiliateFlags from "@/components/admin/AffiliateFlags";
 
 type PayoutStatus = "requested" | "paid" | "rejected";
 
@@ -17,7 +19,7 @@ type PayoutRow = {
   createdAt: string;
   reviewedAt: string | null;
   reviewedByMobile: string | null;
-  user: { id: string; mobile: string; name: string | null; balanceLabel: string };
+  user: { id: string; mobile: string; name: string | null; balanceLabel: string; openFlags: number };
 };
 
 type ListResponse = { items: PayoutRow[]; total: number; page: number; pageSize: number; totalPages: number };
@@ -37,8 +39,28 @@ const tabCls = (active: boolean) =>
     ? "bg-[rgba(56,225,255,.1)] border-[rgba(56,225,255,.4)] text-cyan"
     : "bg-transparent border-[rgba(138,124,255,.2)] text-dim hover:text-text");
 
+type Tab = "report" | "payouts" | "affiliates" | "flags";
+const TABS: [Tab, string][] = [
+  ["report", "گزارش"],
+  ["payouts", "درخواست‌های تسویه"],
+  ["affiliates", "همکاران"],
+  ["flags", "هشدارهای تقلب"],
+];
+
 export default function AdminAffiliatePage() {
-  const [tab, setTab] = useState<"payouts" | "affiliates">("payouts");
+  const [tab, setTab] = useState<Tab>("report");
+  const [openFlags, setOpenFlags] = useState(0);
+  const refreshFlagCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/affiliate/flags?status=open&pageSize=1");
+      if (res.ok) setOpenFlags((await res.json()).total ?? 0);
+    } catch {
+      /* شمارنده‌ی تزئینی؛ خطا نادیده گرفته می‌شود */
+    }
+  }, []);
+  useEffect(() => {
+    refreshFlagCount();
+  }, [refreshFlagCount]);
   return (
     <div>
       <div className="mb-6">
@@ -46,14 +68,24 @@ export default function AdminAffiliatePage() {
         <h1 className="font-display text-[clamp(1.5rem,3.5vw,2.1rem)] font-extrabold mt-2">همکاری در فروش</h1>
         <p className="text-dim text-[.85rem] mt-2">
           درصد کمیسیون و حداقل تسویه از <Link href="/admin/settings" className="text-cyan hover:underline">تنظیمات</Link> قابل تغییر است.
-          بازگشت وجه سفارش (از صفحه‌ی هر سفارش) کمیسیون همان سفارش را خودکار برگشت می‌زند.
+          کمیسیون تا تحویل سفارش «در انتظار» می‌ماند و خودکار آزاد می‌شود؛ بازگشت وجه سفارش (از صفحه‌ی هر سفارش)
+          کمیسیون همان سفارش را خودکار لغو یا برگشت می‌زند.
         </p>
       </div>
-      <div className="flex gap-2 mb-5">
-        <button onClick={() => setTab("payouts")} className={tabCls(tab === "payouts")}>درخواست‌های تسویه</button>
-        <button onClick={() => setTab("affiliates")} className={tabCls(tab === "affiliates")}>همکاران</button>
+      <div className="flex gap-2 mb-5 overflow-x-auto pb-1 -mx-1 px-1">
+        {TABS.map(([key, title]) => (
+          <button key={key} onClick={() => setTab(key)} className={`${tabCls(tab === key)} whitespace-nowrap shrink-0`}>
+            {title}
+            {key === "flags" && openFlags > 0 && (
+              <span className="mr-1.5 px-1.5 py-0.5 rounded-full bg-accent2 text-white text-[.7rem]">{openFlags.toLocaleString("fa-IR")}</span>
+            )}
+          </button>
+        ))}
       </div>
-      {tab === "payouts" ? <PayoutsTab /> : <AffiliatesTab />}
+      {tab === "report" && <AffiliateReport onOpenTab={setTab} />}
+      {tab === "payouts" && <PayoutsTab />}
+      {tab === "affiliates" && <AffiliatesTab />}
+      {tab === "flags" && <AffiliateFlags onChanged={refreshFlagCount} />}
     </div>
   );
 }
@@ -69,6 +101,7 @@ type AffiliateRow = {
   netEarnedLabel: string;
   paidLabel: string;
   suspended: boolean;
+  openFlags: number;
 };
 
 function AffiliatesTab() {
@@ -122,6 +155,7 @@ function AffiliatesTab() {
                     {a.name && <span className="text-dim text-[.82rem]"> · {a.name}</span>}
                   </div>
                   <span className="flex items-center gap-1.5">
+                    {a.openFlags > 0 && <span className="text-[.72rem] font-bold px-2 py-1 rounded-full bg-[rgba(255,107,53,.14)] text-accent2">🚨 {a.openFlags.toLocaleString("fa-IR")}</span>}
                     {a.suspended && <span className="text-[.72rem] font-bold px-2 py-1 rounded-full bg-[rgba(255,107,53,.14)] text-accent2">معلق</span>}
                     <span className="latin text-[.78rem] font-bold px-2.5 py-1 rounded-full bg-[rgba(255,255,255,.05)] border border-[rgba(138,124,255,.2)]">{a.code}</span>
                   </span>
@@ -250,6 +284,11 @@ function PayoutCard({ payout: p, onReviewed }: { payout: PayoutRow; onReviewed: 
             {p.user.mobile}
           </Link>
           {p.user.name && <span className="text-dim text-[.82rem]"> · {p.user.name}</span>}
+          {p.user.openFlags > 0 && p.status === "requested" && (
+            <div className="mt-1.5 text-[.78rem] font-bold text-accent2">
+              🚨 این همکار {p.user.openFlags.toLocaleString("fa-IR")} هشدار تقلب باز دارد — قبل از واریز بررسی کن.
+            </div>
+          )}
         </div>
         <span className={`px-2.5 py-1 rounded-full text-[.72rem] font-bold ${STATUS[p.status].cls}`}>{STATUS[p.status].label}</span>
       </div>

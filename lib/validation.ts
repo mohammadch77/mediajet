@@ -111,6 +111,8 @@ const paymentSettingKeyValues = [
   "payment.wallet_min_charge_rial",
   "affiliate.commission_percent",
   "affiliate.min_payout_rial",
+  "affiliate.hold_days",
+  "affiliate.fraud_ip_burst",
 ] as const;
 
 const paymentSettingFieldInput = z.object({
@@ -563,3 +565,11 @@ export const setReferrerInput = z.object({
 });
 
 export type SetReferrerInput = z.infer<typeof setReferrerInput>;
+
+export const resolveFraudFlagInput = z.object({
+  resolution: z
+    .string({ error: "نتیجه‌ی بررسی الزامی است." })
+    .trim()
+    .min(3, "نتیجه‌ی بررسی را بنویس.")
+    .max(300, "نتیجه‌ی بررسی طولانی است."),
+});

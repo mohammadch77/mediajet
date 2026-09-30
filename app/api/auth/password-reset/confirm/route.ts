@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     throw error;
   }
 
-  await createSession(userId);
+  await createSession(userId, getClientIp(req));
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   return NextResponse.json({ user: await authUserPayload(user) });
 }

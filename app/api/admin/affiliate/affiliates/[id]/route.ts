@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireAdmin, SessionError } from "@/lib/session";
 import { rialToTomanLabel } from "@/lib/money";
 import { formatOrderNumber } from "@/lib/orderNumber";
+import { FRAUD_KIND_LABELS } from "@/lib/affiliateFraud";
 import { AffiliateError, adjustAffiliateBalance, setAffiliateSuspended } from "@/lib/affiliate";
 import { validateInput, affiliateAdminActionInput, ValidationError } from "@/lib/validation";
 
@@ -32,7 +33,18 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   }
 
   const accountId = user.affiliateAccount?.id;
-  const [referrals, referralsCount, ledger, payouts, logs] = await Promise.all([
+  const [pendingRows, flags, referrals, referralsCount, ledger, payouts, logs] = await Promise.all([
+    prisma.affiliatePendingCommission.findMany({
+      where: { affiliateId: user.id, status: "pending" },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    }),
+    prisma.affiliateFraudFlag.findMany({
+      where: { affiliateId: user.id },
+      orderBy: [{ resolvedAt: { sort: "asc", nulls: "first" } }, { createdAt: "desc" }],
+      take: 50,
+      include: { resolvedBy: { select: { mobile: true } } },
+    }),
     prisma.user.findMany({
       where: { referredById: user.id },
       orderBy: { createdAt: "desc" },
@@ -52,7 +64,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     }),
   ]);
 
-  const orderIds = ledger.map((l) => l.orderId).filter((x): x is string => !!x);
+  const orderIds = [
+    ...ledger.map((l) => l.orderId).filter((x): x is string => !!x),
+    ...pendingRows.map((p) => p.orderId),
+  ];
   const orders = orderIds.length
     ? await prisma.order.findMany({ where: { id: { in: orderIds } }, select: { id: true, orderNumber: true } })
     : [];
@@ -70,6 +85,23 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       balanceLabel: rialToTomanLabel(Number(user.affiliateAccount?.balanceRial ?? 0n)),
       referralsCount,
     },
+    pending: pendingRows.map((p) => ({
+      id: p.id,
+      orderId: p.orderId,
+      orderNumber: orderNo.get(p.orderId) ?? null,
+      amountLabel: rialToTomanLabel(Number(p.amountRial)),
+      percent: p.percent,
+      createdAt: p.createdAt.toISOString(),
+    })),
+    flags: flags.map((f) => ({
+      id: f.id,
+      kindLabel: FRAUD_KIND_LABELS[f.kind] ?? f.kind,
+      detail: f.detail,
+      createdAt: f.createdAt.toISOString(),
+      resolvedAt: f.resolvedAt?.toISOString() ?? null,
+      resolution: f.resolution,
+      resolvedByMobile: f.resolvedBy?.mobile ?? null,
+    })),
     referrals: referrals.map((r) => ({
       id: r.id,
       mobile: r.mobile,

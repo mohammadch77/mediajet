@@ -30,6 +30,13 @@ npm run build && <ری‌استارت سرویس>                 # ۴) بیلد
 ```
 
 - اگر `prisma db push` پیام «data loss» داد، **اول متنش را بخوان**. برای step 17 (همکاری در فروش) تنها هشدار، ستون یکتای `User.referralCode` است که برای همه‌ی کاربران موجود خالی است؛ پس `npx prisma db push --accept-data-loss` امن است و داده‌ای پاک نمی‌شود. برای هر هشدار دیگری بدون بررسی این فلگ را نزن.
+- **cron‌های لازم** (هر ساعت، با هدر `Authorization: Bearer $CRON_SECRET`؛ `CRON_SECRET` را در `.env` بگذار):
+  ```bash
+  0 * * * * curl -s -X POST -H "Authorization: Bearer $CRON_SECRET" https://mediajet.ir/api/cron/affiliate
+  0 * * * * curl -s -X POST -H "Authorization: Bearer $CRON_SECRET" https://mediajet.ir/api/cron/cleanup-files
+  ```
+  `/api/cron/affiliate` کمیسیون‌های «در انتظار» را آزاد می‌کند (سفارش تحویل‌شده، یا سفارش «آماده» بعد از دوره‌ی انتظار).
+- **`TRUST_PROXY=true`** را فقط وقتی سایت پشت nginx خودت است بگذار؛ بدون آن IP واقعی کاربر دیده نمی‌شود و تشخیص تقلب همکاری (IP مشترک/ثبت‌نام انبوه) عملاً کار نمی‌کند.
 - step 17 و بعد از آن: جدول‌های `AffiliateAccount`، `AffiliateLedger`، `AffiliatePayout` و ستون‌های همکاری روی `User` اضافه می‌شوند؛ هیچ داده‌ی موجودی تغییر نمی‌کند.
 
 ## ساختار

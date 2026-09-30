@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toJalaliDateTime } from "@/lib/jalali";
 import { toPersianDigits } from "@/lib/money";
+import AffiliateFlags from "@/components/admin/AffiliateFlags";
 
 type Detail = {
   affiliate: {
@@ -17,6 +18,7 @@ type Detail = {
     balanceLabel: string;
     referralsCount: number;
   };
+  pending: { id: string; orderId: string; orderNumber: string | null; amountLabel: string; percent: number; createdAt: string }[];
   referrals: { id: string; mobile: string; name: string | null; joinedAt: string; ordersCount: number }[];
   ledger: {
     id: string;
@@ -125,6 +127,28 @@ export default function AdminAffiliateDetailPage() {
         <SuspendBox id={a.id} suspended={!!a.suspendedAt} onDone={load} />
         <AdjustBox id={a.id} onDone={load} />
       </div>
+
+      <Section title="هشدارهای تقلب">
+        <AffiliateFlags affiliateId={a.id} />
+      </Section>
+
+      <Section title={`کمیسیون در انتظار تحویل (${toPersianDigits(data.pending.length)})`}>
+        {data.pending.length === 0 ? (
+          <Empty>کمیسیون در انتظاری ندارد.</Empty>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {data.pending.map((p) => (
+              <div key={p.id} className={`${card} p-3 flex items-center justify-between gap-2 text-[.84rem]`}>
+                <span>
+                  <Link href={`/admin/orders/${p.orderId}`} className="text-cyan hover:underline latin">{p.orderNumber}</Link>
+                  <span className="text-dim"> · {toPersianDigits(p.percent)}٪ · {toJalaliDateTime(p.createdAt)}</span>
+                </span>
+                <b className="text-[#ffc83c]">{p.amountLabel}</b>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
 
       <Section title="دفتر کمیسیون (۱۰۰ ردیف اخیر)">
         {data.ledger.length === 0 ? (

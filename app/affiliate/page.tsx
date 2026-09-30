@@ -208,9 +208,10 @@ function Dashboard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
           ["موجودی قابل برداشت", d.balanceLabel, "text-[#3ddc84]"],
+          [`در انتظار تحویل (${toPersianDigits(d.pendingCount)})`, d.pendingLabel, "text-[#ffc83c]"],
           ["کل کمیسیون (خالص)", d.totalEarnedLabel, "text-cyan"],
           ["واریزشده", d.totalPaidLabel, "text-primary2"],
           ["زیرمجموعه‌ها", `${toPersianDigits(d.referralsCount)} نفر`, "text-text"],
@@ -232,7 +233,10 @@ function Dashboard({
 
       <section>
         <h2 className="font-display text-[1.1rem] font-bold mb-3">کمیسیون‌های اخیر</h2>
-        <p className="text-dim text-[.8rem] mb-3">اگر سفارشی بازگشت وجه شود، کمیسیون همان سفارش از موجودی کم می‌شود.</p>
+        <p className="text-dim text-[.8rem] mb-3 leading-[1.9]">
+          کمیسیون هر خرید اول «در انتظار» ثبت می‌شود و وقتی سفارش تحویل شد (یا مدتی آماده ماند) خودکار به موجودی قابل
+          برداشت اضافه می‌شود. اگر سفارشی بازگشت وجه شود، کمیسیون همان سفارش لغو یا از موجودی کم می‌شود.
+        </p>
         {d.commissions.length === 0 ? (
           <div className={`${card} p-4 text-dim text-[.9rem]`}>هنوز کمیسیونی ثبت نشده. لینکت را به اشتراک بگذار!</div>
         ) : (

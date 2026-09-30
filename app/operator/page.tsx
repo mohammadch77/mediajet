@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
 import { toJalaliDateTime } from "@/lib/jalali";
-import { STATUS_LABELS, ITEM_STATUS_LABELS, canTransition, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
+import { STATUS_LABELS, ITEM_STATUS_LABELS, operatorCanTransition, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
 import { CATEGORIES } from "@/data/categories";
 
 type OperatorItem = {
@@ -237,7 +237,7 @@ export default function OperatorPage() {
       ) : (
         <div className="grid grid-cols-1 gap-3.5">
           {orders.map((o) => {
-            const nextStatuses = ALL_STATUSES.filter((s) => canTransition(o.status, s));
+            const nextStatuses = ALL_STATUSES.filter((s) => operatorCanTransition(o.status, s));
             const isOrderBusy = busyOrderId === o.id;
             return (
               <div

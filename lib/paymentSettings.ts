@@ -65,6 +65,26 @@ export const PAYMENT_SETTING_DEFS = [
     min: 10_000,
     max: 1_000_000_000,
   },
+  {
+    key: "affiliate.hold_days",
+    label: "دوره‌ی انتظار کمیسیون (روز)",
+    description:
+      "کمیسیون تا تحویل سفارش «در انتظار» می‌ماند. اگر سفارش آماده باشد ولی کاربر دانلودش نکند، بعد از این تعداد روز خودکار آزاد می‌شود. صفر یعنی کمیسیون بلافاصله بعد از پرداخت قابل برداشت شود.",
+    unit: "روز",
+    defaultValue: 7,
+    min: 0,
+    max: 90,
+  },
+  {
+    key: "affiliate.fraud_ip_burst",
+    label: "آستانه‌ی هشدار ثبت‌نام هم‌IP (نفر در ۲۴ ساعت)",
+    description:
+      "اگر این تعداد زیرمجموعه‌ی یک همکار در ۲۴ ساعت از یک IP ثبت‌نام کنند، هشدار تقلب ساخته و به تلگرام مالی فرستاده می‌شود.",
+    unit: "نفر",
+    defaultValue: 3,
+    min: 2,
+    max: 100,
+  },
 ] as const;
 
 const DEF_BY_KEY = new Map(PAYMENT_SETTING_DEFS.map((d) => [d.key as string, d]));
@@ -80,6 +100,10 @@ export type PaymentSettings = {
   affiliateCommissionPercent: number;
   /** حداقل مبلغ درخواست تسویه‌ی همکاری، به ریال */
   affiliateMinPayoutRial: bigint;
+  /** روزهای انتظار کمیسیونِ سفارشِ آماده‌ی تحویل‌نشده؛ ۰ = آزادسازی فوری */
+  affiliateHoldDays: number;
+  /** آستانه‌ی هشدار ثبت‌نام زیرمجموعه‌ها از یک IP در ۲۴ ساعت */
+  affiliateFraudIpBurst: number;
 };
 
 /** مقدار ذخیره‌شده را به عدد تبدیل می‌کند؛ اگر نبود یا خراب بود، مقدار پیش‌فرض. */
@@ -122,6 +146,8 @@ export async function getPaymentSettings(): Promise<PaymentSettings> {
     affiliateMinPayoutRial: BigInt(
       parseValue("affiliate.min_payout_rial", byKey.get("affiliate.min_payout_rial")),
     ),
+    affiliateHoldDays: parseValue("affiliate.hold_days", byKey.get("affiliate.hold_days")),
+    affiliateFraudIpBurst: parseValue("affiliate.fraud_ip_burst", byKey.get("affiliate.fraud_ip_burst")),
   };
 }
 

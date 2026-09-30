@@ -25,7 +25,7 @@ function check(name: string, condition: boolean, detail = ""): void {
 
 const randomMobile = () => "0912" + Math.floor(1000000 + Math.random() * 8999999);
 
-async function sessionFor(mobile: string, role: "user" | "admin" = "user"): Promise<{ userId: string; cookie: string }> {
+async function sessionFor(mobile: string, role: "user" | "admin" | "operator" = "user"): Promise<{ userId: string; cookie: string }> {
   const user = await prisma.user.upsert({
     where: { mobile },
     update: { role },
@@ -46,16 +46,17 @@ function otpFromLog(mobile: string): string {
 }
 
 /** ثبت‌نام/ورود واقعی با OTP، با کوکی دلخواه (مثلاً mj_ref). */
-async function otpLogin(mobile: string, extraCookie = ""): Promise<string> {
+/** ip: با TRUST_PROXY=true روی سرور، به‌عنوان X-Forwarded-For فرستاده می‌شود (برای تست تشخیص تقلب). */
+async function otpLogin(mobile: string, extraCookie = "", ip = "127.0.0.1"): Promise<string> {
   await fetch(`${BASE_URL}/api/auth/request-otp`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Forwarded-For": ip },
     body: JSON.stringify({ mobile }),
   });
   await new Promise((r) => setTimeout(r, 400));
   const res = await fetch(`${BASE_URL}/api/auth/verify-otp`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Cookie: extraCookie },
+    headers: { "Content-Type": "application/json", Cookie: extraCookie, "X-Forwarded-For": ip },
     body: JSON.stringify({ mobile, code: otpFromLog(mobile) }),
   });
   const m = res.headers.get("set-cookie")?.match(/mediajet_session=[^;]+/);
@@ -101,6 +102,9 @@ function luhnCard(prefix15: string): string {
 async function main(): Promise<void> {
   // درصد و حداقل تسویه روی پیش‌فرض (۵٪ و ۲۰۰ هزار تومان) شروع می‌شوند.
   await prisma.siteContent.deleteMany({ where: { key: { startsWith: "affiliate." } } });
+  // بخش‌های ۱ تا ۱۵ منطق کمیسیون/تسویه را با آزادسازی فوری می‌سنجند؛ دوره‌ی انتظار در بخش ۱۶ جدا تست می‌شود.
+  const bootAdmin = await sessionFor(randomMobile(), "admin");
+  await setPaymentSetting("affiliate.hold_days", 0, bootAdmin.userId);
 
   console.log("\n۱) عضویت در برنامه");
   const affiliate = await sessionFor(randomMobile());
@@ -311,7 +315,7 @@ async function main(): Promise<void> {
   const notes = await prisma.notification.findMany({ where: { userId: affiliate.userId } });
   const has = (t: string) => notes.some((n) => n.text.includes(t) && n.href === "/affiliate");
   check("اعلان زیرمجموعه‌ی جدید", has("با لینک تو ثبت‌نام کرد"));
-  check("اعلان کمیسیون", has("به حساب همکاری‌ات اضافه شد"));
+  check("اعلان کمیسیون", has("همکاری‌ات اضافه شد"));
   check("اعلان برگشت کمیسیون", has("برگشت خورد"));
   check("اعلان واریز و رد تسویه", has("به کارتت واریز شد") && has("رد شد"));
 
@@ -374,7 +378,114 @@ async function main(): Promise<void> {
   check("صفحه‌ی جزئیات همکار: دفتر، زیرمجموعه، تسویه و لاگ", detail.json?.ledger?.length > 0 && detail.json?.logs?.length > 0 && Array.isArray(detail.json?.referrals) && detail.json?.payouts?.length > 0);
   check("کاربر عادی جزئیات همکار را نمی‌بیند (۴۰۳)", (await api(affPath, affiliate.cookie)).status === 403);
 
-  console.log("\n۱۵) سازگاری دفتر");
+  console.log("\n۱۶) دوره‌ی انتظار کمیسیون (۷ روز)");
+  await setPaymentSetting("affiliate.hold_days", 7, admin.userId);
+  const holdAff = await sessionFor(randomMobile());
+  const holdCode: string = (await api("/api/affiliate/join", holdAff.cookie, {})).json.code;
+  const holdBuyerMobile = randomMobile();
+  const holdBuyerCookie = await otpLogin(holdBuyerMobile, `mj_ref=${holdCode}`, "10.20.0.1");
+  const holdBuyer = (await prisma.user.findUnique({ where: { mobile: holdBuyerMobile } }))!;
+  await creditWallet(holdBuyer.id, 20_000_000n, null, "شارژ تست");
+  const placeOrder = async (tag: string) => {
+    const k = crypto.randomUUID();
+    await api("/api/orders", holdBuyerCookie, { ...orderBody, idempotencyKey: k, productUrl: `https://www.freepik.com/${tag}` });
+    return (await prisma.order.findUnique({ where: { idempotencyKey: k } }))!;
+  };
+  const cron = async () => (await fetch(`${BASE_URL}/api/cron/affiliate`, { method: "POST" })).json();
+
+  const h1 = await placeOrder("hold-1");
+  const p1Row = await prisma.affiliatePendingCommission.findUnique({ where: { orderId: h1.id } });
+  // درصد در بخش ۶ روی ۱۰٪ مانده: ۱۰٪ از ۲۰۰٬۰۰۰ ریال = ۲۰٬۰۰۰ ریال.
+  check("بعد از پرداخت کمیسیون «در انتظار» است", p1Row?.status === "pending" && p1Row.amountRial === 20_000n, `${p1Row?.status}/${p1Row?.amountRial}`);
+  check("موجودی قابل برداشت هنوز صفر است", (await balanceOf(holdAff.userId)) === 0n);
+  const holdDash = (await api("/api/affiliate", holdAff.cookie)).json?.dashboard;
+  check("داشبورد همکار مبلغ در انتظار را نشان می‌دهد", holdDash?.pendingCount === 1 && holdDash?.pendingLabel?.includes("۲,۰۰۰"));
+  await cron();
+  check("سفارش در صف با cron آزاد نمی‌شود", (await prisma.affiliatePendingCommission.findUnique({ where: { orderId: h1.id } }))?.status === "pending");
+
+  // اپراتور سفارش را تا «تحویل‌شده» جلو می‌برد → آزادسازی فوری.
+  const operator = await sessionFor(randomMobile(), "operator");
+  const opStatus = (id: string, toStatus: string) => api(`/api/operator/orders/${id}/status`, operator.cookie, { toStatus });
+  check("اپراتور نمی‌تواند سفارش پرداخت‌شده را «لغو» کند (پول برنمی‌گشت)", (await opStatus(h1.id, "cancelled")).status === 422);
+  for (const st of ["processing", "ready", "delivered"]) await opStatus(h1.id, st);
+  check("با تحویل سفارش کمیسیون آزاد شد", (await prisma.affiliatePendingCommission.findUnique({ where: { orderId: h1.id } }))?.status === "released" && (await balanceOf(holdAff.userId)) === 20_000n);
+  check("اپراتور نمی‌تواند «بازگشت وجه» بزند", (await opStatus(h1.id, "refunded")).status === 422);
+
+  // سفارش «آماده» که دانلود نهایی نشده: بعد از ۷ روز cron آزادش می‌کند.
+  const h2 = await placeOrder("hold-2");
+  for (const st of ["processing", "ready"]) await opStatus(h2.id, st);
+  await cron();
+  check("سفارش آماده، پیش از ۷ روز آزاد نمی‌شود", (await prisma.affiliatePendingCommission.findUnique({ where: { orderId: h2.id } }))?.status === "pending");
+  await prisma.affiliatePendingCommission.update({ where: { orderId: h2.id }, data: { createdAt: new Date(Date.now() - 8 * 86400000) } });
+  const cronRes = await cron();
+  check("بعد از ۷ روز cron آن را آزاد کرد", cronRes.released >= 1 && (await prisma.affiliatePendingCommission.findUnique({ where: { orderId: h2.id } }))?.status === "released");
+
+  // بازگشت وجه پیش از آزادسازی: فقط لغو، بدون جابه‌جایی پول همکار و بدون بدهی.
+  const h3 = await placeOrder("hold-3");
+  const balBeforeH3 = await balanceOf(holdAff.userId);
+  await api(`/api/admin/orders/${h3.id}/refund`, admin.cookie, { reason: "فایل موجود نبود" });
+  check("بازگشت وجه پیش از تحویل: کمیسیون در انتظار لغو شد", (await prisma.affiliatePendingCommission.findUnique({ where: { orderId: h3.id } }))?.status === "cancelled");
+  check("موجودی همکار دست نخورد (بدون بدهی)", (await balanceOf(holdAff.userId)) === balBeforeH3);
+  check("ردیف برگشتی در دفتر ساخته نشد", (await prisma.affiliateLedger.count({ where: { orderId: h3.id } })) === 0);
+
+  // همکار معلق: آزادسازی متوقف و بعد از رفع تعلیق انجام می‌شود.
+  const h4 = await placeOrder("hold-4");
+  await api(`/api/admin/affiliate/affiliates/${holdAff.userId}`, admin.cookie, { action: "suspend", reason: "بررسی" });
+  for (const st of ["processing", "ready", "delivered"]) await opStatus(h4.id, st);
+  check("کمیسیون همکار معلق حتی با تحویل آزاد نمی‌شود", (await prisma.affiliatePendingCommission.findUnique({ where: { orderId: h4.id } }))?.status === "pending");
+  await api(`/api/admin/affiliate/affiliates/${holdAff.userId}`, admin.cookie, { action: "unsuspend", reason: "رفع شد" });
+  await cron();
+  check("بعد از رفع تعلیق، cron آزادش کرد", (await prisma.affiliatePendingCommission.findUnique({ where: { orderId: h4.id } }))?.status === "released");
+
+  console.log("\n۱۷) تشخیص خودکار تقلب");
+  const fraudAffMobile = randomMobile();
+  const fraudAffCookie = await otpLogin(fraudAffMobile, "", "10.66.0.7");
+  const fraudCode: string = (await api("/api/affiliate/join", fraudAffCookie, {})).json.code;
+  const fraudAff = (await prisma.user.findUnique({ where: { mobile: fraudAffMobile } }))!;
+  check("IP ورود همکار ثبت شد", fraudAff.lastLoginIp === "10.66.0.7" && fraudAff.signupIp === "10.66.0.7");
+  const selfMobile = randomMobile();
+  await otpLogin(selfMobile, `mj_ref=${fraudCode}`, "10.66.0.7");
+  await new Promise((r) => setTimeout(r, 500));
+  const flagsOf = (kind: string) => prisma.affiliateFraudFlag.findMany({ where: { affiliateId: fraudAff.id, kind } });
+  check("زیرمجموعه از IP خود همکار → هشدار same_ip", (await flagsOf("same_ip")).length === 1);
+  const cleanMobile = randomMobile();
+  await otpLogin(cleanMobile, `mj_ref=${fraudCode}`, "10.77.1.1");
+  await new Promise((r) => setTimeout(r, 500));
+  check("زیرمجموعه‌ی عادی هشدار نمی‌سازد", (await flagsOf("same_ip")).length === 1 && (await flagsOf("ip_burst")).length === 0);
+  for (let i = 0; i < 3; i++) await otpLogin(randomMobile(), `mj_ref=${fraudCode}`, "10.88.8.8");
+  await new Promise((r) => setTimeout(r, 500));
+  check("۳ ثبت‌نام از یک IP در ۲۴ ساعت → یک هشدار ip_burst (بدون تکرار)", (await flagsOf("ip_burst")).length === 1);
+
+  await setPaymentSetting("affiliate.min_payout_rial", 10_000, admin.userId);
+  const sharedCard = luhnCard("621986123456789");
+  const cardPayout = async (cookie: string, userId: string) => {
+    await api(`/api/admin/affiliate/affiliates/${userId}`, admin.cookie, { action: "adjust", direction: "credit", amountRial: "100000", reason: "تست", idempotencyKey: crypto.randomUUID() });
+    return api("/api/affiliate/payouts", cookie, { amountRial: "100000", cardNumber: sharedCard, cardHolder: "یک نفر", idempotencyKey: crypto.randomUUID() });
+  };
+  await cardPayout(holdAff.cookie, holdAff.userId);
+  const sp = await cardPayout(fraudAffCookie, fraudAff.id);
+  await new Promise((r) => setTimeout(r, 500));
+  check("درخواست تسویه با کارت همکار دیگر ثبت شد ولی هشدار shared_card ساخت", sp.status === 200 && (await flagsOf("shared_card")).length === 1);
+
+  const flagList = await api(`/api/admin/affiliate/flags?status=open&affiliateId=${fraudAff.id}`, admin.cookie);
+  check("ادمین هشدارهای باز همکار را می‌بیند", flagList.json?.total === 3);
+  check("کاربر عادی هشدارها را نمی‌بیند (۴۰۳)", (await api("/api/admin/affiliate/flags", fraudAffCookie)).status === 403);
+  const payoutsView = await api("/api/admin/affiliate/payouts?status=requested", admin.cookie);
+  check("در لیست تسویه، هشدار باز همکار نمایش داده می‌شود", payoutsView.json?.items?.some((i: any) => i.user.id === fraudAff.id && i.user.openFlags === 3));
+  const flagId = flagList.json.items[0].id;
+  check("بستن هشدار بدون نتیجه رد می‌شود", (await api(`/api/admin/affiliate/flags/${flagId}`, admin.cookie, {})).status === 400);
+  check("ادمین هشدار را بست", (await api(`/api/admin/affiliate/flags/${flagId}`, admin.cookie, { resolution: "همکار و همسرش، مشکلی نیست" })).status === 200);
+  check("بستن دوباره خطا می‌دهد", (await api(`/api/admin/affiliate/flags/${flagId}`, admin.cookie, { resolution: "دوباره" })).status === 422);
+
+  console.log("\n۱۸) گزارش ادمین");
+  const report = await api("/api/admin/affiliate/report", admin.cookie);
+  const dbOpenFlags = await prisma.affiliateFraudFlag.count({ where: { resolvedAt: null } });
+  const dbPending = await prisma.affiliatePendingCommission.count({ where: { status: "pending" } });
+  check("گزارش: تعداد هشدار باز و کمیسیون در انتظار با دیتابیس یکی است", report.json?.totals?.openFlags === dbOpenFlags && report.json?.totals?.pendingCount === dbPending);
+  check("گزارش: بهترین همکاران فهرست شده‌اند", Array.isArray(report.json?.top) && report.json.top.length > 0);
+  check("کاربر عادی گزارش را نمی‌بیند (۴۰۳)", (await api("/api/admin/affiliate/report", fraudAffCookie)).status === 403);
+
+  console.log("\n۱۹) سازگاری دفتر");
   const entries = await prisma.affiliateLedger.findMany({ where: { account: { userId: affiliate.userId } }, orderBy: { createdAt: "asc" } });
   let running = 0n;
   let consistent = true;

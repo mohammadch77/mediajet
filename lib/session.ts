@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { cookies } from "next/headers";
 import type { User } from "@prisma/client";
 import { prisma } from "./db";
+import { checkReferralSignup } from "./affiliateFraud";
 import { REF_COOKIE, findAffiliateIdByCode, normalizeReferralCode, notifyNewReferral } from "./affiliate";
 
 const SESSION_COOKIE = "mediajet_session";
@@ -16,7 +17,7 @@ function hashToken(token: string): string {
 }
 
 /** برای موبایل داده‌شده، در صورت نبود کاربر می‌سازد (به‌همراه کیف پول با موجودی صفر). */
-export async function findOrCreateUserByMobile(mobile: string): Promise<User> {
+export async function findOrCreateUserByMobile(mobile: string, ip?: string): Promise<User> {
   const existing = await prisma.user.findUnique({ where: { mobile } });
   if (existing) {
     return existing;
@@ -30,16 +31,20 @@ export async function findOrCreateUserByMobile(mobile: string): Promise<User> {
   const user = await prisma.user.create({
     data: {
       mobile,
+      signupIp: ip ?? null,
       ...(referredById && { referredById }),
       wallet: { create: { balanceRial: 0n } },
     },
   });
-  if (referredById) await notifyNewReferral(referredById);
+  if (referredById) {
+    await notifyNewReferral(referredById);
+    void checkReferralSignup(user.id);
+  }
   return user;
 }
 
 /** نشست جدید می‌سازد و توکن خام را در کوکی httpOnly می‌گذارد. */
-export async function createSession(userId: string): Promise<void> {
+export async function createSession(userId: string, ip?: string): Promise<void> {
   const token = crypto.randomBytes(32).toString("hex");
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
@@ -47,6 +52,8 @@ export async function createSession(userId: string): Promise<void> {
   await prisma.session.create({
     data: { userId, tokenHash, expiresAt },
   });
+  // آخرین IP ورود، برای تشخیص تقلب همکاری (زیرمجموعه‌ای که از IP خود همکار ثبت‌نام کند).
+  if (ip) await prisma.user.update({ where: { id: userId }, data: { lastLoginIp: ip } });
 
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {

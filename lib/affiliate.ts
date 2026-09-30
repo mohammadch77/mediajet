@@ -19,6 +19,7 @@ import { rialToTomanLabel } from "./money";
 import { formatOrderNumber } from "./orderNumber";
 import { createNotification, NOTIFICATION_HREF } from "./notifications";
 import { getTelegramConfig, sendMessage } from "./telegram";
+import { checkPayoutCard } from "./affiliateFraud";
 
 export { REF_COOKIE, normalizeReferralCode } from "./referralCode";
 
@@ -177,30 +178,112 @@ export async function accrueOrderCommissionInTx(tx: Prisma.TransactionClient, or
   // همکار تعلیق‌شده کمیسیون جدید نمی‌گیرد (زیرمجموعه‌هایش حذف نمی‌شوند؛ با رفع تعلیق دوباره می‌گیرد).
   if (order.user.referredBy?.affiliateSuspendedAt) return;
 
-  const idempotencyKey = `commission:order:${order.id}`;
-  const existing = await tx.affiliateLedger.findUnique({ where: { idempotencyKey } });
-  if (existing) return;
+  // هر سفارش حداکثر یک کمیسیون (orderId یکتاست).
+  if (await tx.affiliatePendingCommission.findUnique({ where: { orderId: order.id } })) return;
 
-  const { affiliateCommissionPercent: percent } = await getPaymentSettings();
+  const { affiliateCommissionPercent: percent, affiliateHoldDays } = await getPaymentSettings();
   const baseRial = order.items.reduce((sum, i) => sum + i.priceRial, 0n);
   const amountRial = commissionFor(baseRial, percent);
   if (amountRial <= 0n) return;
 
-  await appendEntryInTx(tx, referrerId, {
-    type: "commission",
-    amountRial,
-    idempotencyKey,
-    orderId: order.id,
-    sourceUserId: order.userId,
-    baseRial,
-    percent,
-    note: `کمیسیون سفارش ${formatOrderNumber(order.orderNumber)}`,
+  await tx.affiliatePendingCommission.create({
+    data: { orderId: order.id, affiliateId: referrerId, sourceUserId: order.userId, baseRial, percent, amountRial },
   });
+
+  if (affiliateHoldDays === 0) {
+    await releaseOrderCommissionInTx(tx, order.id);
+    return;
+  }
   await createNotification(tx, {
     userId: referrerId,
-    text: `کمیسیون ${rialToTomanLabel(Number(amountRial))} از خرید زیرمجموعه‌ات به حساب همکاری‌ات اضافه شد.`,
+    text: `کمیسیون ${rialToTomanLabel(Number(amountRial))} از خرید زیرمجموعه‌ات ثبت شد و بعد از تحویل سفارش قابل برداشت می‌شود.`,
     href: NOTIFICATION_HREF.affiliate,
   });
+}
+
+type PendingRow = {
+  id: string;
+  orderId: string;
+  affiliateId: string;
+  sourceUserId: string;
+  baseRial: bigint;
+  percent: number;
+  amountRial: bigint;
+  status: string;
+};
+
+async function lockPending(tx: Prisma.TransactionClient, orderId: string): Promise<PendingRow | undefined> {
+  const rows = await tx.$queryRaw<PendingRow[]>`
+    SELECT id, "orderId", "affiliateId", "sourceUserId", "baseRial", percent, "amountRial", status::text AS status
+    FROM "AffiliatePendingCommission" WHERE "orderId" = ${orderId} FOR UPDATE
+  `;
+  return rows[0];
+}
+
+/**
+ * کمیسیون در انتظارِ یک سفارش را قابل برداشت می‌کند (ردیف commission در دفتر). idempotent.
+ * اگر همکار معلق باشد آزاد نمی‌شود و در انتظار می‌ماند تا بعد از رفع تعلیق، cron آزادش کند.
+ */
+export async function releaseOrderCommissionInTx(tx: Prisma.TransactionClient, orderId: string): Promise<boolean> {
+  const pending = await lockPending(tx, orderId);
+  if (!pending || pending.status !== "pending") return false;
+
+  const affiliate = await tx.user.findUnique({ where: { id: pending.affiliateId }, select: { affiliateSuspendedAt: true } });
+  if (affiliate?.affiliateSuspendedAt) return false;
+
+  const order = await tx.order.findUniqueOrThrow({ where: { id: orderId }, select: { orderNumber: true } });
+  await appendEntryInTx(tx, pending.affiliateId, {
+    type: "commission",
+    amountRial: pending.amountRial,
+    idempotencyKey: `commission:order:${orderId}`,
+    orderId,
+    sourceUserId: pending.sourceUserId,
+    baseRial: pending.baseRial,
+    percent: pending.percent,
+    note: `کمیسیون سفارش ${formatOrderNumber(order.orderNumber)}`,
+  });
+  await tx.affiliatePendingCommission.update({
+    where: { id: pending.id },
+    data: { status: "released", resolvedAt: new Date() },
+  });
+  await createNotification(tx, {
+    userId: pending.affiliateId,
+    text: `کمیسیون ${rialToTomanLabel(Number(pending.amountRial))} به موجودی قابل برداشت همکاری‌ات اضافه شد.`,
+    href: NOTIFICATION_HREF.affiliate,
+  });
+  return true;
+}
+
+/** هر بار وضعیت سفارش عوض می‌شود داخل همان تراکنش صدا زده می‌شود؛ تحویل = آزادسازی کمیسیون. */
+export async function onOrderStatusChangedInTx(tx: Prisma.TransactionClient, orderId: string, to: string): Promise<void> {
+  if (to === "delivered") await releaseOrderCommissionInTx(tx, orderId);
+}
+
+/**
+ * آزادسازی دوره‌ای (cron): کمیسیون سفارش‌های تحویل‌شده، و سفارش‌های «آماده»ای که دوره‌ی انتظار
+ * از پرداختشان گذشته (کاربر فایل را گرفته ولی دانلود را نهایی نکرده). هر سفارش در تراکنش جدا.
+ */
+export async function releaseDueCommissions(now = new Date()): Promise<{ released: number }> {
+  const { affiliateHoldDays } = await getPaymentSettings();
+  const cutoff = new Date(now.getTime() - affiliateHoldDays * 24 * 60 * 60 * 1000);
+  const due = await prisma.affiliatePendingCommission.findMany({
+    where: { status: "pending" },
+    select: { orderId: true, createdAt: true },
+    take: 500,
+  });
+  const orders = due.length
+    ? await prisma.order.findMany({ where: { id: { in: due.map((d) => d.orderId) } }, select: { id: true, status: true } })
+    : [];
+  const statusOf = new Map(orders.map((o) => [o.id, o.status]));
+
+  let released = 0;
+  for (const d of due) {
+    const status = statusOf.get(d.orderId);
+    const eligible = status === "delivered" || (status === "ready" && d.createdAt <= cutoff);
+    if (!eligible) continue;
+    if (await prisma.$transaction((tx) => releaseOrderCommissionInTx(tx, d.orderId))) released++;
+  }
+  return { released };
 }
 
 /**
@@ -208,17 +291,40 @@ export async function accrueOrderCommissionInTx(tx: Prisma.TransactionClient, or
  * (با همان مبلغی که ثبت شده بود، نه با درصد فعلی) از موجودی همکار کم می‌کند.
  * idempotent؛ اگر سفارش کمیسیونی نساخته بود، کاری نمی‌کند.
  */
-export async function reverseOrderCommissionInTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
+export type CommissionReversalResult =
+  | { kind: "none" }
+  | { kind: "cancelled_pending"; affiliateId: string; amountRial: bigint }
+  | { kind: "reversed"; affiliateId: string; amountRial: bigint; balanceAfter: bigint };
+
+export async function reverseOrderCommissionInTx(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+): Promise<CommissionReversalResult> {
+  // کمیسیونی که هنوز آزاد نشده فقط لغو می‌شود؛ پولی جابه‌جا نشده بود.
+  const pending = await lockPending(tx, orderId);
+  if (pending?.status === "pending") {
+    await tx.affiliatePendingCommission.update({
+      where: { id: pending.id },
+      data: { status: "cancelled", resolvedAt: new Date() },
+    });
+    await createNotification(tx, {
+      userId: pending.affiliateId,
+      text: `یک سفارش زیرمجموعه‌ات بازگشت وجه شد و کمیسیون در انتظار ${rialToTomanLabel(Number(pending.amountRial))} آن لغو شد.`,
+      href: NOTIFICATION_HREF.affiliate,
+    });
+    return { kind: "cancelled_pending", affiliateId: pending.affiliateId, amountRial: pending.amountRial };
+  }
+
   const original = await tx.affiliateLedger.findUnique({
     where: { idempotencyKey: `commission:order:${orderId}` },
     include: { account: { select: { userId: true } } },
   });
-  if (!original) return;
+  if (!original) return { kind: "none" };
 
   const idempotencyKey = `commission_reversal:order:${orderId}`;
-  if (await tx.affiliateLedger.findUnique({ where: { idempotencyKey } })) return;
+  if (await tx.affiliateLedger.findUnique({ where: { idempotencyKey } })) return { kind: "none" };
 
-  await appendEntryInTx(tx, original.account.userId, {
+  const row = await appendEntryInTx(tx, original.account.userId, {
     type: "commission_reversal",
     amountRial: original.amountRial,
     idempotencyKey,
@@ -233,6 +339,7 @@ export async function reverseOrderCommissionInTx(tx: Prisma.TransactionClient, o
     text: `یک سفارش زیرمجموعه‌ات بازگشت وجه شد و کمیسیون ${rialToTomanLabel(Number(original.amountRial))} آن برگشت خورد.`,
     href: NOTIFICATION_HREF.affiliate,
   });
+  return { kind: "reversed", affiliateId: original.account.userId, amountRial: original.amountRial, balanceAfter: row.balanceAfter };
 }
 
 // ---------------------------------------------------------------------------
@@ -290,7 +397,10 @@ export async function requestPayout(
     return { payout, created: true };
   });
 
-  if (result.created) notifyFinanceOfPayout(result.payout.id);
+  if (result.created) {
+    notifyFinanceOfPayout(result.payout.id);
+    void checkPayoutCard(result.payout.id);
+  }
   return result.payout;
 }
 

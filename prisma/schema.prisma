@@ -38,6 +38,9 @@ model User {
   // تعلیق همکار توسط ادمین: لینکش دیگر زیرمجموعه ثبت نمی‌کند، کمیسیون جدید نمی‌گیرد و تسویه نمی‌تواند بدهد.
   affiliateSuspendedAt     DateTime?
   affiliateSuspendReason   String?
+  // برای تشخیص تقلب همکاری: IP لحظه‌ی ثبت‌نام و آخرین ورود (فقط وقتی TRUST_PROXY درست تنظیم شده معتبر است).
+  signupIp    String?
+  lastLoginIp String?
   referredById      String?
   referredBy        User?     @relation("Referral", fields: [referredById], references: [id])
   referrals         User[]    @relation("Referral")
@@ -46,6 +49,9 @@ model User {
   payoutsReviewed   AffiliatePayout[] @relation("PayoutReviewer")
   affiliateLogsAbout AffiliateAdminLog[] @relation("AffiliateLogTarget")
   affiliateLogsMade  AffiliateAdminLog[] @relation("AffiliateLogActor")
+  pendingCommissions AffiliatePendingCommission[]
+  fraudFlags         AffiliateFraudFlag[] @relation("FraudFlagAffiliate")
+  fraudFlagsResolved AffiliateFraudFlag[] @relation("FraudFlagResolver")
 
   roleChangesReceived RoleChangeLog[] @relation("RoleChangeTarget")
   roleChangesMade     RoleChangeLog[] @relation("RoleChangeActor")
@@ -495,4 +501,50 @@ enum AffiliatePayoutStatus {
   requested
   paid
   rejected
+}
+
+// کمیسیون در انتظار: بلافاصله بعد از پرداخت سفارش ساخته می‌شود ولی هنوز قابل برداشت نیست.
+// وقتی سفارش تحویل شد (یا «آماده» ماند و دوره‌ی انتظار گذشت) آزاد می‌شود و ردیف commission در
+// AffiliateLedger می‌سازد. اگر پیش از آزادسازی بازگشت وجه شود، لغو می‌شود و هیچ پولی جابه‌جا نمی‌شود.
+model AffiliatePendingCommission {
+  id           String                  @id @default(cuid())
+  orderId      String                  @unique
+  affiliateId  String
+  sourceUserId String
+  baseRial     BigInt
+  percent      Int
+  amountRial   BigInt
+  status       PendingCommissionStatus @default(pending)
+  createdAt    DateTime                @default(now())
+  resolvedAt   DateTime?
+
+  affiliate User @relation(fields: [affiliateId], references: [id])
+
+  @@index([affiliateId, status])
+  @@index([status, createdAt])
+}
+
+enum PendingCommissionStatus {
+  pending
+  released
+  cancelled
+}
+
+// هشدار خودکار تقلب همکاری در فروش. append-only به‌جز فیلدهای resolve (بررسی ادمین).
+model AffiliateFraudFlag {
+  id           String    @id @default(cuid())
+  affiliateId  String
+  kind         String // same_ip | ip_burst | shared_card
+  detail       String
+  dedupeKey    String    @unique // جلوگیری از هشدار تکراری برای یک رویداد
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolution   String?
+
+  affiliate  User  @relation("FraudFlagAffiliate", fields: [affiliateId], references: [id])
+  resolvedBy User? @relation("FraudFlagResolver", fields: [resolvedById], references: [id])
+
+  @@index([affiliateId, resolvedAt])
+  @@index([resolvedAt])
 }

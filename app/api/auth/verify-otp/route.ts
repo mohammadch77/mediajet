@@ -35,8 +35,8 @@ export async function POST(req: NextRequest) {
     throw error;
   }
 
-  const user = await findOrCreateUserByMobile(input.mobile);
-  await createSession(user.id);
+  const user = await findOrCreateUserByMobile(input.mobile, getClientIp(req));
+  await createSession(user.id, getClientIp(req));
 
   const payload = await authUserPayload(user);
   return NextResponse.json({ user: payload, needsCredentials: !payload.hasPassword });

@@ -44,6 +44,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: INVALID_CREDENTIALS }, { status: 401 });
   }
 
-  await createSession(user.id);
+  await createSession(user.id, getClientIp(req));
   return NextResponse.json({ user: await authUserPayload(user) });
 }

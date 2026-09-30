@@ -3,6 +3,7 @@
 
 import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
+import { onOrderStatusChangedInTx } from "./affiliate";
 import { assertTransition, deriveOrderStatusFromItems, type OrderStatus, type OrderItemStatus } from "./orderState";
 import { createNotification, createSupportReply, NOTIFICATION_HREF } from "./notifications";
 import { formatOrderNumber } from "./orderNumber";
@@ -79,6 +80,7 @@ export async function advanceOrderStatusFromItems(
     await tx.orderEvent.create({
       data: { orderId, fromStatus: current, toStatus: next, actor, note },
     });
+    await onOrderStatusChangedInTx(tx, orderId, next);
     current = next;
   }
 }

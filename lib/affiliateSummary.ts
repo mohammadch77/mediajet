@@ -39,7 +39,12 @@ export async function getAffiliateDashboard(userId: string) {
   if (!user.referralCode || !user.affiliateJoinedAt) return null;
 
   const accountId = user.affiliateAccount?.id;
-  const [referralsCount, earned, commissions, payouts] = await Promise.all([
+  const [pending, referralsCount, earned, commissions, payouts] = await Promise.all([
+    prisma.affiliatePendingCommission.aggregate({
+      where: { affiliateId: userId, status: "pending" },
+      _sum: { amountRial: true },
+      _count: true,
+    }),
     prisma.user.count({ where: { referredById: userId } }),
     accountId
       ? prisma.affiliateLedger.groupBy({
@@ -78,6 +83,8 @@ export async function getAffiliateDashboard(userId: string) {
     referralsCount,
     balanceRial: balance.toString(),
     balanceLabel: rialToTomanLabel(Number(balance)),
+    pendingLabel: rialToTomanLabel(Number(pending._sum.amountRial ?? 0n)),
+    pendingCount: pending._count,
     totalEarnedLabel: rialToTomanLabel(Number(totalEarned)),
     totalPaidLabel: rialToTomanLabel(Number(totalPaid)),
     hasOpenPayout: payouts.some((p) => p.status === "requested"),
