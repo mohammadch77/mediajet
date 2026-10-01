@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { CATEGORIES, ALL_SITES, type Category } from "@/data/categories";
+import SiteLogo from "@/components/SiteLogo";
 import { toPersianDigits } from "@/lib/money";
 import { useLinkDetect } from "@/lib/useLinkDetect";
 import { unsupportedSiteMessage, sitePresetEntry, type LinkEntry } from "@/lib/linkDetect";
@@ -363,9 +364,7 @@ export default function HomeClient({ content }: { content: Record<string, string
               onClick={() => openSite(site)}
               className="reveal group relative bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-[18px] p-[22px_18px] cursor-pointer transition hover:-translate-y-1.5 hover:border-[rgba(56,225,255,.4)] hover:shadow-[0_20px_40px_-20px_rgba(56,225,255,.3)]"
             >
-              <div className="w-10 h-10 rounded-[10px] bg-[rgba(138,124,255,.14)] grid place-items-center text-[.75rem] font-latin font-bold text-cyan mb-3">
-                {site.slice(0, 2)}
-              </div>
+              <SiteLogo site={site} className="w-10 h-10 rounded-[10px] text-[.75rem] mb-3" />
               <h4 className="latin font-display text-[1rem] mb-1 truncate">{site}</h4>
               <div className="text-dim text-[.8rem]">{toPersianDigits(count)} دسته‌ی قابل سفارش</div>
             </div>

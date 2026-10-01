@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { CATEGORIES, categoryHasSite, categoryById, type Category } from "@/data/categories";
 import { detectSite } from "@/lib/detectSite";
+import SiteLogo from "@/components/SiteLogo";
 import type { LinkEntry } from "@/lib/linkDetect";
 import { useAuth } from "@/lib/AuthContext";
 import { useCart } from "@/lib/CartContext";
@@ -303,9 +304,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
                     onClick={() => selectSite(site)}
                     className="flex items-center gap-2.5 bg-surface border border-[rgba(138,124,255,.14)] rounded-xl p-3 cursor-pointer transition hover:border-[rgba(56,225,255,.5)] hover:-translate-y-0.5"
                   >
-                    <div className="w-[34px] h-[34px] rounded-[10px] bg-bg2 grid place-items-center text-[.7rem] font-latin font-bold shrink-0">
-                      {site.slice(0, 2)}
-                    </div>
+                    <SiteLogo site={site} className="w-[34px] h-[34px] rounded-[10px] text-[.7rem]" />
                     <div className="latin text-[.88rem] font-bold">{site}</div>
                   </div>
                 ))}

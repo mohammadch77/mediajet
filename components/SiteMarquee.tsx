@@ -1,4 +1,5 @@
 import { ALL_SITES } from "@/data/categories";
+import SiteLogo from "@/components/SiteLogo";
 
 export default function SiteMarquee() {
   const items = [...ALL_SITES, ...ALL_SITES];
@@ -14,9 +15,7 @@ export default function SiteMarquee() {
             key={`${site}-${i}`}
             className="latin flex shrink-0 items-center gap-2 rounded-full border border-[rgba(138,124,255,.14)] bg-gradient-to-br from-surface to-bg2 px-5 py-3 text-[.92rem] font-bold text-text whitespace-nowrap"
           >
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-[8px] bg-[rgba(138,124,255,.14)] text-[.72rem] font-bold text-cyan">
-              {site.slice(0, 2)}
-            </span>
+            <SiteLogo site={site} className="h-7 w-7 rounded-[8px] text-[.72rem]" />
             {site}
           </div>
         ))}
