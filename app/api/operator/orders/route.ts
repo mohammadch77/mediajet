@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   const orders = await prisma.order.findMany({
     where: statusParam ? { status: statusParam as OrderStatus } : undefined,
     orderBy: { createdAt: "asc" },
-    include: { items: { include: { delivery: true }, orderBy: { createdAt: "asc" } }, user: true },
+    include: { items: { include: { delivery: true }, orderBy: { position: "asc" } }, user: true },
   });
 
   return NextResponse.json({

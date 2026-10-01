@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       skip: params.skip,
       take: params.take,
-      include: { user: true, items: true },
+      include: { user: true, items: { orderBy: { position: "asc" } } },
     }),
   ]);
 

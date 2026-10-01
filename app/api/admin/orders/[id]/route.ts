@@ -20,7 +20,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     where: { id: params.id },
     include: {
       user: true,
-      items: { include: { delivery: true } },
+      items: { include: { delivery: true }, orderBy: { position: "asc" } },
       events: { orderBy: { createdAt: "asc" } },
     },
   });

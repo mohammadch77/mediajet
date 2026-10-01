@@ -1,218 +1,202 @@
 // تست webhook تلگرام: شبیه‌سازی آپدیت‌های جعلی تلگرام به‌جای وبهوک واقعی (که نیاز به سرور عمومی دارد).
 // سه مسیر بررسی می‌شود: فایل کوچک (ذخیره و دانلود در پنل کاربر)، فایل بزرگ (پیام پشتیبانی)،
-// و امنیت (رد پیام از chat غیرمجاز).
-// نیازمند اجرای سرور dev (BASE_URL قابل تنظیم) و TELEGRAM_CHAT_OPERATOR در .env.
+// و امنیت (رد پیام از chat غیرمجاز یا بدون secret).
+// نیازمند اجرای سرور dev (BASE_URL قابل تنظیم) با همان دیتابیس و همان پوشه‌ی کاری (storage/).
+// چت اپراتور و secret وب‌هوک موقتاً در تنظیمات دیتابیس ست می‌شوند (withTelegramTestConfig).
+// اگر توکن واقعی ربات تنظیم باشد، گام‌های وابسته به دانلود فایل از تلگرام skip می‌شوند.
 
-import crypto from "crypto";
 import { prisma } from "../lib/db";
+import { fileStorage } from "../lib/storage";
+import {
+  BASE_URL,
+  check,
+  skip,
+  run,
+  makeSessionCookie,
+  randomMobile,
+  readJson,
+  withTelegramTestConfig,
+  postWebhook,
+} from "./testUtils";
 
-const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
-const SESSION_COOKIE = "mediajet_session";
-const OPERATOR_CHAT_ID = process.env.TELEGRAM_CHAT_OPERATOR ?? "111111";
-
-function hashToken(token: string): string {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
-
-async function makeSessionCookie(userId: string): Promise<string> {
-  const token = crypto.randomBytes(32).toString("hex");
-  await prisma.session.create({
-    data: { userId, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 3600_000) },
-  });
-  return `${SESSION_COOKIE}=${token}`;
-}
+const OPERATOR_CHAT_ID = "111111";
+const NO_TOKEN_REASON = "توکن واقعی ربات تنظیم است؛ file_id جعلی از API تلگرام قابل دانلود نیست.";
 
 function orderNotifyText(orderId: string): string {
   return `📦 سفارش جدید برای پردازش\nشماره سفارش: ${orderId}\nلینک محصول: https://example.com/p`;
 }
 
-async function main() {
-  process.env.TELEGRAM_CHAT_OPERATOR = OPERATOR_CHAT_ID;
+type PanelItem = { status: string; downloadUrl: string | null; supportMessage: string | null };
 
-  const userMobile = "0935" + Math.floor(1000000 + Math.random() * 8999999);
-  const user = await prisma.user.create({
-    data: { mobile: userMobile, wallet: { create: { balanceRial: 5_000_000n } } },
-  });
-  const userCookie = await makeSessionCookie(user.id);
-  console.log("کاربر تست ساخته شد:", user.id);
+run(() =>
+  withTelegramTestConfig(OPERATOR_CHAT_ID, async (tg) => {
+    const user = await prisma.user.create({
+      data: { mobile: randomMobile("0935"), wallet: { create: { balanceRial: 5_000_000n } } },
+    });
+    const userCookie = await makeSessionCookie(user.id);
 
-  const orderSmall = await prisma.order.create({
-    data: {
-      userId: user.id,
-      totalPriceRial: 700000n,
-      paymentMethod: "wallet",
-      status: "queued",
-      items: { create: { sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/a", priceRial: 700000n } },
-    },
-  });
-  const orderLarge = await prisma.order.create({
-    data: {
-      userId: user.id,
-      totalPriceRial: 1200000n,
-      paymentMethod: "wallet",
-      status: "processing",
-      items: { create: { sourceSite: "Envato", category: "video", productUrl: "https://envato.com/b", priceRial: 1200000n } },
-    },
-  });
-  console.log("سفارش‌های تست:", { small: orderSmall.id, large: orderLarge.id });
-
-  // [۱] امنیت: پیام از چت غیرمجاز باید نادیده گرفته شود
-  const r1 = await fetch(`${BASE_URL}/api/telegram/webhook`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: {
-        message_id: 1,
-        chat: { id: "999999" },
-        document: { file_id: "fake", file_name: "hack.zip", mime_type: "application/zip", file_size: 1000 },
-        reply_to_message: { text: orderNotifyText(orderSmall.id) },
+    const orderSmall = await prisma.order.create({
+      data: {
+        userId: user.id,
+        totalPriceRial: 700000n,
+        paymentMethod: "wallet",
+        status: "queued",
+        items: { create: { sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/a", priceRial: 700000n } },
       },
-    }),
-  });
-  console.log("[۱] پیام از چت غیرمجاز (انتظار 200 و بی‌اثر):", r1.status);
-
-  const afterUnauthorized = await prisma.order.findUnique({
-    where: { id: orderSmall.id },
-    include: { items: { include: { delivery: true } } },
-  });
-  console.log(
-    "    وضعیت سفارش بعد از پیام غیرمجاز (باید همچنان queued باشد):",
-    afterUnauthorized?.status,
-    "| delivery:",
-    afterUnauthorized?.items[0]?.delivery,
-  );
-
-  // [۲] فایل کوچک: اپراتور روی پیام سفارش reply می‌کند و فایل می‌فرستد
-  const r2 = await fetch(`${BASE_URL}/api/telegram/webhook`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: {
-        message_id: 2,
-        chat: { id: OPERATOR_CHAT_ID },
-        document: { file_id: "file-small-1", file_name: "design.zip", mime_type: "application/zip", file_size: 500_000 },
-        reply_to_message: { text: orderNotifyText(orderSmall.id) },
+    });
+    const orderLarge = await prisma.order.create({
+      data: {
+        userId: user.id,
+        totalPriceRial: 1200000n,
+        paymentMethod: "wallet",
+        status: "processing",
+        items: { create: { sourceSite: "Envato", category: "video", productUrl: "https://envato.com/b", priceRial: 1200000n } },
       },
-    }),
-  });
-  console.log("[۲] تحویل فایل کوچک:", r2.status, await r2.json());
+    });
+    const smallMessage = {
+      document: { file_id: "file-small-1", file_name: "design.zip", mime_type: "application/zip", file_size: 500_000 },
+      reply_to_message: { text: orderNotifyText(orderSmall.id) },
+    };
 
-  const smallOrder = await prisma.order.findUnique({
-    where: { id: orderSmall.id },
-    include: { items: { include: { delivery: true } }, events: true },
-  });
-  console.log("    وضعیت سفارش کوچک (انتظار ready):", smallOrder?.status);
-  console.log("    delivery:", smallOrder?.items[0]?.delivery);
-  console.log(
-    "    رویدادها:",
-    smallOrder?.events.map((e: { fromStatus: string | null; toStatus: string; actor: string }) => `${e.fromStatus} → ${e.toStatus} (${e.actor})`),
-  );
+    // [۱] امنیت: پیام از چت غیرمجاز یا بدون secret باید بی‌اثر باشد
+    console.log("[۱] امنیت وب‌هوک");
+    const r1 = await postWebhook(tg, { message_id: 1, chat: { id: "999999" }, ...smallMessage });
+    check("پیام از چت غیرمجاز → 200", r1.status === 200, r1.status);
+    const r1b = await fetch(`${BASE_URL}/api/telegram/webhook`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: { message_id: 2, chat: { id: OPERATOR_CHAT_ID }, ...smallMessage } }),
+    });
+    check("پیام بدون secret token → 200", r1b.status === 200, r1b.status);
+    const afterUnauthorized = await prisma.order.findUnique({
+      where: { id: orderSmall.id },
+      include: { items: { include: { delivery: true } } },
+    });
+    check(
+      "سفارش همچنان queued و بدون delivery",
+      afterUnauthorized?.status === "queued" && !afterUnauthorized.items[0].delivery,
+      afterUnauthorized?.status,
+    );
 
-  // [۲.۱] دانلود از پنل کاربر (endpoint محافظت‌شده، بر اساس orderItemId)
-  const smallItemId = smallOrder!.items[0].id;
-  const rDownload = await fetch(`${BASE_URL}/api/orders/items/${smallItemId}/download`, { headers: { Cookie: userCookie } });
-  const downloadBody = await rDownload.text();
-  console.log("[۲.۱] دانلود فایل توسط مالک سفارش (انتظار 200):", rDownload.status, "طول محتوا:", downloadBody.length);
+    // [۲] فایل کوچک: اپراتور روی پیام سفارش reply می‌کند و فایل می‌فرستد
+    console.log("[۲] تحویل فایل کوچک از تلگرام");
+    const smallItemId = afterUnauthorized!.items[0].id;
+    if (tg.hasRealBotToken) {
+      skip("تحویل و دانلود فایل کوچک ([۲]، [۲.۱])", NO_TOKEN_REASON);
+    } else {
+      const r2 = await postWebhook(tg, { message_id: 3, chat: { id: OPERATOR_CHAT_ID }, ...smallMessage });
+      check("وب‌هوک → 200", r2.status === 200, r2.status);
+      const smallOrder = await prisma.order.findUnique({
+        where: { id: orderSmall.id },
+        include: { items: { include: { delivery: true } }, events: true },
+      });
+      check("سفارش کوچک ready شد", smallOrder?.status === "ready", smallOrder?.status);
+      check("delivery با فایل روی دیسک ثبت شد", Boolean(smallOrder?.items[0].delivery?.storageKey), smallOrder?.items[0].delivery);
+      check(
+        "رویداد audit توسط اپراتور تلگرام",
+        Boolean(smallOrder?.events.some((e) => e.toStatus === "ready" && e.actor === `operator:${OPERATOR_CHAT_ID}`)),
+        smallOrder?.events.map((e) => `${e.fromStatus} → ${e.toStatus} (${e.actor})`),
+      );
 
-  // [۲.۲] کاربر دیگر نباید بتواند فایل را دانلود کند
-  const otherMobile = "0936" + Math.floor(1000000 + Math.random() * 8999999);
-  const otherUser = await prisma.user.create({ data: { mobile: otherMobile, wallet: { create: { balanceRial: 0n } } } });
-  const otherCookie = await makeSessionCookie(otherUser.id);
-  const rDownloadOther = await fetch(`${BASE_URL}/api/orders/items/${smallItemId}/download`, { headers: { Cookie: otherCookie } });
-  console.log("[۲.۲] دانلود توسط کاربر غیرمالک (انتظار 404):", rDownloadOther.status);
+      // [۲.۱] دانلود از پنل کاربر (endpoint محافظت‌شده، بر اساس orderItemId)
+      const rDownload = await fetch(`${BASE_URL}/api/orders/items/${smallItemId}/download`, { headers: { Cookie: userCookie } });
+      const downloadBody = await rDownload.text();
+      check("[۲.۱] دانلود توسط مالک → 200", rDownload.status === 200, rDownload.status);
+      check("[۲.۱] محتوای فایل شبیه‌سازی‌شده", downloadBody.startsWith("simulated-file-content:file-small-1"), downloadBody.slice(0, 80));
+    }
 
-  // [۳] فایل بزرگ: اپراتور با دستور «/large» پاسخ می‌دهد (بدون فایل)
-  const r3 = await fetch(`${BASE_URL}/api/telegram/webhook`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: {
-        message_id: 3,
-        chat: { id: OPERATOR_CHAT_ID },
-        text: "/large",
-        reply_to_message: { text: orderNotifyText(orderLarge.id) },
+    // [۲.۲] کاربر دیگر نباید بتواند فایل را دانلود کند
+    const otherUser = await prisma.user.create({ data: { mobile: randomMobile("0936"), wallet: { create: { balanceRial: 0n } } } });
+    const otherCookie = await makeSessionCookie(otherUser.id);
+    const rDownloadOther = await fetch(`${BASE_URL}/api/orders/items/${smallItemId}/download`, { headers: { Cookie: otherCookie } });
+    check("[۲.۲] دانلود توسط غیرمالک → 404", rDownloadOther.status === 404, rDownloadOther.status);
+
+    // [۳] فایل بزرگ: اپراتور با دستور «/large» پاسخ می‌دهد (بدون فایل)
+    console.log("[۳] علامت‌گذاری فایل بزرگ");
+    const r3 = await postWebhook(tg, {
+      message_id: 4,
+      chat: { id: OPERATOR_CHAT_ID },
+      text: "/large",
+      reply_to_message: { text: orderNotifyText(orderLarge.id) },
+    });
+    check("وب‌هوک → 200", r3.status === 200, r3.status);
+    const largeOrder = await prisma.order.findUnique({
+      where: { id: orderLarge.id },
+      include: { items: { include: { delivery: true } } },
+    });
+    check(
+      "سفارش بزرگ ready با isLarge",
+      largeOrder?.status === "ready" && largeOrder.items[0].delivery?.isLarge === true,
+      { status: largeOrder?.status, isLarge: largeOrder?.items[0].delivery?.isLarge },
+    );
+
+    // [۳.۱] در پنل کاربر باید پیام پشتیبانی نمایش داده شود، نه لینک دانلود
+    const rOrders = await fetch(`${BASE_URL}/api/orders`, { headers: { Cookie: userCookie } });
+    const ordersData = await readJson(rOrders);
+    const largeInPanel = ordersData?.orders?.find((o: { id: string }) => o.id === orderLarge.id);
+    const largePanelItem: PanelItem | undefined = largeInPanel?.items?.[0];
+    check(
+      "[۳.۱] آیتم بزرگ در پنل: پیام پشتیبانی بدون لینک دانلود",
+      Boolean(largePanelItem?.supportMessage) && !largePanelItem?.downloadUrl,
+      largePanelItem,
+    );
+
+    // [۴] سفارش چندآیتمی: یک آیتم آماده (با دانلود جدا)، یک آیتم بزرگ (پیام پشتیبانی)، یک آیتم در انتظار
+    console.log("[۴] سفارش چندآیتمی در پنل");
+    const orderMulti = await prisma.order.create({
+      data: {
+        userId: user.id,
+        totalPriceRial: 3_000_000n,
+        paymentMethod: "wallet",
+        status: "processing",
+        items: {
+          create: [
+            { sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/multi-ready", priceRial: 1_000_000n, status: "ready" },
+            { position: 1, sourceSite: "Envato", category: "video", productUrl: "https://envato.com/multi-large", priceRial: 1_500_000n, status: "ready" },
+            { position: 2, sourceSite: "Shutterstock", category: "photo", productUrl: "https://shutterstock.com/multi-pending", priceRial: 500_000n, status: "pending" },
+          ],
+        },
       },
-    }),
-  });
-  console.log("[۳] علامت‌گذاری فایل بزرگ:", r3.status, await r3.json());
-
-  const largeOrder = await prisma.order.findUnique({
-    where: { id: orderLarge.id },
-    include: { items: { include: { delivery: true } } },
-  });
-  console.log("    وضعیت سفارش بزرگ (انتظار ready):", largeOrder?.status, "| isLarge:", largeOrder?.items[0]?.delivery?.isLarge);
-
-  // [۳.۱] در پنل کاربر باید پیام پشتیبانی نمایش داده شود، نه لینک دانلود
-  const rOrders = await fetch(`${BASE_URL}/api/orders`, { headers: { Cookie: userCookie } });
-  const ordersData = await rOrders.json();
-  const largeInPanel = ordersData.orders.find((o: { id: string }) => o.id === orderLarge.id);
-  const smallInPanel = ordersData.orders.find((o: { id: string }) => o.id === orderSmall.id);
-  console.log("[۳.۱] سفارش بزرگ در پنل:", { downloadUrl: largeInPanel?.downloadUrl, supportMessage: largeInPanel?.supportMessage });
-  console.log("    سفارش کوچک در پنل:", { downloadUrl: smallInPanel?.downloadUrl, supportMessage: smallInPanel?.supportMessage });
-
-  // [۴] سفارش چندآیتمی: یک آیتم آماده (با دانلود جدا)، یک آیتم بزرگ (پیام پشتیبانی)، یک آیتم در انتظار
-  const orderMulti = await prisma.order.create({
-    data: {
-      userId: user.id,
-      totalPriceRial: 3_000_000n,
-      paymentMethod: "wallet",
-      status: "processing",
-      items: {
-        create: [
-          { sourceSite: "Freepik", category: "vector", productUrl: "https://freepik.com/multi-ready", priceRial: 1_000_000n, status: "ready" },
-          { sourceSite: "Envato", category: "video", productUrl: "https://envato.com/multi-large", priceRial: 1_500_000n, status: "ready" },
-          { sourceSite: "Shutterstock", category: "photo", productUrl: "https://shutterstock.com/multi-pending", priceRial: 500_000n, status: "pending" },
-        ],
+      include: { items: { orderBy: { position: "asc" } } },
+    });
+    const [multiReadyItem, multiLargeItem] = orderMulti.items;
+    // فایل واقعاً روی دیسک نوشته می‌شود؛ وگرنه endpoint دانلود (به‌درستی) ۴۰۴ «فایل روی سرور یافت نشد» می‌دهد.
+    const readyKey = `test/${multiReadyItem.id}.zip`;
+    await fileStorage.save(readyKey, Buffer.from("multi-ready-content"));
+    await prisma.delivery.create({
+      data: {
+        orderItemId: multiReadyItem.id,
+        storageKey: readyKey,
+        fileName: "ready-item.zip",
+        mimeType: "application/zip",
+        fileSizeBytes: 19,
+        isLarge: false,
+        isOnDisk: true,
       },
-    },
-    include: { items: true },
-  });
-  const [multiReadyItem, multiLargeItem] = orderMulti.items;
-  await prisma.delivery.create({
-    data: {
-      orderItemId: multiReadyItem.id,
-      storageKey: `test/${multiReadyItem.id}.zip`,
-      fileName: "ready-item.zip",
-      mimeType: "application/zip",
-      fileSizeBytes: 1234,
-      isLarge: false,
-      isOnDisk: true,
-    },
-  });
-  await prisma.delivery.create({
-    data: { orderItemId: multiLargeItem.id, isLarge: true, isOnDisk: false },
-  });
+    });
+    await prisma.delivery.create({ data: { orderItemId: multiLargeItem.id, isLarge: true, isOnDisk: false } });
 
-  const rMultiOrders = await fetch(`${BASE_URL}/api/orders`, { headers: { Cookie: userCookie } });
-  const multiOrdersData = await rMultiOrders.json();
-  const multiInPanel = multiOrdersData.orders.find((o: { id: string }) => o.id === orderMulti.id);
-  console.log(
-    "[۴] سفارش چندآیتمی در پنل (باید ۳ آیتم با وضعیت/دانلود جدا داشته باشد):",
-    multiInPanel?.items.map((i: { status: string; downloadUrl: string | null; supportMessage: string | null }) => ({
-      status: i.status,
-      downloadUrl: i.downloadUrl,
-      supportMessage: i.supportMessage,
-    })),
-  );
+    const multiOrdersData = await readJson(await fetch(`${BASE_URL}/api/orders`, { headers: { Cookie: userCookie } }));
+    const multiItems: PanelItem[] =
+      multiOrdersData?.orders?.find((o: { id: string }) => o.id === orderMulti.id)?.items ?? [];
+    check(
+      "۳ آیتم با وضعیت/دانلود جدا",
+      multiItems.length === 3 &&
+        multiItems[0].status === "ready" && Boolean(multiItems[0].downloadUrl) &&
+        multiItems[1].status === "ready" && !multiItems[1].downloadUrl && Boolean(multiItems[1].supportMessage) &&
+        multiItems[2].status === "pending" && !multiItems[2].downloadUrl,
+      multiItems,
+    );
 
-  // [۴.۱] دانلود آیتم آماده‌ی سفارش چندآیتمی به‌صورت مستقل (نه آیتم اول کل داده‌ها، بلکه بر اساس orderItemId خودش)
-  const rMultiDownload = await fetch(`${BASE_URL}/api/orders/items/${multiReadyItem.id}/download`, {
-    headers: { Cookie: userCookie },
-  });
-  console.log("[۴.۱] دانلود آیتم آماده‌ی سفارش چندآیتمی (انتظار 200):", rMultiDownload.status);
+    // [۴.۱] دانلود آیتم آماده‌ی سفارش چندآیتمی به‌صورت مستقل (بر اساس orderItemId خودش)
+    const rMultiDownload = await fetch(`${BASE_URL}/api/orders/items/${multiReadyItem.id}/download`, { headers: { Cookie: userCookie } });
+    const multiBody = await rMultiDownload.text();
+    check("[۴.۱] دانلود آیتم آماده → 200 با محتوای درست", rMultiDownload.status === 200 && multiBody === "multi-ready-content", rMultiDownload.status);
 
-  // [۴.۲] آیتم بزرگ نباید مستقیماً دانلود شود
-  const rMultiLargeDownload = await fetch(`${BASE_URL}/api/orders/items/${multiLargeItem.id}/download`, {
-    headers: { Cookie: userCookie },
-  });
-  console.log("[۴.۲] دانلود آیتم بزرگ (انتظار 404، باید فقط پیام پشتیبانی داشته باشد):", rMultiLargeDownload.status);
-}
+    // [۴.۲] آیتم بزرگ نباید مستقیماً دانلود شود
+    const rMultiLargeDownload = await fetch(`${BASE_URL}/api/orders/items/${multiLargeItem.id}/download`, { headers: { Cookie: userCookie } });
+    check("[۴.۲] دانلود آیتم بزرگ → 404", rMultiLargeDownload.status === 404, rMultiLargeDownload.status);
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await fileStorage.delete(readyKey);
+  }),
+);

@@ -25,11 +25,11 @@ npm run build && npm start
 pg_dump "$DATABASE_URL" > backup-$(date +%F).sql   # ۱) پشتیبان قبل از هر تغییر اسکیمایی
 git pull                                            # ۲) کد جدید
 npm ci
-npx prisma db push                                  # ۳) اعمال اسکیمای جدید (سؤال می‌پرسد اگر خطر داده باشد)
+npx prisma migrate deploy                           # ۳) اعمال migrationهای جدید (همراه با triggerهای append-only)
 npm run build && <ری‌استارت سرویس>                 # ۴) بیلد و اجرای دوباره
 ```
 
-- اگر `prisma db push` پیام «data loss» داد، **اول متنش را بخوان**. برای step 17 (همکاری در فروش) تنها هشدار، ستون یکتای `User.referralCode` است که برای همه‌ی کاربران موجود خالی است؛ پس `npx prisma db push --accept-data-loss` امن است و داده‌ای پاک نمی‌شود. برای هر هشدار دیگری بدون بررسی این فلگ را نزن.
+- از `prisma db push` استفاده نکن: تاریخچه‌ی migration را دور می‌زند و triggerهای SQL (دفترهای مالی غیرقابل‌ویرایش) را نمی‌سازد. هر تغییر اسکیما باید یک migration در `prisma/migrations` داشته باشد.
 - **cron‌های لازم** (هر ساعت، با هدر `Authorization: Bearer $CRON_SECRET`؛ `CRON_SECRET` را در `.env` بگذار):
   ```bash
   0 * * * * curl -s -X POST -H "Authorization: Bearer $CRON_SECRET" https://mediajet.ir/api/cron/affiliate

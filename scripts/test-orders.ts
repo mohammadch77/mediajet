@@ -89,9 +89,11 @@ async function main() {
   check("یک تراکنش کیف پول با این کلید", (await prisma.walletTransaction.count({ where: { idempotencyKey: key3 } })) === 1);
 
   console.log("\n[۴] امنیت: هویت فقط از session");
-  const anon = await postOrder("", { ...body3, idempotencyKey: crypto.randomUUID() });
-  check("بدون کوکی → ۴۰۱", anon.status === 401);
   const other = await prisma.user.create({ data: { mobile: "0901" + Math.floor(1000000 + Math.random() * 8999999), wallet: { create: { balanceRial: 0n } } } });
+  const anonKey = crypto.randomUUID();
+  const anon = await postOrder("", { ...body3, userId: other.id, idempotencyKey: anonKey });
+  check("بدون کوکی → ۴۰۱ (حتی با userId در بدنه)", anon.status === 401);
+  check("بدون کوکی سفارشی ساخته نشد", (await prisma.order.findUnique({ where: { idempotencyKey: anonKey } })) === null);
   const spoofKey = crypto.randomUUID();
   await postOrder(cookie, { ...body3, userId: other.id, idempotencyKey: spoofKey });
   const spoofed = await prisma.order.findUnique({ where: { idempotencyKey: spoofKey } });

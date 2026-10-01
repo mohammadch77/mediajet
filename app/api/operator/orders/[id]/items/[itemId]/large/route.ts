@@ -34,9 +34,7 @@ export async function POST(
   }
 
   const actor = `operator:${operator.id}`;
-  const itemIndex = [...target.order.items]
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-    .findIndex((i) => i.id === itemId);
+  const itemIndex = target.order.items.find((i) => i.id === itemId)!.position;
   await prisma.$transaction(async (tx) => {
     await markItemLargeAndNotifyUser(tx, {
       orderId: id,
