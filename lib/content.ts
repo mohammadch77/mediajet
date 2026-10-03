@@ -38,6 +38,11 @@ export const CONTENT_DEFS = [
   { key: "header.nav2_href", group: "header", label: "منو ۲ - لینک", defaultValue: "#cats" },
   { key: "header.nav3_label", group: "header", label: "منو ۳ - متن", defaultValue: "کیف پول" },
   { key: "header.nav3_href", group: "header", label: "منو ۳ - لینک", defaultValue: "#wallet" },
+
+  // معرفی همکاری در فروش در صفحه‌ی اصلی (درصد و حداقل تسویه از تنظیمات مالی خوانده می‌شوند)
+  { key: "affiliate.title", group: "affiliate", label: "عنوان بخش", defaultValue: "با معرفی گت‌استوک درآمد داشته باش" },
+  { key: "affiliate.subtitle", group: "affiliate", label: "توضیح بخش", defaultValue: "لینک اختصاصی‌ات را با دوستان، شاگردها یا مخاطبانت به اشتراک بگذار؛ از هر سفارشی که ثبت کنند سهم می‌گیری — بدون سرمایه و بدون پشتیبانی از مشتری." },
+  { key: "affiliate.button", group: "affiliate", label: "متن دکمه", defaultValue: "شروع همکاری" },
 ] as const;
 
 const DEFAULTS_BY_KEY: Record<string, string> = Object.fromEntries(

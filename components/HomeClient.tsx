@@ -16,6 +16,7 @@ import { useCart } from "@/lib/CartContext";
 import Link from "next/link";
 import BrandLogo from "@/components/BrandLogo";
 import ThemeToggle from "@/components/ThemeToggle";
+import type { AffiliateProgramInfo } from "@/lib/affiliateSummary";
 
 // صحنه‌ی سه‌بعدی فقط سمت کلاینت لود شود
 const HeroScene = dynamic(() => import("@/components/HeroScene"), { ssr: false });
@@ -51,7 +52,13 @@ function useReveal() {
   }, []);
 }
 
-export default function HomeClient({ content }: { content: Record<string, string> }) {
+export default function HomeClient({
+  content,
+  affiliate,
+}: {
+  content: Record<string, string>;
+  affiliate: AffiliateProgramInfo;
+}) {
   const [drawerCat, setDrawerCat] = useState<Category | null>(null);
   const [linkEntry, setLinkEntry] = useState<LinkEntry | null>(null);
   const [open, setOpen] = useState(false);
@@ -457,6 +464,43 @@ export default function HomeClient({ content }: { content: Record<string, string
         </div>
       </section>
 
+      {/* AFFILIATE — معرفی همکاری در فروش؛ درصد و حداقل تسویه از تنظیمات واقعی می‌آیند */}
+      <section id="affiliate" className="px-[5vw] pb-[clamp(70px,10vw,120px)] max-w-[1200px] mx-auto">
+        <div className="reveal relative overflow-hidden rounded-[26px] border border-[rgb(var(--c-primary2)/.2)] bg-gradient-to-br from-surface to-bg2 p-[clamp(24px,5vw,48px)]">
+          <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-[rgb(var(--c-accent)/.14)] blur-3xl pointer-events-none" />
+          <div className="relative grid grid-cols-[1.3fr_1fr] gap-[clamp(20px,4vw,40px)] items-center max-[820px]:grid-cols-1">
+            <div>
+              <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Affiliate</div>
+              <h2 className="font-display text-[clamp(1.5rem,4vw,2.3rem)] font-extrabold mt-3 mb-3">{content["affiliate.title"]}</h2>
+              <p className="text-dim text-[.98rem] leading-[1.95] mb-6">{content["affiliate.subtitle"]}</p>
+              <Link
+                href="/affiliate"
+                className="inline-block font-body font-bold rounded-[14px] transition text-[.98rem] px-6 py-3 bg-gradient-to-br from-accent to-accent2 text-white shadow-[0_15px_40px_-15px_rgb(var(--c-accent)/.8)] hover:-translate-y-0.5"
+              >
+                {content["affiliate.button"]}
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.14)] p-4 text-center">
+                <div className="font-display text-[clamp(1.6rem,4vw,2.2rem)] font-extrabold text-cyan">
+                  {toPersianDigits(affiliate.commissionPercent)}٪
+                </div>
+                <div className="text-dim text-[.8rem] mt-1">از هر سفارش زیرمجموعه</div>
+              </div>
+              <div className="rounded-2xl bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.14)] p-4 text-center">
+                <div className="font-display text-[clamp(1.1rem,3vw,1.5rem)] font-extrabold text-primary2 leading-[1.6]">
+                  {affiliate.minPayoutLabel}
+                </div>
+                <div className="text-dim text-[.8rem] mt-1">حداقل تسویه</div>
+              </div>
+              <div className="col-span-2 rounded-2xl bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.14)] p-4 text-[.85rem] text-dim leading-[1.9]">
+                ثبت‌نام رایگان ← اشتراک لینک اختصاصی ← دریافت سهم از هر خرید
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* FOOTER */}
       <footer className="border-t border-[rgb(var(--c-primary2)/.14)] px-[5vw] py-10 text-center text-dim">
         <div className="inline-flex items-center gap-2.5 font-display font-extrabold text-text mb-2.5">
@@ -482,6 +526,7 @@ export default function HomeClient({ content }: { content: Record<string, string
           <a href="/p/terms" className="text-dim hover:text-text transition">قوانین و مقررات</a>
           <a href="/p/faq" className="text-dim hover:text-text transition">سؤالات متداول</a>
           <a href="/blog" className="text-dim hover:text-text transition">وبلاگ</a>
+          <a href="/affiliate" className="text-dim hover:text-text transition">همکاری در فروش</a>
         </div>
         <p className="max-w-[60ch] mx-auto mt-4 text-[.78rem] text-muted leading-[1.85]">
           {content["footer.copyright"]}

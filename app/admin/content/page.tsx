@@ -17,15 +17,17 @@ const GROUP_LABELS: Record<string, string> = {
   contact: "تماس با ما",
   footer: "فوتر",
   header: "هدر (منو)",
+  affiliate: "معرفی همکاری در فروش",
 };
 
-const GROUP_ORDER = ["hero", "contact", "footer", "header"];
+const GROUP_ORDER = ["hero", "contact", "footer", "header", "affiliate"];
 
 const LONG_FIELD_KEYS = new Set([
   "hero.subtitle",
   "contact.description",
   "contact.address",
   "footer.copyright",
+  "affiliate.subtitle",
 ]);
 
 function GroupSection({
