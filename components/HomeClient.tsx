@@ -104,7 +104,7 @@ export default function HomeClient({ content }: { content: Record<string, string
         <div className="flex items-center gap-2 bg-[rgba(20,24,51,.7)] backdrop-blur-[20px] border border-[rgba(138,124,255,.14)] rounded-full py-2 px-3 sm:p-[8px_8px_8px_20px] shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)]">
           <div className="flex items-center gap-2 sm:gap-2.5 font-display font-extrabold text-[1rem] sm:text-[1.15rem] whitespace-nowrap shrink-0">
             <BrandLogo className="w-[28px] h-[28px] sm:w-[30px] sm:h-[30px] shadow-[0_0_60px_-10px_#6B5BFF]" />
-            مدیاجت
+            گت‌استوک
           </div>
           <div className="flex gap-1 mx-1.5 max-[760px]:hidden">
             {navItems.map(([href, label]) => (
@@ -457,7 +457,7 @@ export default function HomeClient({ content }: { content: Record<string, string
       {/* FOOTER */}
       <footer className="border-t border-[rgba(138,124,255,.14)] px-[5vw] py-10 text-center text-dim">
         <div className="inline-flex items-center gap-2.5 font-display font-extrabold text-text mb-2.5">
-          <BrandLogo className="w-[26px] h-[26px]" />مدیاجت
+          <BrandLogo className="w-[26px] h-[26px]" />گت‌استوک
         </div>
         <p className="m-0">{content["footer.tagline"]}</p>
         {(content["footer.social_instagram"] || content["footer.social_telegram"]) && (

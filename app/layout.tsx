@@ -4,7 +4,7 @@ import { AuthProvider } from "@/lib/AuthContext";
 import { CartProvider } from "@/lib/CartContext";
 
 export const metadata: Metadata = {
-  title: "مدیاجت — هر فایلی از هر سایت استوک، فقط با یک لینک",
+  title: "گت‌استوک — هر فایلی از هر سایت استوک، فقط با یک لینک",
   description:
     "سرویس دانلود تک‌فایل از پلتفرم‌های استوک خارجی برای کاربران ایرانی، با کیف پول و پرداخت ریالی.",
 };

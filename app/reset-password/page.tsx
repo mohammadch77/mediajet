@@ -3,7 +3,7 @@ import ResetPasswordForm from "./ResetPasswordForm";
 
 // توکن در URL است؛ no-referrer تا با کلیک روی لینکی در این صفحه به سایت دیگری نشت نکند.
 export const metadata: Metadata = {
-  title: "بازیابی رمز عبور — مدیاجت",
+  title: "بازیابی رمز عبور — گت‌استوک",
   referrer: "no-referrer",
   robots: { index: false, follow: false },
 };

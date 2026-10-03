@@ -8,7 +8,7 @@ export const DEFAULT_PAGES: { slug: string; title: string; contentHtml: string }
   {
     slug: "about",
     title: "درباره ما",
-    contentHtml: "<h2>درباره مدیاجت</h2><p>این متن پیش‌فرض صفحه‌ی «درباره ما» است. از پنل ادمین ویرایش کنید.</p>",
+    contentHtml: "<h2>درباره گت‌استوک</h2><p>این متن پیش‌فرض صفحه‌ی «درباره ما» است. از پنل ادمین ویرایش کنید.</p>",
   },
   {
     slug: "terms",

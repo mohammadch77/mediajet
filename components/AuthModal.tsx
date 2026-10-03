@@ -220,7 +220,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
 
         <div className="flex items-center gap-2.5 font-display font-extrabold text-[1.1rem] mb-1.5">
           <BrandLogo />
-          مدیاجت
+          گت‌استوک
         </div>
 
         {showTabs && (

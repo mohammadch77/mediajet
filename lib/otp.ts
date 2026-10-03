@@ -58,7 +58,7 @@ export async function requestOtp(mobile: string): Promise<void> {
   ]);
 
   const smsPanel = await getSmsPanel();
-  await smsPanel.sendSms(mobile, `کد ورود مدیاجت: ${code}`);
+  await smsPanel.sendSms(mobile, `کد ورود گت‌استوک: ${code}`);
 }
 
 /** کد OTP را تأیید می‌کند. در صورت موفقیت، کد را used می‌کند تا دوباره قابل استفاده نباشد. */

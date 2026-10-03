@@ -69,7 +69,7 @@ export default function AdminShell({
         }
       >
         <div className="px-6 py-6 border-b border-[rgba(138,124,255,.14)]">
-          <div className="latin text-[.75rem] tracking-[.14em] uppercase text-cyan font-bold">Mediajet</div>
+          <div className="latin text-[.75rem] tracking-[.14em] uppercase text-cyan font-bold">GetStock</div>
           <div className="font-display text-lg font-extrabold mt-1">پنل مدیریت</div>
         </div>
 

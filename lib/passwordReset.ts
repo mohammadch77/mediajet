@@ -96,7 +96,7 @@ export async function requestPasswordReset(mobile: string): Promise<void> {
 
   const mode = await getResetMode();
   const link = `${getAppBaseUrl()}/reset-password?t=${token}`;
-  const lines = ["بازیابی رمز مدیاجت"];
+  const lines = ["بازیابی رمز گت‌استوک"];
   if (mode !== "link") lines.push(`کد: ${code}`);
   if (mode !== "code") lines.push(link);
   lines.push("اعتبار: ۱ ساعت. اگر شما درخواست نداده‌اید، این پیام را نادیده بگیرید.");
