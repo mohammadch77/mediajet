@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
 import { toPersianDigits } from "@/lib/money";
@@ -71,9 +72,12 @@ export default function AffiliatePage() {
           <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Affiliate</div>
           <h1 className="font-display text-[clamp(1.6rem,4vw,2.4rem)] font-extrabold mt-2">همکاری در فروش</h1>
         </div>
-        <Link href="/" className="text-dim text-[.9rem] hover:text-text transition">
-          ← بازگشت به صفحه‌ی اصلی
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/" className="text-dim text-[.9rem] hover:text-text transition">
+            ← بازگشت به صفحه‌ی اصلی
+          </Link>
+          <ThemeToggle />
+        </div>
       </div>
 
       {error && (

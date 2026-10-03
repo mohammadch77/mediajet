@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 import { toPersianDigits } from "@/lib/money";
 import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
@@ -363,6 +364,7 @@ export default function DashboardPage() {
           <Link href="/" className="text-dim text-[.9rem] hover:text-text transition">
             ← بازگشت به صفحه‌ی اصلی
           </Link>
+          <ThemeToggle />
         </div>
       </div>
 

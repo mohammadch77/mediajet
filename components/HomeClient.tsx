@@ -74,6 +74,7 @@ export default function HomeClient({
     [content["header.nav1_href"], content["header.nav1_label"]],
     [content["header.nav2_href"], content["header.nav2_label"]],
     [content["header.nav3_href"], content["header.nav3_label"]],
+    [content["header.nav4_href"], content["header.nav4_label"]],
   ];
 
   const openCat = (c: Category) => { setDrawerCat(c); setLinkEntry(null); setOpen(true); };
@@ -114,7 +115,7 @@ export default function HomeClient({
             <BrandLogo className="w-[28px] h-[28px] sm:w-[30px] sm:h-[30px] shadow-[0_0_60px_-10px_#6B5BFF]" />
             گت‌استوک
           </div>
-          <div className="flex gap-1 mx-1.5 max-[760px]:hidden">
+          <div className="flex gap-1 mx-1.5 max-[1100px]:hidden">
             {navItems.map(([href, label]) => (
               <a key={href} href={href} className="text-dim text-[.9rem] font-medium px-3.5 py-2 rounded-full transition hover:text-text hover:bg-[rgb(var(--c-ov)/.05)] whitespace-nowrap">
                 {label}
@@ -145,7 +146,7 @@ export default function HomeClient({
           </Link>
 
           {/* desktop auth area */}
-          <div className="max-[760px]:hidden">
+          <div className="max-[1100px]:hidden">
             {!loading && user ? (
               <div className="flex items-center gap-1.5 shrink-0">
                 <Link
@@ -179,7 +180,7 @@ export default function HomeClient({
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="باز کردن منو"
             aria-expanded={menuOpen}
-            className="min-[761px]:hidden mr-auto shrink-0 w-9 h-9 grid place-items-center rounded-full bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)] transition hover:bg-[rgb(var(--c-ov)/.12)]"
+            className="min-[1101px]:hidden mr-auto shrink-0 w-9 h-9 grid place-items-center rounded-full bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)] transition hover:bg-[rgb(var(--c-ov)/.12)]"
           >
             <div className="w-[16px] flex flex-col gap-[4px] items-center">
               <span className={`block h-[2px] w-full bg-text rounded transition-transform ${menuOpen ? "translate-y-[6px] rotate-45" : ""}`} />
@@ -191,7 +192,7 @@ export default function HomeClient({
 
         {/* mobile dropdown panel */}
         {menuOpen && (
-          <div className="min-[761px]:hidden mt-2 bg-[rgb(var(--c-surface)/.92)] backdrop-blur-[20px] border border-[rgb(var(--c-primary2)/.14)] rounded-[20px] p-3 shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)] flex flex-col gap-1">
+          <div className="min-[1101px]:hidden mt-2 bg-[rgb(var(--c-surface)/.92)] backdrop-blur-[20px] border border-[rgb(var(--c-primary2)/.14)] rounded-[20px] p-3 shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)] flex flex-col gap-1">
             {navItems.map(([href, label]) => (
               <a
                 key={href}

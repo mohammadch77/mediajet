@@ -69,12 +69,9 @@ export default function AdminShell({
           (sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0")
         }
       >
-        <div className="px-6 py-6 border-b border-[rgb(var(--c-primary2)/.14)] flex items-start justify-between gap-3">
-          <div>
-            <div className="latin text-[.75rem] tracking-[.14em] uppercase text-cyan font-bold">GetStock</div>
-            <div className="font-display text-lg font-extrabold mt-1">پنل مدیریت</div>
-          </div>
-          <ThemeToggle />
+        <div className="px-6 py-6 border-b border-[rgb(var(--c-primary2)/.14)]">
+          <div className="latin text-[.75rem] tracking-[.14em] uppercase text-cyan font-bold">GetStock</div>
+          <div className="font-display text-lg font-extrabold mt-1">پنل مدیریت</div>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1">
@@ -134,6 +131,7 @@ export default function AdminShell({
           <div className="flex-1" />
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <div className="text-left hidden sm:block">
               <div className="text-[.85rem] font-bold">{adminName ?? "مدیر سیستم"}</div>
               <div dir="ltr" className="text-[.72rem] text-dim">{adminMobile}</div>
