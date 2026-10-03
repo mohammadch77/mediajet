@@ -356,7 +356,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-4 flex-wrap">
           <Link
             href="/affiliate"
-            className="text-cyan text-[.9rem] font-semibold border border-[rgba(56,225,255,.3)] rounded-full px-3.5 py-1.5 hover:bg-[rgba(56,225,255,.08)] transition"
+            className="text-cyan text-[.9rem] font-semibold border border-[rgb(var(--c-cyan)/.3)] rounded-full px-3.5 py-1.5 hover:bg-[rgb(var(--c-cyan)/.08)] transition"
           >
             همکاری در فروش
           </Link>
@@ -367,35 +367,35 @@ export default function DashboardPage() {
       </div>
 
       {error && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-6">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-6">
           {error}
         </div>
       )}
 
       {chargeNotice === "success" && (
-        <div className="bg-[rgba(56,225,255,.1)] border border-[rgba(56,225,255,.3)] text-cyan rounded-2xl p-4 mb-6">
+        <div className="bg-[rgb(var(--c-cyan)/.1)] border border-[rgb(var(--c-cyan)/.3)] text-cyan rounded-2xl p-4 mb-6">
           شارژ کیف پول با موفقیت انجام شد.
         </div>
       )}
       {chargeNotice === "failed" && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-6">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-6">
           شارژ کیف پول ناموفق بود یا لغو شد.
         </div>
       )}
 
       {orderNotice === "success" && (
-        <div className="bg-[rgba(56,225,255,.1)] border border-[rgba(56,225,255,.3)] text-cyan rounded-2xl p-4 mb-6">
+        <div className="bg-[rgb(var(--c-cyan)/.1)] border border-[rgb(var(--c-cyan)/.3)] text-cyan rounded-2xl p-4 mb-6">
           پرداخت سفارش با موفقیت انجام شد و سفارش در صف پردازش قرار گرفت.
         </div>
       )}
       {orderNotice === "failed" && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-6">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-6">
           پرداخت سفارش ناموفق بود یا لغو شد. سفارش در وضعیت «در انتظار پرداخت» باقی ماند.
         </div>
       )}
 
       {!user.hasPassword && tab !== "profile" && (
-        <div className="flex items-center justify-between flex-wrap gap-3 bg-[rgba(107,91,255,.1)] border border-[rgba(138,124,255,.3)] rounded-2xl p-4 mb-6">
+        <div className="flex items-center justify-between flex-wrap gap-3 bg-[rgb(var(--c-primary)/.1)] border border-[rgb(var(--c-primary2)/.3)] rounded-2xl p-4 mb-6">
           <span className="text-[.88rem]">برای ورود سریع‌تر بدون پیامک، ایمیل و رمز عبور تنظیم کن.</span>
           <button
             type="button"
@@ -418,7 +418,7 @@ export default function DashboardPage() {
               "font-body cursor-pointer shrink-0 relative text-[.9rem] font-bold px-5 py-2.5 rounded-full transition border whitespace-nowrap " +
               (tab === t.id
                 ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
-                : "bg-[rgba(255,255,255,.04)] border-[rgba(138,124,255,.2)] text-dim hover:text-text hover:border-cyan")
+                : "bg-[rgb(var(--c-ov)/.04)] border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text hover:border-cyan")
             }
           >
             {t.label}
@@ -492,10 +492,10 @@ export default function DashboardPage() {
               {wallet.transactions.length === 0 ? (
                 <div className="text-dim text-[.9rem]">هنوز تراکنشی ثبت نشده است.</div>
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-[rgba(138,124,255,.14)]">
+                <div className="overflow-x-auto rounded-2xl border border-[rgb(var(--c-primary2)/.14)]">
                   <table className="w-full text-[.88rem] border-collapse min-w-[560px]">
                     <thead>
-                      <tr className="bg-[rgba(255,255,255,.04)] text-dim text-right">
+                      <tr className="bg-[rgb(var(--c-ov)/.04)] text-dim text-right">
                         <th className="p-3.5 font-semibold">نوع</th>
                         <th className="p-3.5 font-semibold">مبلغ</th>
                         <th className="p-3.5 font-semibold">موجودی پس از تراکنش</th>
@@ -505,14 +505,14 @@ export default function DashboardPage() {
                     </thead>
                     <tbody>
                       {wallet.transactions.map((t) => (
-                        <tr key={t.id} className="border-t border-[rgba(138,124,255,.1)]">
+                        <tr key={t.id} className="border-t border-[rgb(var(--c-primary2)/.1)]">
                           <td className="p-3.5">
                             <span
                               className={
                                 "px-2.5 py-1 rounded-full text-[.78rem] font-bold " +
                                 (t.type === "credit"
-                                  ? "bg-[rgba(56,225,255,.12)] text-cyan"
-                                  : "bg-[rgba(255,107,53,.12)] text-accent2")
+                                  ? "bg-[rgb(var(--c-cyan)/.12)] text-cyan"
+                                  : "bg-[rgb(var(--c-accent)/.12)] text-accent2")
                               }
                             >
                               {t.type === "credit" ? "شارژ" : "پرداخت"}
@@ -544,11 +544,11 @@ export default function DashboardPage() {
           ) : orders.length === 0 ? (
             <div className="text-dim text-[.9rem]">هنوز سفارشی ثبت نکرده‌ای.</div>
           ) : (
-            <div className="grid gap-3.5">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-3.5">
               {orders.map((o) => (
                 <div
                   key={o.id}
-                  className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-[20px_22px]"
+                  className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-[20px_22px]"
                 >
                   <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
                     <div className="flex items-center gap-2.5 flex-wrap">
@@ -560,17 +560,17 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="font-semibold text-[.95rem]">{o.priceLabel}</span>
-                      <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)]">
+                      <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)]">
                         {STATUS_LABELS[o.status]}
                       </span>
                     </div>
                   </div>
 
-                  <div className="grid gap-2.5">
+                  <div className="grid grid-cols-[minmax(0,1fr)] gap-2.5">
                     {o.items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between flex-wrap gap-3 border-t border-[rgba(138,124,255,.1)] pt-2.5 first:border-t-0 first:pt-0"
+                        className="flex items-center justify-between flex-wrap gap-3 border-t border-[rgb(var(--c-primary2)/.1)] pt-2.5 first:border-t-0 first:pt-0"
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-2.5 flex-wrap mb-1">
@@ -580,10 +580,10 @@ export default function DashboardPage() {
                               className={
                                 "px-2.5 py-1 rounded-full text-[.74rem] font-bold " +
                                 (item.status === "delivered"
-                                  ? "bg-[rgba(56,225,255,.12)] text-cyan"
+                                  ? "bg-[rgb(var(--c-cyan)/.12)] text-cyan"
                                   : item.status === "ready"
-                                    ? "bg-[rgba(107,91,255,.16)] text-primary2"
-                                    : "bg-[rgba(255,255,255,.06)] text-dim")
+                                    ? "bg-[rgb(var(--c-primary)/.16)] text-primary2"
+                                    : "bg-[rgb(var(--c-ov)/.06)] text-dim")
                               }
                             >
                               {ITEM_STATUS_LABELS[item.status]}
@@ -625,7 +625,7 @@ export default function DashboardPage() {
       {/* SUPPORT MESSAGES */}
       {tab === "messages" && (
         <section>
-          <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-[20px_22px]">
+          <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-[20px_22px]">
             <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto mb-4">
               {!messages ? (
                 <div className="text-dim text-[.9rem]">در حال بارگذاری...</div>
@@ -638,8 +638,8 @@ export default function DashboardPage() {
                     className={
                       "max-w-[80%] rounded-2xl p-3 text-[.88rem] leading-relaxed " +
                       (m.sender === "user"
-                        ? "self-start bg-[rgba(138,124,255,.16)] border border-[rgba(138,124,255,.24)]"
-                        : "self-end bg-[rgba(56,225,255,.1)] border border-[rgba(56,225,255,.24)]")
+                        ? "self-start bg-[rgb(var(--c-primary2)/.16)] border border-[rgb(var(--c-primary2)/.24)]"
+                        : "self-end bg-[rgb(var(--c-cyan)/.1)] border border-[rgb(var(--c-cyan)/.24)]")
                     }
                   >
                     <div className="whitespace-pre-wrap break-words">{m.text}</div>
@@ -658,7 +658,7 @@ export default function DashboardPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !sendingMessage) handleSendMessage();
                 }}
-                className="flex-1 min-w-[200px] bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2.5 text-[.9rem] outline-none focus:border-cyan"
+                className="flex-1 min-w-[200px] bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] rounded-full px-4 py-2.5 text-[.9rem] outline-none focus:border-cyan"
               />
               <button
                 onClick={handleSendMessage}
@@ -676,7 +676,7 @@ export default function DashboardPage() {
       {/* PROFILE */}
       {tab === "profile" && (
         <section>
-          <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-[24px_26px] max-w-[480px]">
+          <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-[24px_26px] max-w-[480px]">
             <div className="mb-6">
               <div className="text-dim text-[.82rem] mb-1.5">شماره‌ی موبایل</div>
               <div dir="ltr" className="text-left font-bold text-[1.05rem] tracking-wide">
@@ -699,7 +699,7 @@ export default function DashboardPage() {
                     setNameError(null);
                     setNameSaved(false);
                   }}
-                  className="flex-1 min-w-[180px] bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2.5 text-[.9rem] outline-none focus:border-cyan"
+                  className="flex-1 min-w-[180px] bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] rounded-full px-4 py-2.5 text-[.9rem] outline-none focus:border-cyan"
                 />
                 <button
                   onClick={handleSaveName}
@@ -718,7 +718,7 @@ export default function DashboardPage() {
 
           <div
             id="login-credentials"
-            className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-[24px_26px] max-w-[480px] mt-5"
+            className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-[24px_26px] max-w-[480px] mt-5"
           >
             <h2 className="font-display text-[1.05rem] font-bold mb-1">ورود با ایمیل و رمز عبور</h2>
             <p className="text-dim text-[.82rem] mb-4">

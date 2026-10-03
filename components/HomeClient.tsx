@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useCart } from "@/lib/CartContext";
 import Link from "next/link";
 import BrandLogo from "@/components/BrandLogo";
+import ThemeToggle from "@/components/ThemeToggle";
 
 // صحنه‌ی سه‌بعدی فقط سمت کلاینت لود شود
 const HeroScene = dynamic(() => import("@/components/HeroScene"), { ssr: false });
@@ -95,24 +96,26 @@ export default function HomeClient({ content }: { content: Record<string, string
         className="fixed inset-0 -z-10 pointer-events-none"
         style={{
           background:
-            "radial-gradient(60vw 60vw at 80% -10%,rgba(107,91,255,.18),transparent 60%),radial-gradient(50vw 50vw at 0% 20%,rgba(56,225,255,.10),transparent 60%),radial-gradient(50vw 50vw at 50% 120%,rgba(255,107,53,.12),transparent 60%)",
+            "radial-gradient(60vw 60vw at 80% -10%,rgb(var(--c-primary)/.18),transparent 60%),radial-gradient(50vw 50vw at 0% 20%,rgb(var(--c-cyan)/.10),transparent 60%),radial-gradient(50vw 50vw at 50% 120%,rgb(var(--c-accent)/.12),transparent 60%)",
         }}
       />
 
       {/* floating nav */}
       <nav className="fixed top-[14px] sm:top-[18px] left-1/2 -translate-x-1/2 z-[200] w-full max-w-[94vw] sm:w-auto">
-        <div className="flex items-center gap-2 bg-[rgba(20,24,51,.7)] backdrop-blur-[20px] border border-[rgba(138,124,255,.14)] rounded-full py-2 px-3 sm:p-[8px_8px_8px_20px] shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)]">
+        <div className="flex items-center gap-2 bg-[rgb(var(--c-surface)/.7)] backdrop-blur-[20px] border border-[rgb(var(--c-primary2)/.14)] rounded-full py-2 px-3 sm:p-[8px_8px_8px_20px] shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)]">
           <div className="flex items-center gap-2 sm:gap-2.5 font-display font-extrabold text-[1rem] sm:text-[1.15rem] whitespace-nowrap shrink-0">
             <BrandLogo className="w-[28px] h-[28px] sm:w-[30px] sm:h-[30px] shadow-[0_0_60px_-10px_#6B5BFF]" />
             گت‌استوک
           </div>
           <div className="flex gap-1 mx-1.5 max-[760px]:hidden">
             {navItems.map(([href, label]) => (
-              <a key={href} href={href} className="text-dim text-[.9rem] font-medium px-3.5 py-2 rounded-full transition hover:text-text hover:bg-[rgba(255,255,255,.05)] whitespace-nowrap">
+              <a key={href} href={href} className="text-dim text-[.9rem] font-medium px-3.5 py-2 rounded-full transition hover:text-text hover:bg-[rgb(var(--c-ov)/.05)] whitespace-nowrap">
                 {label}
               </a>
             ))}
           </div>
+
+          <ThemeToggle />
 
           {!loading && user && <NotificationBell />}
 
@@ -120,7 +123,7 @@ export default function HomeClient({ content }: { content: Record<string, string
           <Link
             href="/cart"
             aria-label="سبد خرید"
-            className="relative shrink-0 w-9 h-9 grid place-items-center rounded-full bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)] transition hover:bg-[rgba(255,255,255,.12)]"
+            className="relative shrink-0 w-9 h-9 grid place-items-center rounded-full bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)] transition hover:bg-[rgb(var(--c-ov)/.12)]"
           >
             <svg viewBox="0 0 24 24" fill="none" width="17" height="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="9" cy="21" r="1" />
@@ -140,7 +143,7 @@ export default function HomeClient({ content }: { content: Record<string, string
               <div className="flex items-center gap-1.5 shrink-0">
                 <Link
                   href="/dashboard"
-                  className="text-text text-[.85rem] font-semibold px-3.5 py-2 rounded-full whitespace-nowrap transition hover:bg-[rgba(255,255,255,.05)]"
+                  className="text-text text-[.85rem] font-semibold px-3.5 py-2 rounded-full whitespace-nowrap transition hover:bg-[rgb(var(--c-ov)/.05)]"
                 >
                   پنل کاربری
                 </Link>
@@ -149,7 +152,7 @@ export default function HomeClient({ content }: { content: Record<string, string
                 </span>
                 <button
                   onClick={logout}
-                  className="font-body cursor-pointer border-none font-bold text-[.85rem] text-text bg-[rgba(255,255,255,.08)] px-4 py-2.5 rounded-full whitespace-nowrap shrink-0 transition hover:bg-[rgba(255,255,255,.16)]"
+                  className="font-body cursor-pointer border-none font-bold text-[.85rem] text-text bg-[rgb(var(--c-ov)/.08)] px-4 py-2.5 rounded-full whitespace-nowrap shrink-0 transition hover:bg-[rgb(var(--c-ov)/.16)]"
                 >
                   خروج
                 </button>
@@ -169,7 +172,7 @@ export default function HomeClient({ content }: { content: Record<string, string
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="باز کردن منو"
             aria-expanded={menuOpen}
-            className="min-[761px]:hidden mr-auto shrink-0 w-9 h-9 grid place-items-center rounded-full bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)] transition hover:bg-[rgba(255,255,255,.12)]"
+            className="min-[761px]:hidden mr-auto shrink-0 w-9 h-9 grid place-items-center rounded-full bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)] transition hover:bg-[rgb(var(--c-ov)/.12)]"
           >
             <div className="w-[16px] flex flex-col gap-[4px] items-center">
               <span className={`block h-[2px] w-full bg-text rounded transition-transform ${menuOpen ? "translate-y-[6px] rotate-45" : ""}`} />
@@ -181,24 +184,24 @@ export default function HomeClient({ content }: { content: Record<string, string
 
         {/* mobile dropdown panel */}
         {menuOpen && (
-          <div className="min-[761px]:hidden mt-2 bg-[rgba(20,24,51,.92)] backdrop-blur-[20px] border border-[rgba(138,124,255,.14)] rounded-[20px] p-3 shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)] flex flex-col gap-1">
+          <div className="min-[761px]:hidden mt-2 bg-[rgb(var(--c-surface)/.92)] backdrop-blur-[20px] border border-[rgb(var(--c-primary2)/.14)] rounded-[20px] p-3 shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)] flex flex-col gap-1">
             {navItems.map(([href, label]) => (
               <a
                 key={href}
                 href={href}
                 onClick={() => setMenuOpen(false)}
-                className="text-text text-[.9rem] font-medium px-4 py-2.5 rounded-xl transition hover:bg-[rgba(255,255,255,.06)]"
+                className="text-text text-[.9rem] font-medium px-4 py-2.5 rounded-xl transition hover:bg-[rgb(var(--c-ov)/.06)]"
               >
                 {label}
               </a>
             ))}
-            <div className="h-px bg-[rgba(138,124,255,.14)] my-1" />
+            <div className="h-px bg-[rgb(var(--c-primary2)/.14)] my-1" />
             {!loading && user ? (
               <>
                 <Link
                   href="/dashboard"
                   onClick={() => setMenuOpen(false)}
-                  className="text-text text-[.9rem] font-semibold px-4 py-2.5 rounded-xl transition hover:bg-[rgba(255,255,255,.06)]"
+                  className="text-text text-[.9rem] font-semibold px-4 py-2.5 rounded-xl transition hover:bg-[rgb(var(--c-ov)/.06)]"
                 >
                   پنل کاربری
                 </Link>
@@ -207,7 +210,7 @@ export default function HomeClient({ content }: { content: Record<string, string
                 </span>
                 <button
                   onClick={() => { setMenuOpen(false); logout(); }}
-                  className="font-body cursor-pointer border-none text-right font-bold text-[.9rem] text-text bg-[rgba(255,255,255,.08)] px-4 py-2.5 rounded-xl transition hover:bg-[rgba(255,255,255,.16)]"
+                  className="font-body cursor-pointer border-none text-right font-bold text-[.9rem] text-text bg-[rgb(var(--c-ov)/.08)] px-4 py-2.5 rounded-xl transition hover:bg-[rgb(var(--c-ov)/.16)]"
                 >
                   خروج
                 </button>
@@ -228,7 +231,7 @@ export default function HomeClient({ content }: { content: Record<string, string
       <header className="relative min-h-screen grid place-items-center text-center px-[5vw] pt-[120px] pb-20">
         <HeroScene />
         <div className="relative z-[3] max-w-[900px] w-full">
-          <span className="inline-flex items-center gap-2 text-[.82rem] font-semibold text-accent2 bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.25)] px-4 py-[7px] rounded-full mb-[26px]">
+          <span className="inline-flex items-center gap-2 text-[.82rem] font-semibold text-accent2 bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.25)] px-4 py-[7px] rounded-full mb-[26px]">
             <span className="w-[7px] h-[7px] rounded-full bg-accent" style={{ animation: "mj-pulse 2s infinite" }} />
             {content["hero.eyebrow"]}
           </span>
@@ -246,7 +249,7 @@ export default function HomeClient({ content }: { content: Record<string, string
             <a href="#cats" className="font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] px-8 py-4 bg-gradient-to-br from-accent to-accent2 text-white shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px]">
               {content["hero.button_primary"]}
             </a>
-            <a href="#how" className="font-body cursor-pointer font-bold rounded-[14px] transition text-[1.05rem] px-8 py-4 bg-[rgba(255,255,255,.06)] text-text border border-[rgba(138,124,255,.14)] backdrop-blur-[10px] hover:bg-[rgba(255,255,255,.1)] hover:-translate-y-[3px]">
+            <a href="#how" className="font-body cursor-pointer font-bold rounded-[14px] transition text-[1.05rem] px-8 py-4 bg-[rgb(var(--c-ov)/.06)] text-text border border-[rgb(var(--c-primary2)/.14)] backdrop-blur-[10px] hover:bg-[rgb(var(--c-ov)/.1)] hover:-translate-y-[3px]">
               {content["hero.button_secondary"]}
             </a>
           </div>
@@ -261,7 +264,7 @@ export default function HomeClient({ content }: { content: Record<string, string
                 onKeyDown={(e) => e.key === "Enter" && handleHeroLink()}
                 type="text"
                 placeholder="لینک محصول را اینجا بگذار…"
-                className="flex-1 latin text-[.95rem] text-text bg-[rgba(10,12,26,.6)] border border-[rgba(138,124,255,.24)] rounded-xl p-[14px_16px] backdrop-blur-[10px] transition focus:border-primary focus:shadow-[0_0_0_3px_rgba(107,91,255,.15)] outline-none"
+                className="flex-1 latin text-[.95rem] text-text bg-[rgb(var(--c-sink)/.35)] border border-[rgb(var(--c-primary2)/.24)] rounded-xl p-[14px_16px] backdrop-blur-[10px] transition focus:border-primary focus:shadow-[0_0_0_3px_rgb(var(--c-primary)/.15)] outline-none"
               />
               <button
                 onClick={handleHeroLink}
@@ -306,14 +309,14 @@ export default function HomeClient({ content }: { content: Record<string, string
         </div>
         <div className="grid grid-cols-3 gap-5 max-[820px]:grid-cols-1">
           {STEPS.map((s) => (
-            <div key={s.n} className="reveal bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-[20px] p-[32px_26px] transition hover:-translate-y-2 hover:border-[rgba(138,124,255,.5)]">
-              <div className="latin text-[.85rem] font-bold text-accent w-10 h-10 rounded-xl bg-[rgba(255,107,53,.12)] grid place-items-center mb-5">{s.n}</div>
+            <div key={s.n} className="reveal bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-[20px] p-[32px_26px] transition hover:-translate-y-2 hover:border-[rgb(var(--c-primary2)/.5)]">
+              <div className="latin text-[.85rem] font-bold text-accent w-10 h-10 rounded-xl bg-[rgb(var(--c-accent)/.12)] grid place-items-center mb-5">{s.n}</div>
               <h3 className="font-display text-[1.25rem] mb-2">{s.title}</h3>
               <p className="text-dim text-[.95rem]">{s.desc}</p>
               {s.highlight && (
                 <a
                   href="#wallet"
-                  className="mt-3.5 flex items-start gap-2 text-cyan text-[.82rem] leading-[1.7] no-underline hover:text-[rgba(56,225,255,.8)]"
+                  className="mt-3.5 flex items-start gap-2 text-cyan text-[.82rem] leading-[1.7] no-underline hover:text-[rgb(var(--c-cyan)/.8)]"
                 >
                   <span className="shrink-0">💳</span>
                   <span>{s.highlight}</span>
@@ -336,7 +339,7 @@ export default function HomeClient({ content }: { content: Record<string, string
             <div
               key={c.id}
               onClick={() => openCat(c)}
-              className="reveal group relative bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-[18px] p-[24px_22px] cursor-pointer transition hover:-translate-y-1.5 hover:border-[rgba(56,225,255,.4)] hover:shadow-[0_20px_40px_-20px_rgba(56,225,255,.3)]"
+              className="reveal group relative bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-[18px] p-[24px_22px] cursor-pointer transition hover:-translate-y-1.5 hover:border-[rgb(var(--c-cyan)/.4)] hover:shadow-[0_20px_40px_-20px_rgb(var(--c-cyan)/.3)]"
             >
               <span className="absolute top-[22px] left-[22px] text-dim text-[1.1rem] transition group-hover:text-cyan group-hover:-translate-x-1">←</span>
               <div className="text-[1.8rem] mb-3 drop-shadow-[0_4px_8px_rgba(0,0,0,.4)]">{c.icon}</div>
@@ -359,7 +362,7 @@ export default function HomeClient({ content }: { content: Record<string, string
             <div
               key={site}
               onClick={() => openSite(site)}
-              className="reveal group relative bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-[18px] p-[22px_18px] cursor-pointer transition hover:-translate-y-1.5 hover:border-[rgba(56,225,255,.4)] hover:shadow-[0_20px_40px_-20px_rgba(56,225,255,.3)]"
+              className="reveal group relative bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-[18px] p-[22px_18px] cursor-pointer transition hover:-translate-y-1.5 hover:border-[rgb(var(--c-cyan)/.4)] hover:shadow-[0_20px_40px_-20px_rgb(var(--c-cyan)/.3)]"
             >
               <SiteLogo site={site} className="w-10 h-10 rounded-[10px] text-[.75rem] mb-3" />
               <h4 className="latin font-display text-[1rem] mb-1 truncate">{site}</h4>
@@ -379,11 +382,11 @@ export default function HomeClient({ content }: { content: Record<string, string
           {TESTIMONIALS.map((t) => (
             <div
               key={t.name}
-              className="reveal bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-[20px] p-[28px_24px] transition hover:-translate-y-1.5 hover:border-[rgba(138,124,255,.5)]"
+              className="reveal bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-[20px] p-[28px_24px] transition hover:-translate-y-1.5 hover:border-[rgb(var(--c-primary2)/.5)]"
             >
               <div className="latin text-accent2 text-[1.1rem] mb-3 tracking-[.1em]">
                 {"★".repeat(t.stars)}
-                <span className="text-[rgba(255,255,255,.15)]">{"★".repeat(5 - t.stars)}</span>
+                <span className="text-[rgb(var(--c-ov)/.15)]">{"★".repeat(5 - t.stars)}</span>
               </div>
               <p className="text-dim text-[.95rem] leading-[1.9] mb-5">{t.text}</p>
               <div className="flex items-center gap-3">
@@ -427,7 +430,7 @@ export default function HomeClient({ content }: { content: Record<string, string
                 badgeLabel="هنوز فعال نشده"
                 balanceLabel="وارد شو، کیف پولت را فعال کن"
               >
-                <p className="text-[rgba(255,255,255,.85)] text-[.9rem] leading-[1.9] mb-5">
+                <p className="text-[rgb(var(--c-ov)/.85)] text-[.9rem] leading-[1.9] mb-5">
                   با ورود، یک کیف پول برایت فعال می‌شود. شارژش کن تا هر سفارش سریع‌تر و ارزان‌تر از موجودی پرداخت شود — بدون نیاز به رفتن به درگاه در هر خرید.
                 </p>
                 <button
@@ -455,7 +458,7 @@ export default function HomeClient({ content }: { content: Record<string, string
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-[rgba(138,124,255,.14)] px-[5vw] py-10 text-center text-dim">
+      <footer className="border-t border-[rgb(var(--c-primary2)/.14)] px-[5vw] py-10 text-center text-dim">
         <div className="inline-flex items-center gap-2.5 font-display font-extrabold text-text mb-2.5">
           <BrandLogo className="w-[26px] h-[26px]" />گت‌استوک
         </div>
@@ -480,7 +483,7 @@ export default function HomeClient({ content }: { content: Record<string, string
           <a href="/p/faq" className="text-dim hover:text-text transition">سؤالات متداول</a>
           <a href="/blog" className="text-dim hover:text-text transition">وبلاگ</a>
         </div>
-        <p className="max-w-[60ch] mx-auto mt-4 text-[.78rem] text-[#5b6390] leading-[1.85]">
+        <p className="max-w-[60ch] mx-auto mt-4 text-[.78rem] text-muted leading-[1.85]">
           {content["footer.copyright"]}
         </p>
       </footer>

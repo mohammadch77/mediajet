@@ -24,14 +24,14 @@ export default function Pagination({
         <button
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
-          className="px-3.5 py-1.5 rounded-full border border-[rgba(138,124,255,.2)] bg-[rgba(255,255,255,.04)] text-dim hover:text-text transition disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3.5 py-1.5 rounded-full border border-[rgb(var(--c-primary2)/.2)] bg-[rgb(var(--c-ov)/.04)] text-dim hover:text-text transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           قبلی
         </button>
         <button
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
-          className="px-3.5 py-1.5 rounded-full border border-[rgba(138,124,255,.2)] bg-[rgba(255,255,255,.04)] text-dim hover:text-text transition disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3.5 py-1.5 rounded-full border border-[rgb(var(--c-primary2)/.2)] bg-[rgb(var(--c-ov)/.04)] text-dim hover:text-text transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           بعدی
         </button>

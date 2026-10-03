@@ -13,7 +13,7 @@ export default function SiteMarquee() {
         {items.map((site, i) => (
           <div
             key={`${site}-${i}`}
-            className="latin flex shrink-0 items-center gap-2 rounded-full border border-[rgba(138,124,255,.14)] bg-gradient-to-br from-surface to-bg2 px-5 py-3 text-[.92rem] font-bold text-text whitespace-nowrap"
+            className="latin flex shrink-0 items-center gap-2 rounded-full border border-[rgb(var(--c-primary2)/.14)] bg-gradient-to-br from-surface to-bg2 px-5 py-3 text-[.92rem] font-bold text-text whitespace-nowrap"
           >
             <SiteLogo site={site} className="h-7 w-7 rounded-[8px] text-[.72rem]" />
             {site}

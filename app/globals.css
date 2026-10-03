@@ -5,12 +5,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* پالت تم. مقادیر کانال‌های RGB‌اند تا با شفافیت ترکیب شوند: rgb(var(--c-x) / .5)
+   --c-ov: رنگ لایه‌های نیمه‌شفاف روی سطوح (در تیره سفید، در روشن سرمه‌ای)
+   --c-sink: پس‌زمینه‌ی فیلدهای ورودی */
+:root {
+  color-scheme: dark;
+  --c-bg: 8 10 21; --c-bg2: 13 16 32; --c-surface: 20 24 51; --c-surface2: 27 33 69;
+  --c-primary: 107 91 255; --c-primary2: 138 124 255; --c-cyan: 56 225 255;
+  --c-accent: 255 107 53; --c-accent2: 255 154 92;
+  --c-text: 238 240 251; --c-dim: 152 160 200; --c-muted: 91 99 144;
+  --c-success: 61 220 132; --c-danger: 255 107 107; --c-warning: 255 200 60;
+  --c-ov: 255 255 255; --c-sink: 0 0 0;
+  --prose-body: #C7CBE8; --prose-quote: #9AA0C7; --prose-link: #6EE7F0; --prose-strong: #fff;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --c-bg: 244 245 251; --c-bg2: 236 238 248; --c-surface: 255 255 255; --c-surface2: 241 242 250;
+  --c-primary: 98 80 245; --c-primary2: 112 96 240; --c-cyan: 0 132 170;
+  --c-accent: 230 86 30; --c-accent2: 214 98 40;
+  --c-text: 22 25 48; --c-dim: 84 91 128; --c-muted: 128 134 168;
+  --c-success: 22 150 82; --c-danger: 214 54 54; --c-warning: 176 120 0;
+  --c-ov: 22 25 48; --c-sink: 255 255 255;
+  --prose-body: #3A3F60; --prose-quote: #5A6088; --prose-link: #0B7FA3; --prose-strong: #161930;
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
-  background: #080A15;
-  color: #EEF0FB;
+  background: rgb(var(--c-bg));
+  color: rgb(var(--c-text));
   font-family: "Vazirmatn", sans-serif;
   line-height: 1.85;
   overflow-x: hidden;
@@ -59,14 +83,14 @@ body {
 }
 
 /* استایل محتوای صفحات متن‌آزاد (ویرایشگر ادمین + نمایش عمومی) */
-.prose-page { color: #EEF0FB; line-height: 1.9; }
+.prose-page { color: rgb(var(--c-text)); line-height: 1.9; }
 .prose-page h1 { font-size: 1.8rem; font-weight: 800; margin: 1.2em 0 .5em; }
 .prose-page h2 { font-size: 1.4rem; font-weight: 800; margin: 1.1em 0 .5em; }
 .prose-page h3 { font-size: 1.15rem; font-weight: 700; margin: 1em 0 .4em; }
-.prose-page p { margin: .8em 0; color: #C7CBE8; }
-.prose-page ul, .prose-page ol { margin: .8em 0; padding-inline-start: 1.6em; color: #C7CBE8; }
+.prose-page p { margin: .8em 0; color: var(--prose-body); }
+.prose-page ul, .prose-page ol { margin: .8em 0; padding-inline-start: 1.6em; color: var(--prose-body); }
 .prose-page li { margin: .3em 0; }
-.prose-page a { color: #6EE7F0; text-decoration: underline; }
-.prose-page strong { color: #fff; }
-.prose-page blockquote { border-inline-start: 3px solid rgba(138,124,255,.4); padding-inline-start: 1em; color: #9AA0C7; margin: 1em 0; }
+.prose-page a { color: var(--prose-link); text-decoration: underline; }
+.prose-page strong { color: var(--prose-strong); }
+.prose-page blockquote { border-inline-start: 3px solid rgba(138,124,255,.4); padding-inline-start: 1em; color: var(--prose-quote); margin: 1em 0; }
 .prose-page hr { border: none; border-top: 1px solid rgba(138,124,255,.2); margin: 1.5em 0; }

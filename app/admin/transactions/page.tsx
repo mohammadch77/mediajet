@@ -60,7 +60,7 @@ export default function AdminTransactionsPage() {
               "px-3.5 py-1.5 rounded-full text-[.82rem] font-bold border transition " +
               (typeFilter === t
                 ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
-                : "bg-[rgba(255,255,255,.04)] border-[rgba(138,124,255,.2)] text-dim hover:text-text")
+                : "bg-[rgb(var(--c-ov)/.04)] border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text")
             }
           >
             {t === "" ? "همه" : t === "credit" ? "شارژ" : "برداشت"}
@@ -69,7 +69,7 @@ export default function AdminTransactionsPage() {
       </div>
 
       {error && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-5">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-5">
           {error}
         </div>
       )}
@@ -80,10 +80,10 @@ export default function AdminTransactionsPage() {
         <div className="text-dim text-[.9rem]">تراکنشی پیدا نشد.</div>
       ) : (
         <>
-          <div className="hidden md:block bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl overflow-x-auto">
+          <div className="hidden md:block bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl overflow-x-auto">
             <table className="w-full text-[.85rem] min-w-[760px]">
               <thead>
-                <tr className="text-dim text-[.78rem] border-b border-[rgba(138,124,255,.14)]">
+                <tr className="text-dim text-[.78rem] border-b border-[rgb(var(--c-primary2)/.14)]">
                   <th className="text-right font-semibold px-5 py-3.5">کاربر</th>
                   <th className="text-right font-semibold px-5 py-3.5">نوع</th>
                   <th className="text-right font-semibold px-5 py-3.5">مبلغ</th>
@@ -94,7 +94,7 @@ export default function AdminTransactionsPage() {
               </thead>
               <tbody>
                 {data.items.map((t) => (
-                  <tr key={t.id} className="border-b border-[rgba(138,124,255,.08)] last:border-0">
+                  <tr key={t.id} className="border-b border-[rgb(var(--c-primary2)/.08)] last:border-0">
                     <td className="px-5 py-3.5">
                       <Link href={`/admin/users/${t.user.id}`} className="text-cyan hover:underline" dir="ltr">
                         {t.user.mobile}
@@ -104,7 +104,7 @@ export default function AdminTransactionsPage() {
                       <span
                         className={
                           "px-2.5 py-1 rounded-full text-[.72rem] font-bold " +
-                          (t.type === "credit" ? "bg-[rgba(56,225,255,.14)] text-cyan" : "bg-[rgba(255,107,53,.14)] text-accent2")
+                          (t.type === "credit" ? "bg-[rgb(var(--c-cyan)/.14)] text-cyan" : "bg-[rgb(var(--c-accent)/.14)] text-accent2")
                         }
                       >
                         {t.type === "credit" ? "شارژ" : "برداشت"}
@@ -124,7 +124,7 @@ export default function AdminTransactionsPage() {
             {data.items.map((t) => (
               <div
                 key={t.id}
-                className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4"
+                className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4"
               >
                 <div className="flex items-center justify-between mb-2">
                   <Link href={`/admin/users/${t.user.id}`} className="text-cyan font-bold" dir="ltr">
@@ -133,7 +133,7 @@ export default function AdminTransactionsPage() {
                   <span
                     className={
                       "px-2.5 py-1 rounded-full text-[.72rem] font-bold " +
-                      (t.type === "credit" ? "bg-[rgba(56,225,255,.14)] text-cyan" : "bg-[rgba(255,107,53,.14)] text-accent2")
+                      (t.type === "credit" ? "bg-[rgb(var(--c-cyan)/.14)] text-cyan" : "bg-[rgb(var(--c-accent)/.14)] text-accent2")
                     }
                   >
                     {t.type === "credit" ? "شارژ" : "برداشت"}

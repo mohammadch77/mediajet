@@ -41,7 +41,7 @@ export default async function BlogListPage({
             <Link
               key={post.id}
               href={`/blog/${post.slug}`}
-              className="group bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl overflow-hidden hover:border-[rgba(138,124,255,.35)] transition"
+              className="group bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl overflow-hidden hover:border-[rgb(var(--c-primary2)/.35)] transition"
             >
               {post.coverImage && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -58,7 +58,7 @@ export default async function BlogListPage({
                 {post.excerpt && (
                   <p className="text-dim text-[.85rem] mt-2 leading-[1.8] line-clamp-2">{post.excerpt}</p>
                 )}
-                <p className="text-[#5b6390] text-[.75rem] mt-3">
+                <p className="text-muted text-[.75rem] mt-3">
                   {post.publishedAt ? toJalaliDate(post.publishedAt) : ""}
                 </p>
               </div>
@@ -71,7 +71,7 @@ export default async function BlogListPage({
             {page > 1 && (
               <Link
                 href={`/blog?page=${page - 1}`}
-                className="px-4 py-2 rounded-xl bg-[rgba(255,255,255,.06)] text-text text-[.82rem] font-bold hover:bg-[rgba(255,255,255,.1)] transition"
+                className="px-4 py-2 rounded-xl bg-[rgb(var(--c-ov)/.06)] text-text text-[.82rem] font-bold hover:bg-[rgb(var(--c-ov)/.1)] transition"
               >
                 قبلی
               </Link>
@@ -82,7 +82,7 @@ export default async function BlogListPage({
             {page < totalPages && (
               <Link
                 href={`/blog?page=${page + 1}`}
-                className="px-4 py-2 rounded-xl bg-[rgba(255,255,255,.06)] text-text text-[.82rem] font-bold hover:bg-[rgba(255,255,255,.1)] transition"
+                className="px-4 py-2 rounded-xl bg-[rgb(var(--c-ov)/.06)] text-text text-[.82rem] font-bold hover:bg-[rgb(var(--c-ov)/.1)] transition"
               >
                 بعدی
               </Link>

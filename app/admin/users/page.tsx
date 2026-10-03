@@ -27,8 +27,8 @@ type ListResponse = {
 
 function RoleBadge({ role }: { role: Role }) {
   const styles: Record<Role, string> = {
-    user: "bg-[rgba(255,255,255,.06)] text-dim",
-    operator: "bg-[rgba(56,225,255,.14)] text-cyan",
+    user: "bg-[rgb(var(--c-ov)/.06)] text-dim",
+    operator: "bg-[rgb(var(--c-cyan)/.14)] text-cyan",
     admin: "bg-gradient-to-br from-primary to-primary2 text-white",
   };
   return (
@@ -105,12 +105,12 @@ export default function AdminUsersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="جستجو بر اساس موبایل یا نام…"
-          className="w-full max-w-[360px] bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2.5 text-[.85rem] outline-none focus:border-cyan transition"
+          className="w-full max-w-[360px] bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] rounded-full px-4 py-2.5 text-[.85rem] outline-none focus:border-cyan transition"
         />
       </div>
 
       {error && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-5">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-5">
           {error}
         </div>
       )}
@@ -122,10 +122,10 @@ export default function AdminUsersPage() {
       ) : (
         <>
           {/* دسکتاپ: جدول */}
-          <div className="hidden md:block bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl overflow-x-auto">
+          <div className="hidden md:block bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl overflow-x-auto">
             <table className="w-full text-[.85rem] min-w-[760px]">
               <thead>
-                <tr className="text-dim text-[.78rem] border-b border-[rgba(138,124,255,.14)]">
+                <tr className="text-dim text-[.78rem] border-b border-[rgb(var(--c-primary2)/.14)]">
                   <th className="text-right font-semibold px-5 py-3.5">موبایل</th>
                   <th className="text-right font-semibold px-5 py-3.5">نام</th>
                   <th className="text-right font-semibold px-5 py-3.5">نقش</th>
@@ -137,7 +137,7 @@ export default function AdminUsersPage() {
               </thead>
               <tbody>
                 {data.items.map((u) => (
-                  <tr key={u.id} className="border-b border-[rgba(138,124,255,.08)] last:border-0">
+                  <tr key={u.id} className="border-b border-[rgb(var(--c-primary2)/.08)] last:border-0">
                     <td dir="ltr" className="text-left px-5 py-3.5 font-semibold">
                       {u.mobile}
                     </td>
@@ -164,7 +164,7 @@ export default function AdminUsersPage() {
             {data.items.map((u) => (
               <div
                 key={u.id}
-                className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4"
+                className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span dir="ltr" className="font-bold">{u.mobile}</span>
@@ -213,7 +213,7 @@ function RoleSelect({ user, onRequestChange }: { user: UserRow; onRequestChange:
     <select
       value={user.role}
       onChange={(e) => onRequestChange(e.target.value as Role)}
-      className="bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-3 py-1.5 text-[.78rem] outline-none focus:border-cyan transition cursor-pointer"
+      className="bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] rounded-full px-3 py-1.5 text-[.78rem] outline-none focus:border-cyan transition cursor-pointer"
     >
       {ALL_ROLES.map((r) => (
         <option key={r} value={r} className="bg-bg2">

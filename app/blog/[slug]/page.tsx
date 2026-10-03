@@ -54,7 +54,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         </Link>
         <h1 className="font-display text-[clamp(1.6rem,4vw,2.4rem)] font-extrabold mt-4">{post.title}</h1>
         {post.publishedAt && (
-          <p className="text-[#5b6390] text-[.8rem] mt-2">{toJalaliDate(post.publishedAt)}</p>
+          <p className="text-muted text-[.8rem] mt-2">{toJalaliDate(post.publishedAt)}</p>
         )}
         {post.coverImage && (
           // eslint-disable-next-line @next/next/no-img-element

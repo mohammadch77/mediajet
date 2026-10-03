@@ -197,7 +197,7 @@ export default function OperatorPage() {
       </div>
 
       {error && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-8">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-8">
           {error}
         </div>
       )}
@@ -209,7 +209,7 @@ export default function OperatorPage() {
             "px-3.5 py-1.5 rounded-full text-[.82rem] font-bold border transition " +
             (statusFilter === ""
               ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
-              : "bg-[rgba(255,255,255,.04)] border-[rgba(138,124,255,.2)] text-dim hover:text-text")
+              : "bg-[rgb(var(--c-ov)/.04)] border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text")
           }
         >
           همه
@@ -222,7 +222,7 @@ export default function OperatorPage() {
               "px-3.5 py-1.5 rounded-full text-[.82rem] font-bold border transition " +
               (statusFilter === s
                 ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
-                : "bg-[rgba(255,255,255,.04)] border-[rgba(138,124,255,.2)] text-dim hover:text-text")
+                : "bg-[rgb(var(--c-ov)/.04)] border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text")
             }
           >
             {STATUS_LABELS[s]}
@@ -242,7 +242,7 @@ export default function OperatorPage() {
             return (
               <div
                 key={o.id}
-                className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-[18px] sm:p-[20px_22px]"
+                className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-[18px] sm:p-[20px_22px]"
               >
                 <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
                   <div className="min-w-0">
@@ -250,7 +250,7 @@ export default function OperatorPage() {
                       <span className="font-display font-bold">
                         سفارش <span dir="ltr" className="latin">{o.orderNumber}</span>
                       </span>
-                      <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)]">
+                      <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)]">
                         {STATUS_LABELS[o.status]}
                       </span>
                       <span className="text-dim text-[.78rem]">
@@ -286,7 +286,7 @@ export default function OperatorPage() {
                     return (
                       <div
                         key={item.id}
-                        className="bg-[rgba(255,255,255,.03)] border border-[rgba(138,124,255,.1)] rounded-xl p-3.5 sm:p-4"
+                        className="bg-[rgb(var(--c-ov)/.03)] border border-[rgb(var(--c-primary2)/.1)] rounded-xl p-3.5 sm:p-4"
                       >
                         <div className="flex items-start justify-between flex-wrap gap-2 mb-2">
                           <div className="min-w-0">
@@ -294,11 +294,11 @@ export default function OperatorPage() {
                               <span className="text-[.78rem] font-bold text-cyan">آیتم {item.index}</span>
                               <span className="font-semibold text-[.88rem]">{categoryTitle(item.category)}</span>
                               <span className="text-dim text-[.78rem]">{item.sourceSite}</span>
-                              <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)]">
+                              <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)]">
                                 {ITEM_STATUS_LABELS[item.status]}
                               </span>
                               {item.isLarge && (
-                                <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgba(255,107,53,.12)] border border-[rgba(255,107,53,.3)] text-accent2">
+                                <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgb(var(--c-accent)/.12)] border border-[rgb(var(--c-accent)/.3)] text-accent2">
                                   فایل بزرگ
                                 </span>
                               )}
@@ -324,12 +324,12 @@ export default function OperatorPage() {
                                 placeholder="لینک فایل تحویلی"
                                 value={linkDrafts[item.id] ?? ""}
                                 onChange={(e) => setLinkDrafts((d) => ({ ...d, [item.id]: e.target.value }))}
-                                className="bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2 text-[.8rem] flex-1 w-full sm:min-w-[200px] sm:w-auto outline-none focus:border-cyan"
+                                className="bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] rounded-full px-4 py-2 text-[.8rem] flex-1 w-full sm:min-w-[200px] sm:w-auto outline-none focus:border-cyan"
                               />
                               <button
                                 disabled={isItemBusy}
                                 onClick={() => deliverByLink(o.id, item.id)}
-                                className="font-body cursor-pointer border-none font-bold text-[.78rem] text-white bg-[rgba(56,225,255,.16)] text-cyan px-4 py-2 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto"
+                                className="font-body cursor-pointer border-none font-bold text-[.78rem] text-white bg-[rgb(var(--c-cyan)/.16)] text-cyan px-4 py-2 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto"
                               >
                                 ثبت لینک
                               </button>
@@ -340,7 +340,7 @@ export default function OperatorPage() {
                                 ref={(el) => {
                                   fileInputRefs.current[item.id] = el;
                                 }}
-                                className="text-[.76rem] text-dim flex-1 w-full sm:w-auto file:ml-2 file:rounded-full file:border-0 file:bg-[rgba(138,124,255,.16)] file:text-text file:px-3 file:py-1.5 file:text-[.76rem] file:cursor-pointer"
+                                className="text-[.76rem] text-dim flex-1 w-full sm:w-auto file:ml-2 file:rounded-full file:border-0 file:bg-[rgb(var(--c-primary2)/.16)] file:text-text file:px-3 file:py-1.5 file:text-[.76rem] file:cursor-pointer"
                               />
                               <button
                                 disabled={isItemBusy}
@@ -352,7 +352,7 @@ export default function OperatorPage() {
                               <button
                                 disabled={isItemBusy}
                                 onClick={() => markLarge(o.id, item.id)}
-                                className="font-body cursor-pointer border border-[rgba(255,107,53,.3)] font-bold text-[.78rem] text-accent2 bg-transparent px-4 py-2 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto"
+                                className="font-body cursor-pointer border border-[rgb(var(--c-accent)/.3)] font-bold text-[.78rem] text-accent2 bg-transparent px-4 py-2 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto"
                               >
                                 علامت به‌عنوان فایل بزرگ
                               </button>

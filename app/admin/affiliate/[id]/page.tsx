@@ -36,7 +36,7 @@ type Detail = {
 };
 
 const ENTRY: Record<string, { label: string; sign: "+" | "−"; cls: string }> = {
-  commission: { label: "کمیسیون", sign: "+", cls: "text-[#3ddc84]" },
+  commission: { label: "کمیسیون", sign: "+", cls: "text-success" },
   commission_reversal: { label: "برگشت کمیسیون", sign: "−", cls: "text-accent2" },
   payout_hold: { label: "درخواست تسویه", sign: "−", cls: "text-dim" },
   payout_release: { label: "بازگشت تسویه‌ی ردشده", sign: "+", cls: "text-cyan" },
@@ -53,9 +53,9 @@ const ACTION_LABEL: Record<string, string> = {
 
 const PAYOUT_LABEL: Record<string, string> = { requested: "در انتظار", paid: "واریز شد", rejected: "رد شد" };
 
-const card = "bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl";
+const card = "bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl";
 const inputCls =
-  "w-full min-w-0 font-body text-[.88rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[10px_12px] focus:border-primary outline-none";
+  "w-full min-w-0 font-body text-[.88rem] text-text bg-bg border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-[10px_12px] focus:border-primary outline-none";
 
 function newKey(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -100,11 +100,11 @@ export default function AdminAffiliateDetailPage() {
             <div className="text-dim text-[.85rem] mt-1">{a.name ?? "بدون نام"}</div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="latin font-bold px-3 py-1.5 rounded-full bg-[rgba(255,255,255,.05)] border border-[rgba(138,124,255,.2)]">{a.code}</span>
+            <span className="latin font-bold px-3 py-1.5 rounded-full bg-[rgb(var(--c-ov)/.05)] border border-[rgb(var(--c-primary2)/.2)]">{a.code}</span>
             <span
               className={
                 "px-3 py-1.5 rounded-full text-[.78rem] font-bold " +
-                (a.suspendedAt ? "bg-[rgba(255,107,53,.14)] text-accent2" : "bg-[rgba(61,220,132,.14)] text-[#3ddc84]")
+                (a.suspendedAt ? "bg-[rgb(var(--c-accent)/.14)] text-accent2" : "bg-[rgb(var(--c-success)/.14)] text-success")
               }
             >
               {a.suspendedAt ? "معلق" : "فعال"}
@@ -143,7 +143,7 @@ export default function AdminAffiliateDetailPage() {
                   <Link href={`/admin/orders/${p.orderId}`} className="text-cyan hover:underline latin">{p.orderNumber}</Link>
                   <span className="text-dim"> · {toPersianDigits(p.percent)}٪ · {toJalaliDateTime(p.createdAt)}</span>
                 </span>
-                <b className="text-[#ffc83c]">{p.amountLabel}</b>
+                <b className="text-warning">{p.amountLabel}</b>
               </div>
             ))}
           </div>
@@ -190,7 +190,7 @@ export default function AdminAffiliateDetailPage() {
           ) : (
             <div className="grid gap-2">
               {data.referrals.map((r) => (
-                <Link key={r.id} href={`/admin/users/${r.id}`} className={`${card} p-3 flex items-center justify-between gap-2 text-[.84rem] hover:border-[rgba(56,225,255,.4)]`}>
+                <Link key={r.id} href={`/admin/users/${r.id}`} className={`${card} p-3 flex items-center justify-between gap-2 text-[.84rem] hover:border-[rgb(var(--c-cyan)/.4)]`}>
                   <span>
                     <span dir="ltr" className="text-cyan">{r.mobile}</span>
                     {r.name && <span className="text-dim"> · {r.name}</span>}
@@ -306,8 +306,8 @@ function SuspendBox({ id, suspended, onDone }: { id: string; suspended: boolean;
           className={
             "font-bold rounded-xl px-4 py-2.5 text-[.85rem] shrink-0 disabled:opacity-60 " +
             (suspended
-              ? "bg-[rgba(61,220,132,.16)] text-[#3ddc84] border border-[rgba(61,220,132,.35)]"
-              : "bg-[rgba(255,107,53,.12)] text-accent2 border border-[rgba(255,107,53,.3)]")
+              ? "bg-[rgb(var(--c-success)/.16)] text-success border border-[rgb(var(--c-success)/.35)]"
+              : "bg-[rgb(var(--c-accent)/.12)] text-accent2 border border-[rgb(var(--c-accent)/.3)]")
           }
         >
           {suspended ? "رفع تعلیق" : "تعلیق"}

@@ -6,7 +6,7 @@ import { useState } from "react";
 import type { AuthUser } from "@/lib/AuthContext";
 
 export const authInputClass =
-  "w-full font-body text-[1rem] bg-[rgba(255,255,255,.05)] border border-[rgba(138,124,255,.2)] rounded-[12px] px-4 py-3 text-text placeholder:text-[#5b6390] outline-none transition focus:border-[rgba(138,124,255,.6)]";
+  "w-full font-body text-[1rem] bg-[rgb(var(--c-ov)/.05)] border border-[rgb(var(--c-primary2)/.2)] rounded-[12px] px-4 py-3 text-text placeholder:text-muted outline-none transition focus:border-[rgb(var(--c-primary2)/.6)]";
 
 export const authButtonClass =
   "w-full font-body cursor-pointer border-none font-bold text-[1rem] text-white bg-gradient-to-br from-primary to-primary2 px-[18px] py-3.5 rounded-[12px] transition hover:-translate-y-px hover:shadow-[0_0_60px_-10px_#6B5BFF] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0";

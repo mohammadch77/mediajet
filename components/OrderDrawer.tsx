@@ -225,22 +225,22 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
       <aside
         role="dialog"
         aria-modal="true"
-        className={`fixed z-[310] flex flex-col bg-gradient-to-b from-surface to-bg2 border border-[rgba(138,124,255,.14)] shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)] transition-transform duration-[420ms] [transition-timing-function:cubic-bezier(.2,.8,.2,1)]
+        className={`fixed z-[310] flex flex-col bg-gradient-to-b from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)] transition-transform duration-[420ms] [transition-timing-function:cubic-bezier(.2,.8,.2,1)]
           top-0 right-0 h-screen w-[min(460px,92vw)] rounded-r-none rounded-l-[24px]
           max-[640px]:top-auto max-[640px]:bottom-0 max-[640px]:left-0 max-[640px]:w-full max-[640px]:h-auto max-[640px]:max-h-[88vh] max-[640px]:rounded-t-[24px] max-[640px]:rounded-b-none
           ${open ? "translate-x-0 max-[640px]:translate-y-0" : "translate-x-[105%] max-[640px]:translate-x-0 max-[640px]:translate-y-[105%]"}`}
       >
         {/* handle (mobile) */}
-        <div className="hidden max-[640px]:block w-11 h-[5px] rounded-full bg-[rgba(138,124,255,.14)] mx-auto mt-3" />
+        <div className="hidden max-[640px]:block w-11 h-[5px] rounded-full bg-[rgb(var(--c-primary2)/.14)] mx-auto mt-3" />
 
         {/* head */}
-        <div className="flex items-start justify-between gap-3 p-[26px_26px_18px] border-b border-[rgba(138,124,255,.14)] shrink-0">
+        <div className="flex items-start justify-between gap-3 p-[26px_26px_18px] border-b border-[rgb(var(--c-primary2)/.14)] shrink-0">
           <div className="flex items-start gap-3 min-w-0">
             {stage === "form" && !linkEntry && (
               <button
                 onClick={() => setStage("sites")}
                 aria-label="بازگشت به لیست سایت‌ها"
-                className="bg-surface2 border border-[rgba(138,124,255,.14)] text-text w-9 h-9 rounded-[10px] cursor-pointer text-base shrink-0 mt-0.5 transition hover:border-cyan hover:text-cyan"
+                className="bg-surface2 border border-[rgb(var(--c-primary2)/.14)] text-text w-9 h-9 rounded-[10px] cursor-pointer text-base shrink-0 mt-0.5 transition hover:border-cyan hover:text-cyan"
               >
                 →
               </button>
@@ -268,7 +268,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
           <button
             onClick={onClose}
             aria-label="بستن"
-            className="bg-surface2 border border-[rgba(138,124,255,.14)] text-text w-9 h-9 rounded-[10px] cursor-pointer text-[1.1rem] shrink-0 transition hover:bg-accent hover:border-accent"
+            className="bg-surface2 border border-[rgb(var(--c-primary2)/.14)] text-text w-9 h-9 rounded-[10px] cursor-pointer text-[1.1rem] shrink-0 transition hover:bg-accent hover:border-accent"
           >
             ✕
           </button>
@@ -286,7 +286,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
                   <div
                     key={c.id}
                     onClick={() => pickCategory(c.id)}
-                    className="flex items-center gap-2.5 bg-surface border border-[rgba(138,124,255,.14)] rounded-xl p-3 cursor-pointer transition hover:border-[rgba(56,225,255,.5)] hover:-translate-y-0.5"
+                    className="flex items-center gap-2.5 bg-surface border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-3 cursor-pointer transition hover:border-[rgb(var(--c-cyan)/.5)] hover:-translate-y-0.5"
                   >
                     <div className="text-xl shrink-0">{c.icon}</div>
                     <div className="text-[.88rem] font-bold">{c.title}</div>
@@ -302,7 +302,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
                   <div
                     key={site}
                     onClick={() => selectSite(site)}
-                    className="flex items-center gap-2.5 bg-surface border border-[rgba(138,124,255,.14)] rounded-xl p-3 cursor-pointer transition hover:border-[rgba(56,225,255,.5)] hover:-translate-y-0.5"
+                    className="flex items-center gap-2.5 bg-surface border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-3 cursor-pointer transition hover:border-[rgb(var(--c-cyan)/.5)] hover:-translate-y-0.5"
                   >
                     <SiteLogo site={site} className="w-[34px] h-[34px] rounded-[10px] text-[.7rem]" />
                     <div className="latin text-[.88rem] font-bold">{site}</div>
@@ -312,7 +312,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
             </>
           ) : submitStatus === "success" && addedItem ? (
             <div className="flex flex-col items-center text-center py-8 gap-3">
-              <div className="w-16 h-16 rounded-full bg-[rgba(56,225,255,.12)] border border-[rgba(56,225,255,.4)] grid place-items-center text-3xl">✓</div>
+              <div className="w-16 h-16 rounded-full bg-[rgb(var(--c-cyan)/.12)] border border-[rgb(var(--c-cyan)/.4)] grid place-items-center text-3xl">✓</div>
               <h4 className="font-display text-[1.25rem]">به سبد اضافه شد</h4>
               <p className="text-dim text-[.9rem]">
                 <b className="text-text">{addedItem.categoryTitle}</b> — <b className="text-primary2">{addedItem.priceLabel}</b>
@@ -320,7 +320,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
               <div className="flex gap-2.5 flex-wrap justify-center mt-4">
                 <button
                   onClick={addAnother}
-                  className="font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[.95rem] px-5 py-3 bg-[rgba(255,255,255,.08)] text-text hover:bg-[rgba(255,255,255,.16)]"
+                  className="font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[.95rem] px-5 py-3 bg-[rgb(var(--c-ov)/.08)] text-text hover:bg-[rgb(var(--c-ov)/.16)]"
                 >
                   افزودن آیتم دیگر
                 </button>
@@ -340,7 +340,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
                 <select
                   value={selectedCatId}
                   onChange={(e) => onCategoryChange(e.target.value)}
-                  className="w-full font-body text-[.95rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[14px_15px] cursor-pointer focus:border-primary outline-none"
+                  className="w-full font-body text-[.95rem] text-text bg-bg border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-[14px_15px] cursor-pointer focus:border-primary outline-none"
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c.id} value={c.id}>{c.title}</option>
@@ -352,7 +352,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
                 <select
                   value={selectedSite}
                   onChange={(e) => { setSelectedSite(e.target.value); fetchQuote(selectedCatId, e.target.value); }}
-                  className="w-full font-body text-[.95rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[14px_15px] cursor-pointer focus:border-primary outline-none"
+                  className="w-full font-body text-[.95rem] text-text bg-bg border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-[14px_15px] cursor-pointer focus:border-primary outline-none"
                 >
                   <option value="">— انتخاب کن —</option>
                   {activeCat?.sites.map((s) => (
@@ -367,7 +367,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
                   onChange={(e) => onLinkInput(e.target.value)}
                   type="text"
                   placeholder="https://..."
-                  className="w-full latin text-[.95rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[14px_15px] transition focus:border-primary focus:shadow-[0_0_0_3px_rgba(107,91,255,.15)] outline-none"
+                  className="w-full latin text-[.95rem] text-text bg-bg border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-[14px_15px] transition focus:border-primary focus:shadow-[0_0_0_3px_rgb(var(--c-primary)/.15)] outline-none"
                 />
                 <div className="text-[.82rem] text-dim mt-2 min-h-[20px]">
                   {detected ? (
@@ -383,17 +383,17 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
 
         {/* footer (form stage) */}
         {stage === "form" && submitStatus !== "success" && (
-          <div className="p-[16px_26px_22px] border-t border-[rgba(138,124,255,.14)] shrink-0 bg-bg2">
+          <div className="p-[16px_26px_22px] border-t border-[rgb(var(--c-primary2)/.14)] shrink-0 bg-bg2">
             {!quote ? (
-              <div className="flex items-center justify-between bg-[rgba(107,91,255,.08)] border border-dashed border-[rgba(138,124,255,.4)] rounded-[14px] p-[16px_20px] mb-3.5">
+              <div className="flex items-center justify-between bg-[rgb(var(--c-primary)/.08)] border border-dashed border-[rgb(var(--c-primary2)/.4)] rounded-[14px] p-[16px_20px] mb-3.5">
                 <span>هزینه‌ی تخمینی</span>
                 <span className="font-display text-[1.5rem] font-extrabold text-primary2">—</span>
               </div>
             ) : (
-              <div className="mb-3.5 bg-[rgba(107,91,255,.08)] border border-[rgba(138,124,255,.2)] rounded-[14px] p-[16px_20px]">
+              <div className="mb-3.5 bg-[rgb(var(--c-primary)/.08)] border border-[rgb(var(--c-primary2)/.2)] rounded-[14px] p-[16px_20px]">
                 <div className="text-[.82rem] text-dim mb-1.5">هزینه‌ی این آیتم (بسته به روش پرداخت در سبد)</div>
                 <div className="flex items-center gap-2 flex-wrap font-display font-extrabold text-[1.15rem]">
-                  <span className="text-[#3ddc84]">{quote.walletPriceLabel}</span>
+                  <span className="text-success">{quote.walletPriceLabel}</span>
                   <span className="text-dim text-[.85rem] font-normal">تا</span>
                   <span className="text-primary2">{quote.gatewayPriceLabel}</span>
                 </div>

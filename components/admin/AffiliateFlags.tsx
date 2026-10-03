@@ -15,7 +15,7 @@ type Flag = {
   affiliate: { id: string; mobile: string; code: string | null; suspended: boolean };
 };
 
-const card = "bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl";
+const card = "bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl";
 
 /**
  * لیست هشدارهای تقلب با امکان بستن (نتیجه‌ی بررسی). اگر affiliateId داده شود فقط هشدارهای همان همکار.
@@ -57,7 +57,7 @@ export default function AffiliateFlags({ affiliateId, onChanged }: { affiliateId
               "px-3.5 py-1.5 rounded-full text-[.82rem] font-bold border transition " +
               (status === s
                 ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
-                : "bg-[rgba(255,255,255,.04)] border-[rgba(138,124,255,.2)] text-dim hover:text-text")
+                : "bg-[rgb(var(--c-ov)/.04)] border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text")
             }
           >
             {s === "open" ? "باز" : "بسته‌شده"}
@@ -120,7 +120,7 @@ function FlagCard({ flag: f, showAffiliate, onResolved }: { flag: Flag; showAffi
   }
 
   return (
-    <div className={`${card} p-4 ${f.resolvedAt ? "" : "border-[rgba(255,107,53,.35)]"}`}>
+    <div className={`${card} p-4 ${f.resolvedAt ? "" : "border-[rgb(var(--c-accent)/.35)]"}`}>
       <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
         <span className="font-bold text-[.9rem]">{f.resolvedAt ? "✓" : "🚨"} {f.kindLabel}</span>
         <span className="text-dim text-[.75rem]">{toJalaliDateTime(f.createdAt)}</span>
@@ -151,12 +151,12 @@ function FlagCard({ flag: f, showAffiliate, onResolved }: { flag: Flag; showAffi
             value={resolution}
             onChange={(e) => setResolution(e.target.value)}
             placeholder="نتیجه‌ی بررسی (مثلاً: خانواده‌ی همکار، مشکلی نیست)"
-            className="flex-1 min-w-0 font-body text-[.86rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[9px_12px] focus:border-primary outline-none"
+            className="flex-1 min-w-0 font-body text-[.86rem] text-text bg-bg border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-[9px_12px] focus:border-primary outline-none"
           />
           <button
             onClick={resolve}
             disabled={busy}
-            className="font-bold rounded-xl px-4 py-2 text-[.84rem] bg-[rgba(61,220,132,.16)] text-[#3ddc84] border border-[rgba(61,220,132,.35)] disabled:opacity-60 shrink-0"
+            className="font-bold rounded-xl px-4 py-2 text-[.84rem] bg-[rgb(var(--c-success)/.16)] text-success border border-[rgb(var(--c-success)/.35)] disabled:opacity-60 shrink-0"
           >
             بستن هشدار
           </button>

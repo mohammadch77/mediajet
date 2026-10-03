@@ -33,7 +33,7 @@ type Report = {
   }[];
 };
 
-const card = "bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl";
+const card = "bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl";
 
 /** گزارش کلی همکاری در فروش (کاشی‌های آماری + جدول بهترین همکاران). */
 export default function AffiliateReport({ onOpenTab }: { onOpenTab: (tab: "payouts" | "flags") => void }) {
@@ -59,14 +59,14 @@ export default function AffiliateReport({ onOpenTab }: { onOpenTab: (tab: "payou
 
   const tiles: { label: string; value: string; sub?: string; tone?: string; onClick?: () => void }[] = [
     { label: "کمیسیون خالص (کل)", value: t.netCommission, sub: `۳۰ روز اخیر: ${t.netCommission30}`, tone: "text-cyan" },
-    { label: "در انتظار تحویل", value: t.pending, sub: `${toPersianDigits(t.pendingCount)} سفارش`, tone: "text-[#ffc83c]" },
-    { label: "قابل برداشت همکاران", value: t.withdrawable, sub: "بدهی بالقوه‌ی سایت", tone: "text-[#3ddc84]" },
+    { label: "در انتظار تحویل", value: t.pending, sub: `${toPersianDigits(t.pendingCount)} سفارش`, tone: "text-warning" },
+    { label: "قابل برداشت همکاران", value: t.withdrawable, sub: "بدهی بالقوه‌ی سایت", tone: "text-success" },
     { label: "واریزشده", value: t.paidOut, sub: `${toPersianDigits(t.paidCount)} تسویه`, tone: "text-primary2" },
     {
       label: "تسویه‌ی در انتظار بررسی",
       value: t.openPayouts,
       sub: `${toPersianDigits(t.openPayoutsCount)} درخواست`,
-      tone: t.openPayoutsCount ? "text-[#ffc83c]" : "text-text",
+      tone: t.openPayoutsCount ? "text-warning" : "text-text",
       onClick: () => onOpenTab("payouts"),
     },
     { label: "بدهی همکاران", value: t.debt, sub: `${toPersianDigits(t.debtorsCount)} همکار بدهکار`, tone: t.debtorsCount ? "text-accent2" : "text-text" },
@@ -80,7 +80,7 @@ export default function AffiliateReport({ onOpenTab }: { onOpenTab: (tab: "payou
       label: "هشدار تقلب باز",
       value: toPersianDigits(t.openFlags),
       sub: t.openFlags ? "نیاز به بررسی" : "مورد مشکوکی نیست",
-      tone: t.openFlags ? "text-accent2" : "text-[#3ddc84]",
+      tone: t.openFlags ? "text-accent2" : "text-success",
       onClick: () => onOpenTab("flags"),
     },
   ];
@@ -97,7 +97,7 @@ export default function AffiliateReport({ onOpenTab }: { onOpenTab: (tab: "payou
             </>
           );
           return x.onClick ? (
-            <button key={x.label} onClick={x.onClick} className={`${card} p-4 text-right hover:border-[rgba(56,225,255,.4)] transition`}>
+            <button key={x.label} onClick={x.onClick} className={`${card} p-4 text-right hover:border-[rgb(var(--c-cyan)/.4)] transition`}>
               {body}
             </button>
           ) : (
@@ -116,9 +116,9 @@ export default function AffiliateReport({ onOpenTab }: { onOpenTab: (tab: "payou
               <Link
                 key={a.userId ?? i}
                 href={a.userId ? `/admin/affiliate/${a.userId}` : "#"}
-                className={`${card} p-3.5 grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_auto_auto_auto] items-center gap-x-4 gap-y-1 text-[.85rem] hover:border-[rgba(56,225,255,.4)]`}
+                className={`${card} p-3.5 grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_auto_auto_auto] items-center gap-x-4 gap-y-1 text-[.85rem] hover:border-[rgb(var(--c-cyan)/.4)]`}
               >
-                <span className="w-7 h-7 rounded-full bg-[rgba(56,225,255,.12)] text-cyan grid place-items-center font-bold text-[.8rem]">
+                <span className="w-7 h-7 rounded-full bg-[rgb(var(--c-cyan)/.12)] text-cyan grid place-items-center font-bold text-[.8rem]">
                   {toPersianDigits(i + 1)}
                 </span>
                 <span className="min-w-0">
@@ -132,7 +132,7 @@ export default function AffiliateReport({ onOpenTab }: { onOpenTab: (tab: "payou
                 </span>
                 <span className="col-start-2 sm:col-start-auto text-dim">زیرمجموعه: {toPersianDigits(a.referrals)}</span>
                 <span className="col-start-2 sm:col-start-auto text-dim">فروش: {a.sales}</span>
-                <span className="col-start-2 sm:col-start-auto font-bold text-[#3ddc84]">{a.netCommission}</span>
+                <span className="col-start-2 sm:col-start-auto font-bold text-success">{a.netCommission}</span>
               </Link>
             ))}
           </div>

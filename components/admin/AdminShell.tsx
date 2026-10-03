@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 
 type NavItem = {
@@ -64,13 +65,16 @@ export default function AdminShell({
 
       <aside
         className={
-          "fixed lg:sticky top-0 right-0 h-screen w-[260px] shrink-0 z-40 bg-gradient-to-b from-surface to-bg2 border-l border-[rgba(138,124,255,.14)] flex flex-col transition-transform duration-300 " +
+          "fixed lg:sticky top-0 right-0 h-screen w-[260px] shrink-0 z-40 bg-gradient-to-b from-surface to-bg2 border-l border-[rgb(var(--c-primary2)/.14)] flex flex-col transition-transform duration-300 " +
           (sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0")
         }
       >
-        <div className="px-6 py-6 border-b border-[rgba(138,124,255,.14)]">
-          <div className="latin text-[.75rem] tracking-[.14em] uppercase text-cyan font-bold">GetStock</div>
-          <div className="font-display text-lg font-extrabold mt-1">پنل مدیریت</div>
+        <div className="px-6 py-6 border-b border-[rgb(var(--c-primary2)/.14)] flex items-start justify-between gap-3">
+          <div>
+            <div className="latin text-[.75rem] tracking-[.14em] uppercase text-cyan font-bold">GetStock</div>
+            <div className="font-display text-lg font-extrabold mt-1">پنل مدیریت</div>
+          </div>
+          <ThemeToggle />
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1">
@@ -85,7 +89,7 @@ export default function AdminShell({
                 >
                   {item.icon}
                   <span className="text-[.9rem] font-semibold flex-1">{item.label}</span>
-                  <span className="text-[.65rem] bg-[rgba(255,255,255,.06)] px-2 py-0.5 rounded-full">به‌زودی</span>
+                  <span className="text-[.65rem] bg-[rgb(var(--c-ov)/.06)] px-2 py-0.5 rounded-full">به‌زودی</span>
                 </div>
               );
             }
@@ -98,7 +102,7 @@ export default function AdminShell({
                   "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[.9rem] font-semibold transition " +
                   (active
                     ? "bg-gradient-to-br from-primary to-primary2 text-white"
-                    : "text-dim hover:text-text hover:bg-[rgba(255,255,255,.04)]")
+                    : "text-dim hover:text-text hover:bg-[rgb(var(--c-ov)/.04)]")
                 }
               >
                 {item.icon}
@@ -108,7 +112,7 @@ export default function AdminShell({
           })}
         </nav>
 
-        <div className="px-4 py-4 border-t border-[rgba(138,124,255,.14)]">
+        <div className="px-4 py-4 border-t border-[rgb(var(--c-primary2)/.14)]">
           <Link href="/" className="text-dim text-[.8rem] hover:text-text transition">
             ← بازگشت به سایت
           </Link>
@@ -116,10 +120,10 @@ export default function AdminShell({
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="sticky top-0 z-20 bg-bg/85 backdrop-blur border-b border-[rgba(138,124,255,.14)] px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-20 bg-bg/85 backdrop-blur border-b border-[rgb(var(--c-primary2)/.14)] px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 -mr-2 rounded-lg hover:bg-[rgba(255,255,255,.06)] transition"
+            className="lg:hidden p-2 -mr-2 rounded-lg hover:bg-[rgb(var(--c-ov)/.06)] transition"
             aria-label="باز کردن منو"
           >
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -139,7 +143,7 @@ export default function AdminShell({
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-lg text-dim hover:text-accent2 hover:bg-[rgba(255,107,53,.1)] transition"
+              className="p-2 rounded-lg text-dim hover:text-accent2 hover:bg-[rgb(var(--c-accent)/.1)] transition"
               title="خروج"
               aria-label="خروج"
             >

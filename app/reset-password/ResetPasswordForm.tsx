@@ -45,7 +45,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
   }
 
   return (
-    <div className="w-full max-w-[420px] bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.2)] rounded-[22px] p-[26px_20px] sm:p-[30px_26px] shadow-[0_40px_100px_-30px_rgba(0,0,0,.85)]">
+    <div className="w-full max-w-[420px] bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.2)] rounded-[22px] p-[26px_20px] sm:p-[30px_26px] shadow-[0_40px_100px_-30px_rgba(0,0,0,.85)]">
       <h1 className="font-display text-[1.35rem] font-extrabold mb-1.5">بازیابی رمز عبور</h1>
 
       {!token ? (

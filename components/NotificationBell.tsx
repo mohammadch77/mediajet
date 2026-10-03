@@ -87,7 +87,7 @@ export default function NotificationBell() {
         aria-label={unreadCount > 0 ? `اعلان‌ها (${toPersianDigits(unreadCount)} خوانده‌نشده)` : "اعلان‌ها"}
         aria-expanded={open}
         aria-haspopup="true"
-        className="relative w-9 h-9 grid place-items-center rounded-full bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)] transition hover:bg-[rgba(255,255,255,.12)] cursor-pointer"
+        className="relative w-9 h-9 grid place-items-center rounded-full bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)] transition hover:bg-[rgb(var(--c-ov)/.12)] cursor-pointer"
       >
         <svg
           viewBox="0 0 24 24"
@@ -113,10 +113,10 @@ export default function NotificationBell() {
       {open && (
         <div
           role="menu"
-          className="z-[210] bg-[#141833] border border-[rgba(138,124,255,.2)] rounded-[20px] shadow-[0_30px_80px_-20px_rgba(0,0,0,.85)] overflow-hidden
+          className="z-[210] bg-surface border border-[rgb(var(--c-primary2)/.2)] rounded-[20px] shadow-[0_30px_80px_-20px_rgba(0,0,0,.85)] overflow-hidden
             fixed top-[70px] inset-x-4 min-[761px]:absolute min-[761px]:inset-x-auto min-[761px]:top-[calc(100%+12px)] min-[761px]:left-0 min-[761px]:w-[360px]"
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(138,124,255,.14)]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[rgb(var(--c-primary2)/.14)]">
             <span className="font-display font-bold text-[.95rem]">اعلان‌ها</span>
             {unreadCount > 0 && (
               <button
@@ -142,8 +142,8 @@ export default function NotificationBell() {
                   role="menuitem"
                   onClick={() => handleItemClick(item)}
                   className={
-                    "font-body w-full text-right flex items-start gap-3 px-4 py-3 border-b border-[rgba(138,124,255,.08)] last:border-0 cursor-pointer transition hover:bg-[rgba(255,255,255,.05)] " +
-                    (item.read ? "bg-transparent" : "bg-[rgba(107,91,255,.08)]")
+                    "font-body w-full text-right flex items-start gap-3 px-4 py-3 border-b border-[rgb(var(--c-primary2)/.08)] last:border-0 cursor-pointer transition hover:bg-[rgb(var(--c-ov)/.05)] " +
+                    (item.read ? "bg-transparent" : "bg-[rgb(var(--c-primary)/.08)]")
                   }
                 >
                   <span

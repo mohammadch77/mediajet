@@ -46,7 +46,7 @@ function RefundBox({ orderId, priceLabel, onDone }: { orderId: string; priceLabe
   }
 
   return (
-    <div className="bg-[rgba(255,107,53,.06)] border border-[rgba(255,107,53,.25)] rounded-2xl p-5 mb-6">
+    <div className="bg-[rgb(var(--c-accent)/.06)] border border-[rgb(var(--c-accent)/.25)] rounded-2xl p-5 mb-6">
       <h2 className="font-display font-bold mb-1">بازگشت وجه</h2>
       <p className="text-dim text-[.82rem] mb-3 leading-[1.9]">
         کل مبلغ سفارش ({priceLabel}) به کیف پول کاربر برمی‌گردد و اگر این سفارش برای همکار معرف کمیسیون ساخته بود،
@@ -57,12 +57,12 @@ function RefundBox({ orderId, priceLabel, onDone }: { orderId: string; priceLabe
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="دلیل بازگشت وجه (به کاربر نمایش داده نمی‌شود)"
-          className="flex-1 min-w-0 font-body text-[.9rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[10px_12px] focus:border-primary outline-none"
+          className="flex-1 min-w-0 font-body text-[.9rem] text-text bg-bg border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-[10px_12px] focus:border-primary outline-none"
         />
         <button
           onClick={refund}
           disabled={busy}
-          className="font-bold rounded-xl px-5 py-2.5 text-[.9rem] bg-[rgba(255,107,53,.16)] text-accent2 border border-[rgba(255,107,53,.35)] hover:bg-[rgba(255,107,53,.26)] disabled:opacity-60 shrink-0"
+          className="font-bold rounded-xl px-5 py-2.5 text-[.9rem] bg-[rgb(var(--c-accent)/.16)] text-accent2 border border-[rgb(var(--c-accent)/.35)] hover:bg-[rgb(var(--c-accent)/.26)] disabled:opacity-60 shrink-0"
         >
           {busy ? "در حال انجام..." : "بازگشت وجه"}
         </button>
@@ -94,7 +94,7 @@ export default function AdminOrderDetailPage() {
 
   if (error) {
     return (
-      <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4">
+      <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4">
         {error}
       </div>
     );
@@ -110,12 +110,12 @@ export default function AdminOrderDetailPage() {
         ← بازگشت به لیست سفارش‌ها
       </Link>
 
-      <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-5 sm:p-6 mb-6">
+      <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-5 sm:p-6 mb-6">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <h1 className="font-display text-xl font-extrabold">
             <span dir="ltr" className="latin">{order.orderNumber}</span> · {order.category}
           </h1>
-          <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgba(255,255,255,.06)] border border-[rgba(138,124,255,.14)]">
+          <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)]">
             {STATUS_LABELS[order.status]}
           </span>
         </div>
@@ -140,7 +140,7 @@ export default function AdminOrderDetailPage() {
         </div>
 
         {order.delivery && (
-          <div className="mt-4 pt-4 border-t border-[rgba(138,124,255,.14)] text-[.85rem]">
+          <div className="mt-4 pt-4 border-t border-[rgb(var(--c-primary2)/.14)] text-[.85rem]">
             {order.delivery.isLarge ? (
               <span className="text-dim">فایل حجیم است؛ از طریق پشتیبانی تلگرام تحویل داده می‌شود.</span>
             ) : (
@@ -166,8 +166,8 @@ export default function AdminOrderDetailPage() {
       {order.events.length === 0 ? (
         <div className="text-dim text-[.85rem]">رویدادی ثبت نشده.</div>
       ) : (
-        <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-5 sm:p-6">
-          <ol className="relative border-r border-[rgba(138,124,255,.2)] pr-5 flex flex-col gap-6">
+        <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-5 sm:p-6">
+          <ol className="relative border-r border-[rgb(var(--c-primary2)/.2)] pr-5 flex flex-col gap-6">
             {order.events.map((e) => (
               <li key={e.id} className="relative">
                 <span className="absolute right-[-25px] top-1 w-2.5 h-2.5 rounded-full bg-gradient-to-br from-primary to-cyan" />

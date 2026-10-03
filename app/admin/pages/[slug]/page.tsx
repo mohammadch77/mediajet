@@ -130,7 +130,7 @@ export default function AdminPageEditor() {
               آخرین به‌روزرسانی: {toJalaliDateTime(page.updatedAt)}
               {" · "}
               <span
-                className={page.published ? "text-[#3ddc84]" : "text-dim"}
+                className={page.published ? "text-success" : "text-dim"}
               >
                 {page.published ? "منتشرشده" : "پیش‌نویس"}
               </span>
@@ -150,7 +150,7 @@ export default function AdminPageEditor() {
       </div>
 
       {error && (
-        <div className="bg-[rgba(255,107,107,.1)] border border-[rgba(255,107,107,.3)] text-[#ff6b6b] rounded-xl px-4 py-3 text-[.85rem] mb-5">
+        <div className="bg-[rgb(var(--c-danger)/.1)] border border-[rgb(var(--c-danger)/.3)] text-danger rounded-xl px-4 py-3 text-[.85rem] mb-5">
           {error}
         </div>
       )}
@@ -159,13 +159,13 @@ export default function AdminPageEditor() {
 
       {page && (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
-          <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4 sm:p-5">
+          <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5">
             <label className="block text-[.8rem] font-bold mb-1.5">عنوان صفحه</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-[rgba(0,0,0,.25)] border border-[rgba(138,124,255,.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition mb-4"
+              className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition mb-4"
             />
 
             <label className="block text-[.8rem] font-bold mb-1.5">محتوا</label>
@@ -173,25 +173,25 @@ export default function AdminPageEditor() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4 sm:p-5">
+            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5">
               <h2 className="font-display font-bold text-[.95rem] mb-3">سئو</h2>
               <label className="block text-[.78rem] font-bold mb-1.5">عنوان متا (metaTitle)</label>
               <input
                 type="text"
                 value={metaTitle}
                 onChange={(e) => setMetaTitle(e.target.value)}
-                className="w-full bg-[rgba(0,0,0,.25)] border border-[rgba(138,124,255,.2)] rounded-xl px-3.5 py-2.5 text-[.82rem] outline-none focus:border-primary transition mb-3"
+                className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.82rem] outline-none focus:border-primary transition mb-3"
               />
               <label className="block text-[.78rem] font-bold mb-1.5">توضیحات متا (metaDescription)</label>
               <textarea
                 value={metaDescription}
                 onChange={(e) => setMetaDescription(e.target.value)}
                 rows={3}
-                className="w-full bg-[rgba(0,0,0,.25)] border border-[rgba(138,124,255,.2)] rounded-xl px-3.5 py-2.5 text-[.82rem] outline-none focus:border-primary transition resize-y"
+                className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.82rem] outline-none focus:border-primary transition resize-y"
               />
             </div>
 
-            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4 sm:p-5 flex flex-col gap-2.5">
+            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5 flex flex-col gap-2.5">
               <button
                 onClick={() => save(true)}
                 disabled={busy}
@@ -202,20 +202,20 @@ export default function AdminPageEditor() {
               <button
                 onClick={() => save(false)}
                 disabled={busy}
-                className="px-4 py-2.5 rounded-xl bg-[rgba(255,255,255,.06)] text-text text-[.85rem] font-bold disabled:opacity-50 transition"
+                className="px-4 py-2.5 rounded-xl bg-[rgb(var(--c-ov)/.06)] text-text text-[.85rem] font-bold disabled:opacity-50 transition"
               >
                 ذخیره به‌عنوان پیش‌نویس
               </button>
-              {ok && !error && <div className="text-[#3ddc84] text-[.78rem]">{ok}</div>}
+              {ok && !error && <div className="text-success text-[.78rem]">{ok}</div>}
             </div>
 
-            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(255,107,107,.2)] rounded-2xl p-4 sm:p-5">
-              <h2 className="font-display font-bold text-[.9rem] mb-2 text-[#ff6b6b]">منطقه‌ی خطر</h2>
+            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-danger)/.2)] rounded-2xl p-4 sm:p-5">
+              <h2 className="font-display font-bold text-[.9rem] mb-2 text-danger">منطقه‌ی خطر</h2>
               <p className="text-dim text-[.78rem] mb-3">حذف صفحه غیرقابل بازگشت است.</p>
               <button
                 onClick={() => setConfirmDeleteOpen(true)}
                 disabled={busy}
-                className="w-full px-4 py-2.5 rounded-xl bg-[rgba(255,107,107,.1)] text-[#ff6b6b] text-[.85rem] font-bold hover:bg-[rgba(255,107,107,.18)] disabled:opacity-50 transition"
+                className="w-full px-4 py-2.5 rounded-xl bg-[rgb(var(--c-danger)/.1)] text-danger text-[.85rem] font-bold hover:bg-[rgb(var(--c-danger)/.18)] disabled:opacity-50 transition"
               >
                 حذف صفحه
               </button>

@@ -9,14 +9,14 @@ import type { AffiliateDashboard, AffiliateProgramInfo } from "@/lib/affiliateSu
 type ApiResponse = { program: AffiliateProgramInfo; loggedIn: boolean; dashboard: AffiliateDashboard | null };
 
 const PAYOUT_STATUS: Record<string, { label: string; cls: string }> = {
-  requested: { label: "در حال بررسی", cls: "bg-[rgba(255,200,60,.14)] text-[#ffc83c]" },
-  paid: { label: "واریز شد", cls: "bg-[rgba(61,220,132,.14)] text-[#3ddc84]" },
-  rejected: { label: "رد شد", cls: "bg-[rgba(255,107,53,.14)] text-accent2" },
+  requested: { label: "در حال بررسی", cls: "bg-[rgb(var(--c-warning)/.14)] text-warning" },
+  paid: { label: "واریز شد", cls: "bg-[rgb(var(--c-success)/.14)] text-success" },
+  rejected: { label: "رد شد", cls: "bg-[rgb(var(--c-accent)/.14)] text-accent2" },
 };
 
-const card = "bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl";
+const card = "bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl";
 const input =
-  "w-full font-body text-[.95rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[12px_14px] focus:border-primary outline-none";
+  "w-full font-body text-[.95rem] text-text bg-bg border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-[12px_14px] focus:border-primary outline-none";
 const primaryBtn =
   "font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[.95rem] px-5 py-3 bg-gradient-to-br from-primary to-primary2 text-white hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed";
 
@@ -77,7 +77,7 @@ export default function AffiliatePage() {
       </div>
 
       {error && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-5">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-5">
           {error}
         </div>
       )}
@@ -124,7 +124,7 @@ export default function AffiliatePage() {
               ],
             ].map(([title, body], i) => (
               <li key={title} className={`${card} p-4 flex gap-3.5`}>
-                <span className="w-8 h-8 shrink-0 rounded-full bg-[rgba(56,225,255,.12)] text-cyan grid place-items-center font-bold">
+                <span className="w-8 h-8 shrink-0 rounded-full bg-[rgb(var(--c-cyan)/.12)] text-cyan grid place-items-center font-bold">
                   {toPersianDigits(i + 1)}
                 </span>
                 <div className="min-w-0">
@@ -189,7 +189,7 @@ function Dashboard({
   return (
     <div className="grid gap-5">
       {d.suspended && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 text-[.9rem] leading-[1.9]">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 text-[.9rem] leading-[1.9]">
           حساب همکاری‌ات معلق است؛ تا رفع تعلیق، لینکت زیرمجموعه‌ی جدید ثبت نمی‌کند، کمیسیون جدید نمی‌گیری و امکان تسویه نداری.
           {d.suspendReason && <> دلیل: {d.suspendReason}</>} برای پیگیری از بخش «پیام‌ها» به پشتیبانی پیام بده.
         </div>
@@ -210,8 +210,8 @@ function Dashboard({
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
-          ["موجودی قابل برداشت", d.balanceLabel, "text-[#3ddc84]"],
-          [`در انتظار تحویل (${toPersianDigits(d.pendingCount)})`, d.pendingLabel, "text-[#ffc83c]"],
+          ["موجودی قابل برداشت", d.balanceLabel, "text-success"],
+          [`در انتظار تحویل (${toPersianDigits(d.pendingCount)})`, d.pendingLabel, "text-warning"],
           ["کل کمیسیون (خالص)", d.totalEarnedLabel, "text-cyan"],
           ["واریزشده", d.totalPaidLabel, "text-primary2"],
           ["زیرمجموعه‌ها", `${toPersianDigits(d.referralsCount)} نفر`, "text-text"],
@@ -250,7 +250,7 @@ function Dashboard({
                     {toJalaliDateTime(c.createdAt)}
                   </div>
                 </div>
-                <div className={`font-bold ${c.reversal ? "text-accent2" : "text-[#3ddc84]"}`}>
+                <div className={`font-bold ${c.reversal ? "text-accent2" : "text-success"}`}>
                   {c.reversal ? "−" : "+"} {c.amountLabel}
                 </div>
               </div>
@@ -355,7 +355,7 @@ function PayoutForm({
           <input value={cardHolder} onChange={(e) => setCardHolder(e.target.value)} className={input} disabled={!canRequest} />
         </label>
       </div>
-      {msg && <div className={`text-[.85rem] mb-3 ${msg.ok ? "text-[#3ddc84]" : "text-accent2"}`}>{msg.text}</div>}
+      {msg && <div className={`text-[.85rem] mb-3 ${msg.ok ? "text-success" : "text-accent2"}`}>{msg.text}</div>}
       <button type="submit" disabled={!canRequest || submitting} className={`${primaryBtn} w-full sm:w-auto`}>
         {submitting ? "در حال ثبت..." : "درخواست واریز"}
       </button>

@@ -32,7 +32,7 @@ function ToolbarButton({
         "px-2.5 py-1.5 rounded-lg text-[.8rem] font-bold transition " +
         (active
           ? "bg-gradient-to-br from-primary to-primary2 text-white"
-          : "bg-[rgba(0,0,0,.25)] text-dim hover:text-text")
+          : "bg-[rgb(var(--c-sink)/.25)] text-dim hover:text-text")
       }
     >
       {children}
@@ -87,8 +87,8 @@ export default function RichTextEditor({
   }
 
   return (
-    <div className="border border-[rgba(138,124,255,.2)] rounded-xl overflow-hidden bg-[rgba(0,0,0,.25)]">
-      <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 border-b border-[rgba(138,124,255,.14)]">
+    <div className="border border-[rgb(var(--c-primary2)/.2)] rounded-xl overflow-hidden bg-[rgb(var(--c-sink)/.25)]">
+      <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 border-b border-[rgb(var(--c-primary2)/.14)]">
         <ToolbarButton label="تیتر ۱" active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
           H1
         </ToolbarButton>

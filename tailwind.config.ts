@@ -1,12 +1,17 @@
 import type { Config } from "tailwindcss";
+
+// رنگ‌ها از متغیرهای CSS در app/globals.css می‌آیند تا تم تیره/روشن بدون تغییر کلاس‌ها عوض شود.
+const v = (name: string) => `rgb(var(--c-${name}) / <alpha-value>)`;
+
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        bg: "#080A15", bg2: "#0D1020", surface: "#141833", surface2: "#1B2145",
-        primary: "#6B5BFF", primary2: "#8A7CFF", cyan: "#38E1FF",
-        accent: "#FF6B35", accent2: "#FF9A5C", text: "#EEF0FB", dim: "#98A0C8",
+        bg: v("bg"), bg2: v("bg2"), surface: v("surface"), surface2: v("surface2"),
+        primary: v("primary"), primary2: v("primary2"), cyan: v("cyan"),
+        accent: v("accent"), accent2: v("accent2"), text: v("text"), dim: v("dim"), muted: v("muted"),
+        success: v("success"), danger: v("danger"), warning: v("warning"),
       },
       fontFamily: {
         display: ["Estedad", "Vazirmatn", "sans-serif"],

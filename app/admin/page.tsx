@@ -25,7 +25,7 @@ function StatCard({
   accent: string;
 }) {
   return (
-    <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-5 sm:p-6">
+    <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-5 sm:p-6">
       <div className="flex items-center justify-between mb-3">
         <span className="text-dim text-[.82rem] font-semibold">{label}</span>
         <span className="w-2.5 h-2.5 rounded-full" style={{ background: accent }} />
@@ -55,7 +55,7 @@ export default function AdminDashboardPage() {
 
   if (error) {
     return (
-      <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4">
+      <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4">
         {error}
       </div>
     );
@@ -110,7 +110,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[1.4fr_1fr] gap-4">
-        <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-5 sm:p-6">
+        <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-5 sm:p-6">
           <h2 className="font-display font-bold mb-6">سفارش‌های ۷ روز اخیر</h2>
           <div className="flex items-end gap-2 sm:gap-4 h-[180px]">
             {stats.recentOrdersByDay.map((d) => (
@@ -126,7 +126,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-5 sm:p-6">
+        <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-5 sm:p-6">
           <h2 className="font-display font-bold mb-5">سفارش‌ها به تفکیک وضعیت</h2>
           <div className="flex flex-col gap-3">
             {statusOrder.map((s) => {
@@ -138,7 +138,7 @@ export default function AdminDashboardPage() {
                     <span className="text-dim">{STATUS_LABELS[s]}</span>
                     <span className="font-bold">{toPersianDigits(count)}</span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-[rgba(255,255,255,.06)] overflow-hidden">
+                  <div className="h-1.5 rounded-full bg-[rgb(var(--c-ov)/.06)] overflow-hidden">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-primary to-primary2"
                       style={{ width: `${pct}%` }}

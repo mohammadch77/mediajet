@@ -77,7 +77,7 @@ function GroupSection({
     .sort((a, b) => (b.updatedAt! > a.updatedAt! ? 1 : -1))[0];
 
   return (
-    <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4 sm:p-5 mb-6">
+    <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5 mb-6">
       <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
         <h2 className="font-display font-bold text-[1.05rem]">{GROUP_LABELS[group] ?? group}</h2>
         {lastUpdated && (
@@ -100,14 +100,14 @@ function GroupSection({
                 value={values[r.key] ?? ""}
                 onChange={(e) => setValues((v) => ({ ...v, [r.key]: e.target.value }))}
                 rows={3}
-                className="w-full bg-[rgba(0,0,0,.25)] border border-[rgba(138,124,255,.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition resize-y"
+                className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition resize-y"
               />
             ) : (
               <input
                 type="text"
                 value={values[r.key] ?? ""}
                 onChange={(e) => setValues((v) => ({ ...v, [r.key]: e.target.value }))}
-                className="w-full bg-[rgba(0,0,0,.25)] border border-[rgba(138,124,255,.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
+                className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
               />
             )}
           </div>
@@ -122,8 +122,8 @@ function GroupSection({
         >
           {busy ? "در حال ذخیره…" : "ذخیره‌ی این بخش"}
         </button>
-        {error && <div className="text-[#ff6b6b] text-[.78rem]">{error}</div>}
-        {ok && !error && <div className="text-[#3ddc84] text-[.78rem]">ذخیره شد.</div>}
+        {error && <div className="text-danger text-[.78rem]">{error}</div>}
+        {ok && !error && <div className="text-success text-[.78rem]">ذخیره شد.</div>}
       </div>
     </div>
   );
@@ -162,7 +162,7 @@ export default function AdminContentPage() {
       </div>
 
       {error && (
-        <div className="bg-[rgba(255,107,107,.1)] border border-[rgba(255,107,107,.3)] text-[#ff6b6b] rounded-xl px-4 py-3 text-[.85rem] mb-5">
+        <div className="bg-[rgb(var(--c-danger)/.1)] border border-[rgb(var(--c-danger)/.3)] text-danger rounded-xl px-4 py-3 text-[.85rem] mb-5">
           {error}
         </div>
       )}

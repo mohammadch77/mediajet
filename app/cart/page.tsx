@@ -162,7 +162,7 @@ export default function CartPage() {
       </div>
 
       {error && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-8">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-8">
           {error}
         </div>
       )}
@@ -186,7 +186,7 @@ export default function CartPage() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-[18px_20px] flex items-center justify-between flex-wrap gap-3"
+                className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-[18px_20px] flex items-center justify-between flex-wrap gap-3"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2.5 flex-wrap mb-1.5">
@@ -210,7 +210,7 @@ export default function CartPage() {
                     onClick={() => handleRemove(item.id)}
                     disabled={removingId === item.id}
                     aria-label="حذف از سبد"
-                    className="font-body cursor-pointer border-none font-bold text-[.82rem] text-accent2 bg-[rgba(255,107,53,.1)] px-3.5 py-2 rounded-full whitespace-nowrap transition hover:bg-[rgba(255,107,53,.2)] disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="font-body cursor-pointer border-none font-bold text-[.82rem] text-accent2 bg-[rgb(var(--c-accent)/.1)] px-3.5 py-2 rounded-full whitespace-nowrap transition hover:bg-[rgb(var(--c-accent)/.2)] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {removingId === item.id ? "..." : "حذف"}
                   </button>
@@ -220,22 +220,22 @@ export default function CartPage() {
           </div>
 
           {quote && (
-            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-[22px_24px] mb-6">
+            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-[22px_24px] mb-6">
               <div className="text-dim text-[.85rem] mb-3">جمع کل ({quote.itemCount} آیتم) — روش پرداخت را انتخاب کن</div>
               <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2.5 mb-1">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("wallet")}
                   className={
-                    "text-right rounded-[14px] p-3.5 bg-[rgba(61,220,132,.1)] border-2 transition cursor-pointer " +
-                    (paymentMethod === "wallet" ? "border-[#3ddc84]" : "border-[rgba(61,220,132,.25)]")
+                    "text-right rounded-[14px] p-3.5 bg-[rgb(var(--c-success)/.1)] border-2 transition cursor-pointer " +
+                    (paymentMethod === "wallet" ? "border-success" : "border-[rgb(var(--c-success)/.25)]")
                   }
                 >
-                  <div className="flex items-center gap-2 text-[.78rem] text-[#3ddc84] font-bold mb-1">
+                  <div className="flex items-center gap-2 text-[.78rem] text-success font-bold mb-1">
                     پرداخت از کیف پول
-                    <span className="px-2 py-0.5 rounded-full bg-[rgba(61,220,132,.2)] text-[.72rem]">ارزان‌تر</span>
+                    <span className="px-2 py-0.5 rounded-full bg-[rgb(var(--c-success)/.2)] text-[.72rem]">ارزان‌تر</span>
                   </div>
-                  <div className="font-display text-[1.2rem] font-extrabold text-[#3ddc84]">{quote.walletTotalLabel}</div>
+                  <div className="font-display text-[1.2rem] font-extrabold text-success">{quote.walletTotalLabel}</div>
                   {hasEnoughWalletBalance === false && (
                     <div className="text-[.76rem] text-accent2 mt-1.5">
                       موجودی کیف پول کافی نیست؛ از پنل کاربری شارژ کن یا از درگاه پرداخت کن.
@@ -246,8 +246,8 @@ export default function CartPage() {
                   type="button"
                   onClick={() => setPaymentMethod("gateway")}
                   className={
-                    "text-right rounded-[14px] p-3.5 bg-[rgba(107,91,255,.1)] border-2 transition cursor-pointer " +
-                    (paymentMethod === "gateway" ? "border-primary2" : "border-[rgba(138,124,255,.3)]")
+                    "text-right rounded-[14px] p-3.5 bg-[rgb(var(--c-primary)/.1)] border-2 transition cursor-pointer " +
+                    (paymentMethod === "gateway" ? "border-primary2" : "border-[rgb(var(--c-primary2)/.3)]")
                   }
                 >
                   <div className="text-[.78rem] text-primary2 font-bold mb-1">پرداخت مستقیم از درگاه</div>
@@ -258,7 +258,7 @@ export default function CartPage() {
           )}
 
           {checkoutError && (
-            <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-6 text-[.9rem]">
+            <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-6 text-[.9rem]">
               {checkoutError}
             </div>
           )}

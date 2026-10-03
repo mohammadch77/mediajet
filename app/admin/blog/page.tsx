@@ -84,12 +84,12 @@ export default function AdminBlogList() {
       </div>
 
       {error && (
-        <div className="bg-[rgba(255,107,107,.1)] border border-[rgba(255,107,107,.3)] text-[#ff6b6b] rounded-xl px-4 py-3 text-[.85rem] mb-5">
+        <div className="bg-[rgb(var(--c-danger)/.1)] border border-[rgb(var(--c-danger)/.3)] text-danger rounded-xl px-4 py-3 text-[.85rem] mb-5">
           {error}
         </div>
       )}
 
-      <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4 sm:p-5 mb-5">
+      <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5 mb-5">
         <h2 className="font-display font-bold text-[.95rem] mb-3">نوشته‌ی جدید</h2>
         <div className="flex flex-col sm:flex-row gap-3">
           <input
@@ -98,14 +98,14 @@ export default function AdminBlogList() {
             value={newSlug}
             onChange={(e) => setNewSlug(e.target.value)}
             dir="ltr"
-            className="flex-1 bg-[rgba(0,0,0,.25)] border border-[rgba(138,124,255,.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
+            className="flex-1 bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
           />
           <input
             type="text"
             placeholder="عنوان نوشته"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
-            className="flex-1 bg-[rgba(0,0,0,.25)] border border-[rgba(138,124,255,.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
+            className="flex-1 bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
           />
           <button
             onClick={create}
@@ -120,11 +120,11 @@ export default function AdminBlogList() {
       {!posts && !error && <div className="text-dim text-[.85rem]">در حال بارگذاری…</div>}
 
       {posts && (
-        <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl overflow-hidden">
+        <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-[.85rem] min-w-[640px]">
               <thead>
-                <tr className="text-dim text-[.75rem] border-b border-[rgba(138,124,255,.14)]">
+                <tr className="text-dim text-[.75rem] border-b border-[rgb(var(--c-primary2)/.14)]">
                   <th className="text-right px-4 py-3 font-semibold">عنوان</th>
                   <th className="text-right px-4 py-3 font-semibold">نامک</th>
                   <th className="text-right px-4 py-3 font-semibold">وضعیت</th>
@@ -141,7 +141,7 @@ export default function AdminBlogList() {
                   </tr>
                 )}
                 {posts.map((p) => (
-                  <tr key={p.id} className="border-b border-[rgba(138,124,255,.08)] last:border-0">
+                  <tr key={p.id} className="border-b border-[rgb(var(--c-primary2)/.08)] last:border-0">
                     <td className="px-4 py-3 font-bold">{p.title}</td>
                     <td className="px-4 py-3 text-dim latin" dir="ltr">/{p.slug}</td>
                     <td className="px-4 py-3">
@@ -149,8 +149,8 @@ export default function AdminBlogList() {
                         className={
                           "px-2.5 py-1 rounded-full text-[.72rem] font-bold " +
                           (p.published
-                            ? "bg-[rgba(61,220,132,.14)] text-[#3ddc84]"
-                            : "bg-[rgba(255,255,255,.08)] text-dim")
+                            ? "bg-[rgb(var(--c-success)/.14)] text-success"
+                            : "bg-[rgb(var(--c-ov)/.08)] text-dim")
                         }
                       >
                         {p.published ? "منتشرشده" : "پیش‌نویس"}
@@ -160,13 +160,13 @@ export default function AdminBlogList() {
                     <td className="px-4 py-3 text-left whitespace-nowrap">
                       <Link
                         href={`/admin/blog/${p.slug}`}
-                        className="px-3 py-1.5 rounded-lg bg-[rgba(138,124,255,.14)] text-primary font-bold text-[.78rem] hover:bg-[rgba(138,124,255,.22)] transition ml-2"
+                        className="px-3 py-1.5 rounded-lg bg-[rgb(var(--c-primary2)/.14)] text-primary font-bold text-[.78rem] hover:bg-[rgb(var(--c-primary2)/.22)] transition ml-2"
                       >
                         ویرایش
                       </Link>
                       <button
                         onClick={() => setPendingDelete(p)}
-                        className="px-3 py-1.5 rounded-lg bg-[rgba(255,107,107,.1)] text-[#ff6b6b] font-bold text-[.78rem] hover:bg-[rgba(255,107,107,.18)] transition"
+                        className="px-3 py-1.5 rounded-lg bg-[rgb(var(--c-danger)/.1)] text-danger font-bold text-[.78rem] hover:bg-[rgb(var(--c-danger)/.18)] transition"
                       >
                         حذف
                       </button>

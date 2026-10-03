@@ -47,7 +47,7 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
   return (
     <div
       className={
-        "bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-5 sm:p-6 " +
+        "bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-5 sm:p-6 " +
         className
       }
     >
@@ -130,7 +130,7 @@ export default function AdminReportsPage() {
                   "px-3.5 py-2 rounded-xl text-[.82rem] font-semibold transition " +
                   (range === k
                     ? "bg-gradient-to-br from-primary to-primary2 text-white"
-                    : "bg-[rgba(255,255,255,.04)] text-dim hover:text-text")
+                    : "bg-[rgb(var(--c-ov)/.04)] text-dim hover:text-text")
                 }
               >
                 {RANGE_LABELS[k]}
@@ -142,7 +142,7 @@ export default function AdminReportsPage() {
               "px-3.5 py-2 rounded-xl text-[.82rem] font-semibold transition " +
               (range === "custom"
                 ? "bg-gradient-to-br from-primary to-primary2 text-white"
-                : "bg-[rgba(255,255,255,.04)] text-dim hover:text-text")
+                : "bg-[rgb(var(--c-ov)/.04)] text-dim hover:text-text")
             }
           >
             دلخواه
@@ -158,7 +158,7 @@ export default function AdminReportsPage() {
               type="date"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
-              className="bg-[rgba(255,255,255,.05)] border border-[rgba(138,124,255,.2)] rounded-lg px-3 py-1.5 text-text"
+              className="bg-[rgb(var(--c-ov)/.05)] border border-[rgb(var(--c-primary2)/.2)] rounded-lg px-3 py-1.5 text-text"
             />
           </label>
           <label className="flex items-center gap-2 text-[.82rem] text-dim">
@@ -167,7 +167,7 @@ export default function AdminReportsPage() {
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
-              className="bg-[rgba(255,255,255,.05)] border border-[rgba(138,124,255,.2)] rounded-lg px-3 py-1.5 text-text"
+              className="bg-[rgb(var(--c-ov)/.05)] border border-[rgb(var(--c-primary2)/.2)] rounded-lg px-3 py-1.5 text-text"
             />
           </label>
           {(!customFrom || !customTo) && (
@@ -177,7 +177,7 @@ export default function AdminReportsPage() {
       )}
 
       {error && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-6">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-6">
           {error}
         </div>
       )}
@@ -266,7 +266,7 @@ export default function AdminReportsPage() {
                         <span className="text-dim">{STATUS_LABELS[s]}</span>
                         <span className="font-bold">{toPersianDigits(count)}</span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-[rgba(255,255,255,.06)] overflow-hidden">
+                      <div className="h-1.5 rounded-full bg-[rgb(var(--c-ov)/.06)] overflow-hidden">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-primary to-primary2"
                           style={{ width: `${pct}%` }}
@@ -292,7 +292,7 @@ export default function AdminReportsPage() {
                         <span className="text-dim">{c.title}</span>
                         <span className="font-bold">{toPersianDigits(c.count)}</span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-[rgba(255,255,255,.06)] overflow-hidden">
+                      <div className="h-1.5 rounded-full bg-[rgb(var(--c-ov)/.06)] overflow-hidden">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-cyan to-primary"
                           style={{ width: `${(c.count / maxCategoryCount) * 100}%` }}
@@ -313,7 +313,7 @@ export default function AdminReportsPage() {
                   {data.orders.bySite.map((s) => (
                     <div
                       key={s.site}
-                      className="flex items-center gap-2 bg-[rgba(255,255,255,.04)] rounded-xl px-3 py-2 text-[.78rem]"
+                      className="flex items-center gap-2 bg-[rgb(var(--c-ov)/.04)] rounded-xl px-3 py-2 text-[.78rem]"
                     >
                       <span className="text-dim">{s.site}</span>
                       <span className="font-bold">{toPersianDigits(s.count)}</span>
@@ -332,7 +332,7 @@ export default function AdminReportsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-[.82rem]">
                   <thead>
-                    <tr className="text-dim border-b border-[rgba(138,124,255,.14)]">
+                    <tr className="text-dim border-b border-[rgb(var(--c-primary2)/.14)]">
                       <th className="text-right py-2 font-semibold">کاربر</th>
                       <th className="text-right py-2 font-semibold">موبایل</th>
                       <th className="text-right py-2 font-semibold">تعداد سفارش</th>
@@ -340,7 +340,7 @@ export default function AdminReportsPage() {
                   </thead>
                   <tbody>
                     {data.users.mostActive.map((u) => (
-                      <tr key={u.id} className="border-b border-[rgba(138,124,255,.06)] last:border-0">
+                      <tr key={u.id} className="border-b border-[rgb(var(--c-primary2)/.06)] last:border-0">
                         <td className="py-2.5">{u.name ?? "—"}</td>
                         <td className="py-2.5" dir="ltr">
                           {u.mobile}

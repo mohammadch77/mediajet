@@ -79,7 +79,7 @@ export default function AdminOrdersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="جستجو بر اساس شماره سفارش، موبایل، نام، سایت یا دسته…"
-          className="flex-1 min-w-[220px] max-w-[360px] bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2.5 text-[.85rem] outline-none focus:border-cyan transition"
+          className="flex-1 min-w-[220px] max-w-[360px] bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] rounded-full px-4 py-2.5 text-[.85rem] outline-none focus:border-cyan transition"
         />
         <select
           value={statusFilter}
@@ -87,7 +87,7 @@ export default function AdminOrdersPage() {
             setStatusFilter(e.target.value as OrderStatus | "");
             setPage(1);
           }}
-          className="bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.2)] rounded-full px-4 py-2.5 text-[.85rem] outline-none focus:border-cyan transition cursor-pointer"
+          className="bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] rounded-full px-4 py-2.5 text-[.85rem] outline-none focus:border-cyan transition cursor-pointer"
         >
           <option value="" className="bg-bg2">همه‌ی وضعیت‌ها</option>
           {ALL_STATUSES.map((s) => (
@@ -99,7 +99,7 @@ export default function AdminOrdersPage() {
       </div>
 
       {error && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-5">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-5">
           {error}
         </div>
       )}
@@ -110,10 +110,10 @@ export default function AdminOrdersPage() {
         <div className="text-dim text-[.9rem]">سفارشی پیدا نشد.</div>
       ) : (
         <>
-          <div className="hidden md:block bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl overflow-x-auto">
+          <div className="hidden md:block bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl overflow-x-auto">
             <table className="w-full text-[.85rem] min-w-[820px]">
               <thead>
-                <tr className="text-dim text-[.78rem] border-b border-[rgba(138,124,255,.14)]">
+                <tr className="text-dim text-[.78rem] border-b border-[rgb(var(--c-primary2)/.14)]">
                   <th className="text-right font-semibold px-5 py-3.5">شماره</th>
                   <th className="text-right font-semibold px-5 py-3.5">کاربر</th>
                   <th className="text-right font-semibold px-5 py-3.5">دسته</th>
@@ -126,7 +126,7 @@ export default function AdminOrdersPage() {
               </thead>
               <tbody>
                 {data.items.map((o) => (
-                  <tr key={o.id} className="border-b border-[rgba(138,124,255,.08)] last:border-0">
+                  <tr key={o.id} className="border-b border-[rgb(var(--c-primary2)/.08)] last:border-0">
                     <td dir="ltr" className="px-5 py-3.5 text-right font-bold latin whitespace-nowrap">{o.orderNumber}</td>
                     <td className="px-5 py-3.5">
                       <div dir="ltr" className="text-left font-semibold">{o.user.mobile}</div>
@@ -136,7 +136,7 @@ export default function AdminOrdersPage() {
                     <td className="px-5 py-3.5">{o.sourceSite}</td>
                     <td className="px-5 py-3.5">{o.priceLabel}</td>
                     <td className="px-5 py-3.5">
-                      <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgba(255,255,255,.06)]">
+                      <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgb(var(--c-ov)/.06)]">
                         {STATUS_LABELS[o.status]}
                       </span>
                     </td>
@@ -156,13 +156,13 @@ export default function AdminOrdersPage() {
             {data.items.map((o) => (
               <div
                 key={o.id}
-                className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4"
+                className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-display font-bold">
                     {o.category} <span dir="ltr" className="latin text-dim text-[.78rem]">{o.orderNumber}</span>
                   </span>
-                  <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgba(255,255,255,.06)]">
+                  <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgb(var(--c-ov)/.06)]">
                     {STATUS_LABELS[o.status]}
                   </span>
                 </div>

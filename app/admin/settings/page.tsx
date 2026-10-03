@@ -23,10 +23,10 @@ function StatusDot({ configured }: { configured: boolean }) {
     <span className="flex items-center gap-1.5 text-[.78rem] font-bold">
       <span
         className={
-          "w-2 h-2 rounded-full " + (configured ? "bg-[#3ddc84] shadow-[0_0_8px_#3ddc84]" : "bg-[rgba(255,255,255,.25)]")
+          "w-2 h-2 rounded-full " + (configured ? "bg-success shadow-[0_0_8px_#3ddc84]" : "bg-[rgb(var(--c-ov)/.25)]")
         }
       />
-      <span className={configured ? "text-[#3ddc84]" : "text-dim"}>
+      <span className={configured ? "text-success" : "text-dim"}>
         {configured ? "تنظیم شده" : "تنظیم نشده"}
       </span>
     </span>
@@ -66,7 +66,7 @@ function SettingCard({ row, onSaved }: { row: SettingRow; onSaved: () => void })
   }
 
   return (
-    <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4 sm:p-5">
+    <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3 flex-wrap mb-1">
         <div className="font-bold text-[.95rem]">{row.label}</div>
         <StatusDot configured={row.configured} />
@@ -87,7 +87,7 @@ function SettingCard({ row, onSaved }: { row: SettingRow; onSaved: () => void })
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={row.configured ? "برای تغییر، مقدار جدید را وارد کنید" : "مقدار را وارد کنید"}
-          className="flex-1 min-w-[180px] bg-[rgba(0,0,0,.25)] border border-[rgba(138,124,255,.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
+          className="flex-1 min-w-[180px] bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
         />
         <button
           onClick={save}
@@ -98,8 +98,8 @@ function SettingCard({ row, onSaved }: { row: SettingRow; onSaved: () => void })
         </button>
       </div>
 
-      {error && <div className="text-[#ff6b6b] text-[.78rem] mt-2">{error}</div>}
-      {ok && !error && <div className="text-[#3ddc84] text-[.78rem] mt-2">ذخیره شد.</div>}
+      {error && <div className="text-danger text-[.78rem] mt-2">{error}</div>}
+      {ok && !error && <div className="text-success text-[.78rem] mt-2">ذخیره شد.</div>}
     </div>
   );
 }
@@ -195,7 +195,7 @@ function PaymentSettingsSection() {
           {rows.map((row) => (
             <div
               key={row.key}
-              className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4 sm:p-5"
+              className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5"
             >
               <div className="font-bold text-[.95rem] mb-1">{row.label}</div>
               <p className="text-dim text-[.8rem] leading-relaxed mb-3">{row.description}</p>
@@ -218,7 +218,7 @@ function PaymentSettingsSection() {
                   max={row.max}
                   value={draft[row.key] ?? ""}
                   onChange={(e) => setDraft((d) => ({ ...d, [row.key]: e.target.value }))}
-                  className="flex-1 min-w-0 bg-[rgba(0,0,0,.25)] border border-[rgba(138,124,255,.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
+                  className="flex-1 min-w-0 bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
                 />
                 <span className="text-dim text-[.8rem] shrink-0">{row.unit}</span>
               </div>
@@ -236,8 +236,8 @@ function PaymentSettingsSection() {
           >
             {busy ? "در حال ذخیره…" : "ذخیره‌ی تنظیمات پرداخت"}
           </button>
-          {error && <span className="text-[#ff6b6b] text-[.78rem]">{error}</span>}
-          {ok && !error && <span className="text-[#3ddc84] text-[.78rem]">ذخیره شد.</span>}
+          {error && <span className="text-danger text-[.78rem]">{error}</span>}
+          {ok && !error && <span className="text-success text-[.78rem]">ذخیره شد.</span>}
         </div>
       )}
     </div>
@@ -281,7 +281,7 @@ export default function AdminSettingsPage() {
       <h2 className="font-display text-[1.2rem] font-extrabold mb-4">تنظیمات حساس</h2>
 
       {error && (
-        <div className="bg-[rgba(255,107,107,.1)] border border-[rgba(255,107,107,.3)] text-[#ff6b6b] rounded-xl px-4 py-3 text-[.85rem] mb-5">
+        <div className="bg-[rgb(var(--c-danger)/.1)] border border-[rgb(var(--c-danger)/.3)] text-danger rounded-xl px-4 py-3 text-[.85rem] mb-5">
           {error}
         </div>
       )}

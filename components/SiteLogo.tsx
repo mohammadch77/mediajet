@@ -13,7 +13,7 @@ export default function SiteLogo({ site, className = "" }: { site: string; class
     );
   }
   return (
-    <span className={`grid shrink-0 place-items-center bg-[rgba(138,124,255,.14)] font-latin font-bold text-cyan ${className}`}>
+    <span className={`grid shrink-0 place-items-center bg-[rgb(var(--c-primary2)/.14)] font-latin font-bold text-cyan ${className}`}>
       {site.slice(0, 2)}
     </span>
   );

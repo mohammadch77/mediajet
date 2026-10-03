@@ -85,10 +85,10 @@ function ReferrerBox({
   }
 
   const input =
-    "w-full min-w-0 font-body text-[.88rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[10px_12px] focus:border-primary outline-none";
+    "w-full min-w-0 font-body text-[.88rem] text-text bg-bg border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-[10px_12px] focus:border-primary outline-none";
 
   return (
-    <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-5 mb-6">
+    <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-5 mb-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="text-[.88rem]">
           <span className="text-dim">معرف (همکاری در فروش): </span>
@@ -122,7 +122,7 @@ function ReferrerBox({
               ثبت معرف جدید
             </button>
             {referrer && (
-              <button onClick={() => save(true)} disabled={busy} className="font-bold rounded-xl px-4 py-2 text-[.85rem] bg-[rgba(255,107,53,.12)] text-accent2 border border-[rgba(255,107,53,.3)] disabled:opacity-60">
+              <button onClick={() => save(true)} disabled={busy} className="font-bold rounded-xl px-4 py-2 text-[.85rem] bg-[rgb(var(--c-accent)/.12)] text-accent2 border border-[rgb(var(--c-accent)/.3)] disabled:opacity-60">
                 حذف معرف
               </button>
             )}
@@ -159,7 +159,7 @@ export default function AdminUserDetailPage() {
 
   if (error) {
     return (
-      <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4">
+      <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4">
         {error}
       </div>
     );
@@ -177,7 +177,7 @@ export default function AdminUserDetailPage() {
         ← بازگشت به لیست کاربران
       </Link>
 
-      <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-5 sm:p-6 mb-6 flex flex-wrap items-center gap-x-8 gap-y-3">
+      <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-5 sm:p-6 mb-6 flex flex-wrap items-center gap-x-8 gap-y-3">
         <div>
           <div dir="ltr" className="font-display text-xl font-extrabold text-left">{user.mobile}</div>
           <div className="text-dim text-[.85rem] mt-1">{user.name ?? "بدون نام"}</div>
@@ -203,10 +203,10 @@ export default function AdminUserDetailPage() {
         <div className="text-dim text-[.85rem] mb-8">سفارشی ثبت نشده.</div>
       ) : (
         <div className="mb-8">
-          <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl overflow-x-auto">
+          <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl overflow-x-auto">
             <table className="w-full text-[.83rem] min-w-[640px]">
               <thead>
-                <tr className="text-dim text-[.76rem] border-b border-[rgba(138,124,255,.14)]">
+                <tr className="text-dim text-[.76rem] border-b border-[rgb(var(--c-primary2)/.14)]">
                   <th className="text-right font-semibold px-4 py-3">دسته</th>
                   <th className="text-right font-semibold px-4 py-3">سایت</th>
                   <th className="text-right font-semibold px-4 py-3">مبلغ</th>
@@ -216,12 +216,12 @@ export default function AdminUserDetailPage() {
               </thead>
               <tbody>
                 {orders.items.map((o) => (
-                  <tr key={o.id} className="border-b border-[rgba(138,124,255,.08)] last:border-0">
+                  <tr key={o.id} className="border-b border-[rgb(var(--c-primary2)/.08)] last:border-0">
                     <td className="px-4 py-3">{o.category}</td>
                     <td className="px-4 py-3">{o.sourceSite}</td>
                     <td className="px-4 py-3">{o.priceLabel}</td>
                     <td className="px-4 py-3">
-                      <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgba(255,255,255,.06)]">
+                      <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgb(var(--c-ov)/.06)]">
                         {STATUS_LABELS[o.status]}
                       </span>
                     </td>
@@ -240,10 +240,10 @@ export default function AdminUserDetailPage() {
         <div className="text-dim text-[.85rem]">تراکنشی ثبت نشده.</div>
       ) : (
         <div>
-          <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl overflow-x-auto">
+          <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl overflow-x-auto">
             <table className="w-full text-[.83rem] min-w-[640px]">
               <thead>
-                <tr className="text-dim text-[.76rem] border-b border-[rgba(138,124,255,.14)]">
+                <tr className="text-dim text-[.76rem] border-b border-[rgb(var(--c-primary2)/.14)]">
                   <th className="text-right font-semibold px-4 py-3">نوع</th>
                   <th className="text-right font-semibold px-4 py-3">مبلغ</th>
                   <th className="text-right font-semibold px-4 py-3">موجودی پس از تراکنش</th>
@@ -253,12 +253,12 @@ export default function AdminUserDetailPage() {
               </thead>
               <tbody>
                 {transactions.items.map((t) => (
-                  <tr key={t.id} className="border-b border-[rgba(138,124,255,.08)] last:border-0">
+                  <tr key={t.id} className="border-b border-[rgb(var(--c-primary2)/.08)] last:border-0">
                     <td className="px-4 py-3">
                       <span
                         className={
                           "px-2.5 py-1 rounded-full text-[.72rem] font-bold " +
-                          (t.type === "credit" ? "bg-[rgba(56,225,255,.14)] text-cyan" : "bg-[rgba(255,107,53,.14)] text-accent2")
+                          (t.type === "credit" ? "bg-[rgb(var(--c-cyan)/.14)] text-cyan" : "bg-[rgb(var(--c-accent)/.14)] text-accent2")
                         }
                       >
                         {t.type === "credit" ? "شارژ" : "برداشت"}

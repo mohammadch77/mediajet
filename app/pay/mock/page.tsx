@@ -19,7 +19,7 @@ function MockPaymentContent() {
 
   return (
     <div className="min-h-screen grid place-items-center px-6">
-      <div className="max-w-sm w-full bg-surface border border-[rgba(138,124,255,.14)] rounded-2xl p-8 text-center">
+      <div className="max-w-sm w-full bg-surface border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-8 text-center">
         <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold mb-2">
           Mock Gateway
         </div>
@@ -47,7 +47,7 @@ function MockPaymentContent() {
           </button>
           <button
             onClick={() => resolve("NOK")}
-            className="font-body cursor-pointer font-bold text-dim border border-[rgba(138,124,255,.3)] bg-transparent py-3 rounded-full transition hover:text-text"
+            className="font-body cursor-pointer font-bold text-dim border border-[rgb(var(--c-primary2)/.3)] bg-transparent py-3 rounded-full transition hover:text-text"
           >
             انصراف
           </button>

@@ -25,19 +25,19 @@ type PayoutRow = {
 type ListResponse = { items: PayoutRow[]; total: number; page: number; pageSize: number; totalPages: number };
 
 const STATUS: Record<PayoutStatus, { label: string; cls: string }> = {
-  requested: { label: "در انتظار بررسی", cls: "bg-[rgba(255,200,60,.14)] text-[#ffc83c]" },
-  paid: { label: "واریز شد", cls: "bg-[rgba(61,220,132,.14)] text-[#3ddc84]" },
-  rejected: { label: "رد شد", cls: "bg-[rgba(255,107,53,.14)] text-accent2" },
+  requested: { label: "در انتظار بررسی", cls: "bg-[rgb(var(--c-warning)/.14)] text-warning" },
+  paid: { label: "واریز شد", cls: "bg-[rgb(var(--c-success)/.14)] text-success" },
+  rejected: { label: "رد شد", cls: "bg-[rgb(var(--c-accent)/.14)] text-accent2" },
 };
 
 const inputCls =
-  "w-full font-body text-[.88rem] text-text bg-bg border border-[rgba(138,124,255,.14)] rounded-xl p-[10px_12px] focus:border-primary outline-none";
+  "w-full font-body text-[.88rem] text-text bg-bg border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-[10px_12px] focus:border-primary outline-none";
 
 const tabCls = (active: boolean) =>
   "px-4 py-2 rounded-xl text-[.88rem] font-bold border transition " +
   (active
-    ? "bg-[rgba(56,225,255,.1)] border-[rgba(56,225,255,.4)] text-cyan"
-    : "bg-transparent border-[rgba(138,124,255,.2)] text-dim hover:text-text");
+    ? "bg-[rgb(var(--c-cyan)/.1)] border-[rgb(var(--c-cyan)/.4)] text-cyan"
+    : "bg-transparent border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text");
 
 type Tab = "report" | "payouts" | "affiliates" | "flags";
 const TABS: [Tab, string][] = [
@@ -148,16 +148,16 @@ function AffiliatesTab() {
         <>
           <div className="grid gap-3 md:grid-cols-2">
             {data.items.map((a) => (
-              <div key={a.id} className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4">
+              <div key={a.id} className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4">
                 <div className="flex items-center justify-between gap-2 flex-wrap mb-2.5">
                   <div className="min-w-0">
                     <Link href={`/admin/users/${a.id}`} className="text-cyan font-bold hover:underline" dir="ltr">{a.mobile}</Link>
                     {a.name && <span className="text-dim text-[.82rem]"> · {a.name}</span>}
                   </div>
                   <span className="flex items-center gap-1.5">
-                    {a.openFlags > 0 && <span className="text-[.72rem] font-bold px-2 py-1 rounded-full bg-[rgba(255,107,53,.14)] text-accent2">🚨 {a.openFlags.toLocaleString("fa-IR")}</span>}
-                    {a.suspended && <span className="text-[.72rem] font-bold px-2 py-1 rounded-full bg-[rgba(255,107,53,.14)] text-accent2">معلق</span>}
-                    <span className="latin text-[.78rem] font-bold px-2.5 py-1 rounded-full bg-[rgba(255,255,255,.05)] border border-[rgba(138,124,255,.2)]">{a.code}</span>
+                    {a.openFlags > 0 && <span className="text-[.72rem] font-bold px-2 py-1 rounded-full bg-[rgb(var(--c-accent)/.14)] text-accent2">🚨 {a.openFlags.toLocaleString("fa-IR")}</span>}
+                    {a.suspended && <span className="text-[.72rem] font-bold px-2 py-1 rounded-full bg-[rgb(var(--c-accent)/.14)] text-accent2">معلق</span>}
+                    <span className="latin text-[.78rem] font-bold px-2.5 py-1 rounded-full bg-[rgb(var(--c-ov)/.05)] border border-[rgb(var(--c-primary2)/.2)]">{a.code}</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[.82rem]">
@@ -216,7 +216,7 @@ function PayoutsTab() {
               "px-3.5 py-1.5 rounded-full text-[.82rem] font-bold border transition " +
               (status === s
                 ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
-                : "bg-[rgba(255,255,255,.04)] border-[rgba(138,124,255,.2)] text-dim hover:text-text")
+                : "bg-[rgb(var(--c-ov)/.04)] border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text")
             }
           >
             {s === "" ? "همه" : STATUS[s].label}
@@ -225,7 +225,7 @@ function PayoutsTab() {
       </div>
 
       {error && (
-        <div className="bg-[rgba(255,107,53,.1)] border border-[rgba(255,107,53,.3)] text-accent2 rounded-2xl p-4 mb-5">
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-5">
           {error}
         </div>
       )}
@@ -276,7 +276,7 @@ function PayoutCard({ payout: p, onReviewed }: { payout: PayoutRow; onReviewed: 
   }
 
   return (
-    <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.14)] rounded-2xl p-4 sm:p-5">
+    <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
         <div className="min-w-0">
           <div className="font-display text-[1.2rem] font-extrabold">{p.amountLabel}</div>
@@ -320,7 +320,7 @@ function PayoutCard({ payout: p, onReviewed }: { payout: PayoutRow; onReviewed: 
       </div>
 
       {p.status === "requested" && (
-        <div className="border-t border-[rgba(138,124,255,.1)] pt-3">
+        <div className="border-t border-[rgb(var(--c-primary2)/.1)] pt-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2.5">
             <input value={bankRef} onChange={(e) => setBankRef(e.target.value)} placeholder="شماره پیگیری واریز" className={inputCls} />
             <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="توضیح (برای رد الزامی است)" className={inputCls} />
@@ -330,14 +330,14 @@ function PayoutCard({ payout: p, onReviewed }: { payout: PayoutRow; onReviewed: 
             <button
               onClick={() => review("paid")}
               disabled={busy}
-              className="font-bold rounded-xl px-4 py-2.5 text-[.88rem] bg-[rgba(61,220,132,.16)] text-[#3ddc84] border border-[rgba(61,220,132,.35)] hover:bg-[rgba(61,220,132,.25)] disabled:opacity-60 flex-1 sm:flex-none"
+              className="font-bold rounded-xl px-4 py-2.5 text-[.88rem] bg-[rgb(var(--c-success)/.16)] text-success border border-[rgb(var(--c-success)/.35)] hover:bg-[rgb(var(--c-success)/.25)] disabled:opacity-60 flex-1 sm:flex-none"
             >
               واریز شد
             </button>
             <button
               onClick={() => review("rejected")}
               disabled={busy}
-              className="font-bold rounded-xl px-4 py-2.5 text-[.88rem] bg-[rgba(255,107,53,.12)] text-accent2 border border-[rgba(255,107,53,.3)] hover:bg-[rgba(255,107,53,.2)] disabled:opacity-60 flex-1 sm:flex-none"
+              className="font-bold rounded-xl px-4 py-2.5 text-[.88rem] bg-[rgb(var(--c-accent)/.12)] text-accent2 border border-[rgb(var(--c-accent)/.3)] hover:bg-[rgb(var(--c-accent)/.2)] disabled:opacity-60 flex-1 sm:flex-none"
             >
               رد درخواست
             </button>

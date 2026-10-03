@@ -207,7 +207,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-modal-title"
-        className="relative w-full max-w-[420px] bg-gradient-to-br from-surface to-bg2 border border-[rgba(138,124,255,.2)] rounded-[22px] p-[26px_20px] sm:p-[30px_26px] shadow-[0_40px_100px_-30px_rgba(0,0,0,.85)]"
+        className="relative w-full max-w-[420px] bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.2)] rounded-[22px] p-[26px_20px] sm:p-[30px_26px] shadow-[0_40px_100px_-30px_rgba(0,0,0,.85)]"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -224,7 +224,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         </div>
 
         {showTabs && (
-          <div className="grid grid-cols-2 gap-1 p-1 mt-4 rounded-full bg-[rgba(255,255,255,.04)] border border-[rgba(138,124,255,.14)]">
+          <div className="grid grid-cols-2 gap-1 p-1 mt-4 rounded-full bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.14)]">
             {(
               [
                 ["password", "ایمیل و رمز"],
