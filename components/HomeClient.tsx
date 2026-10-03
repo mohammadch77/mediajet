@@ -14,6 +14,7 @@ import WalletCard from "@/components/WalletCard";
 import { useAuth } from "@/lib/AuthContext";
 import { useCart } from "@/lib/CartContext";
 import Link from "next/link";
+import BrandLogo from "@/components/BrandLogo";
 
 // صحنه‌ی سه‌بعدی فقط سمت کلاینت لود شود
 const HeroScene = dynamic(() => import("@/components/HeroScene"), { ssr: false });
@@ -102,11 +103,7 @@ export default function HomeClient({ content }: { content: Record<string, string
       <nav className="fixed top-[14px] sm:top-[18px] left-1/2 -translate-x-1/2 z-[200] w-full max-w-[94vw] sm:w-auto">
         <div className="flex items-center gap-2 bg-[rgba(20,24,51,.7)] backdrop-blur-[20px] border border-[rgba(138,124,255,.14)] rounded-full py-2 px-3 sm:p-[8px_8px_8px_20px] shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)]">
           <div className="flex items-center gap-2 sm:gap-2.5 font-display font-extrabold text-[1rem] sm:text-[1.15rem] whitespace-nowrap shrink-0">
-            <span className="w-[28px] h-[28px] sm:w-[30px] sm:h-[30px] rounded-[9px] bg-gradient-to-br from-primary to-accent grid place-items-center shadow-[0_0_60px_-10px_#6B5BFF]">
-              <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
-                <path d="M3 12l7-2 2-7 2 7 7 2-7 2-2 7-2-7-7-2z" fill="#fff" />
-              </svg>
-            </span>
+            <BrandLogo className="w-[28px] h-[28px] sm:w-[30px] sm:h-[30px] shadow-[0_0_60px_-10px_#6B5BFF]" />
             مدیاجت
           </div>
           <div className="flex gap-1 mx-1.5 max-[760px]:hidden">
@@ -460,7 +457,7 @@ export default function HomeClient({ content }: { content: Record<string, string
       {/* FOOTER */}
       <footer className="border-t border-[rgba(138,124,255,.14)] px-[5vw] py-10 text-center text-dim">
         <div className="inline-flex items-center gap-2.5 font-display font-extrabold text-text mb-2.5">
-          <span className="w-[26px] h-[26px] rounded-lg bg-gradient-to-br from-primary to-accent" />مدیاجت
+          <BrandLogo className="w-[26px] h-[26px]" />مدیاجت
         </div>
         <p className="m-0">{content["footer.tagline"]}</p>
         {(content["footer.social_instagram"] || content["footer.social_telegram"]) && (

@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth, type AuthUser } from "@/lib/AuthContext";
 import { toPersianDigits } from "@/lib/money";
 import CredentialsForm, { authInputClass, authButtonClass, postJson, PASSWORD_HINT } from "@/components/CredentialsForm";
+import BrandLogo from "@/components/BrandLogo";
 
 const RESEND_SECONDS = 60;
 const MOBILE_PATTERN = /^09\d{9}$/;
@@ -218,11 +219,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         </button>
 
         <div className="flex items-center gap-2.5 font-display font-extrabold text-[1.1rem] mb-1.5">
-          <span className="w-[28px] h-[28px] rounded-lg bg-gradient-to-br from-primary to-accent grid place-items-center">
-            <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
-              <path d="M3 12l7-2 2-7 2 7 7 2-7 2-2 7-2-7-7-2z" fill="#fff" />
-            </svg>
-          </span>
+          <BrandLogo />
           مدیاجت
         </div>
 
