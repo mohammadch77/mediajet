@@ -1,0 +1,6 @@
+name = "getstock-telegram-relay"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# RELAY_SECRET را اینجا ننویسید؛ با دستور زیر به‌صورت محرمانه ست کنید:
+#   npx wrangler secret put RELAY_SECRET

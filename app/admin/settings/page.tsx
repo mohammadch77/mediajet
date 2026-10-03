@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { toJalaliDateTime } from "@/lib/jalali";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 
 type SettingRow = {
   key: string;
@@ -23,7 +24,7 @@ function StatusDot({ configured }: { configured: boolean }) {
     <span className="flex items-center gap-1.5 text-[.78rem] font-bold">
       <span
         className={
-          "w-2 h-2 rounded-full " + (configured ? "bg-success shadow-[0_0_8px_#3ddc84]" : "bg-[rgb(var(--c-ov)/.25)]")
+          "w-2 h-2 rounded-full " + (configured ? "bg-success shadow-[0_0_8px_rgb(var(--c-success))]" : "bg-[rgb(var(--c-ov)/.25)]")
         }
       />
       <span className={configured ? "text-success" : "text-dim"}>
@@ -37,32 +38,38 @@ function SettingCard({ row, onSaved }: { row: SettingRow; onSaved: () => void })
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ok, setOk] = useState(false);
+  const [ok, setOk] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
 
-  async function save() {
-    if (!value.trim()) {
-      setError("مقدار را وارد کنید.");
-      return;
-    }
+  async function submit(method: "POST" | "DELETE", body: object, okMessage: string) {
     setBusy(true);
     setError(null);
-    setOk(false);
+    setOk(null);
     try {
       const res = await fetch("/api/admin/settings", {
-        method: "POST",
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: row.key, value: value.trim() }),
+        body: JSON.stringify(body),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "خطا در ذخیره‌ی تنظیم.");
       setValue("");
-      setOk(true);
+      setOk(okMessage);
       onSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : "خطا در ذخیره‌ی تنظیم.");
     } finally {
       setBusy(false);
+      setConfirmClear(false);
     }
+  }
+
+  function save() {
+    if (!value.trim()) {
+      setError("مقدار را وارد کنید.");
+      return;
+    }
+    submit("POST", { key: row.key, value: value.trim() }, "ذخیره شد.");
   }
 
   return (
@@ -96,10 +103,29 @@ function SettingCard({ row, onSaved }: { row: SettingRow; onSaved: () => void })
         >
           {busy ? "در حال ذخیره…" : "ذخیره"}
         </button>
+        {row.configured && (
+          <button
+            onClick={() => setConfirmClear(true)}
+            disabled={busy}
+            className="px-4 py-2.5 rounded-xl border border-[rgb(var(--c-danger)/.35)] text-danger text-[.85rem] font-bold hover:bg-[rgb(var(--c-danger)/.08)] disabled:opacity-50 transition"
+          >
+            حذف مقدار
+          </button>
+        )}
       </div>
 
       {error && <div className="text-danger text-[.78rem] mt-2">{error}</div>}
-      {ok && !error && <div className="text-success text-[.78rem] mt-2">ذخیره شد.</div>}
+      {ok && !error && <div className="text-success text-[.78rem] mt-2">{ok}</div>}
+
+      <ConfirmDialog
+        open={confirmClear}
+        title={`حذف «${row.label}»`}
+        message="مقدار ذخیره‌شده در پنل حذف می‌شود و از این پس مقدار .env سرور (یا رفتار پیش‌فرض) استفاده خواهد شد."
+        confirmLabel="حذف"
+        busy={busy}
+        onConfirm={() => submit("DELETE", { key: row.key }, "حذف شد.")}
+        onCancel={() => setConfirmClear(false)}
+      />
     </div>
   );
 }

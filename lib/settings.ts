@@ -59,6 +59,19 @@ export const SETTING_DEFS = [
     label: "رمز وب‌هوک تلگرام",
     description: "مقداری که هنگام setWebhook به تلگرام داده می‌شود تا فقط درخواست‌های واقعی تلگرام (با هدر secret token) پذیرفته شوند.",
   },
+  {
+    key: "TELEGRAM_API_BASE",
+    group: "telegram",
+    label: "آدرس رله‌ی تلگرام",
+    description:
+      "فقط برای سرور داخل ایران: آدرس Cloudflare Worker (پوشه‌ی telegram-relay/) که تماس‌ها با تلگرام از آن رد می‌شوند، مثل https://telegram-relay.example.workers.dev. اگر تنظیم نشود، اتصال مستقیم به api.telegram.org است. با «حذف مقدار» به حالت مستقیم برمی‌گردد.",
+  },
+  {
+    key: "TELEGRAM_RELAY_SECRET",
+    group: "telegram",
+    label: "رمز رله‌ی تلگرام",
+    description: "همان مقدار RELAY_SECRET که در Worker تنظیم شده؛ در هدر X-Relay-Secret فرستاده می‌شود تا فقط این سرور بتواند از رله استفاده کند.",
+  },
 ] as const;
 
 /** مقدار یک تنظیم را رمزنگاری‌شده ذخیره می‌کند (ایجاد یا به‌روزرسانی). */
@@ -69,6 +82,11 @@ export async function setSetting(key: SettingKey, value: string, updatedBy: stri
     create: { key, valueEncrypted, updatedBy },
     update: { valueEncrypted, updatedBy },
   });
+}
+
+/** مقدار ذخیره‌شده‌ی یک تنظیم را حذف می‌کند تا دوباره مقدار .env (یا رفتار پیش‌فرض) استفاده شود. */
+export async function deleteSetting(key: SettingKey): Promise<void> {
+  await prisma.appSetting.deleteMany({ where: { key } });
 }
 
 /**

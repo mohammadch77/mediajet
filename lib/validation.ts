@@ -303,6 +303,16 @@ export const changeUserRoleInput = z.object({
 
 export type ChangeUserRoleInput = z.infer<typeof changeUserRoleInput>;
 
+/** آدرس پایه‌ی https بدون query/hash (برای آدرس رله‌ی تلگرام). */
+function isHttpsBaseUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.search && !url.hash && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}
+
 const settingKeyValues = [
   "ZARINPAL_MERCHANT_ID",
   "SMS_PANEL_API_KEY",
@@ -312,6 +322,8 @@ const settingKeyValues = [
   "TELEGRAM_CHAT_OPERATOR",
   "TELEGRAM_CHAT_SUPPORT",
   "TELEGRAM_WEBHOOK_SECRET",
+  "TELEGRAM_API_BASE",
+  "TELEGRAM_RELAY_SECRET",
 ] as const;
 
 export const updateSettingInput = z.object({
@@ -326,7 +338,16 @@ export const updateSettingInput = z.object({
 }).refine(
   (s) => s.key !== "PASSWORD_RESET_SMS_MODE" || ["code", "link", "both"].includes(s.value.toLowerCase()),
   { message: "روش بازیابی باید یکی از code، link یا both باشد.", path: ["value"] },
+).refine(
+  (s) => s.key !== "TELEGRAM_API_BASE" || isHttpsBaseUrl(s.value),
+  { message: "آدرس رله باید یک آدرس https معتبر باشد (مثلاً https://telegram-relay.example.workers.dev).", path: ["value"] },
 );
+
+export const deleteSettingInput = z.object({
+  key: z.enum(settingKeyValues, {
+    error: requiredOrInvalidType("کلید تنظیم الزامی است.", "کلید تنظیم نامعتبر است."),
+  }),
+});
 
 export type UpdateSettingInput = z.infer<typeof updateSettingInput>;
 

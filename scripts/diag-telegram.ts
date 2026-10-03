@@ -1,7 +1,7 @@
 // عیب‌یابی تنظیمات تلگرام: منبع هر مقدار (DB/env) و وضعیت webhook از دید تلگرام. توکن/secret چاپ نمی‌شوند.
 // اجرا: npx tsx --env-file=.env scripts/diag-telegram.ts
 import { getSetting } from "../lib/settings";
-import { getTelegramConfig } from "../lib/telegram";
+import { getTelegramConfig, telegramFetch } from "../lib/telegram";
 import { prisma } from "../lib/db";
 
 const KEYS = [
@@ -10,8 +10,10 @@ const KEYS = [
   "TELEGRAM_CHAT_OPERATOR",
   "TELEGRAM_CHAT_SUPPORT",
   "TELEGRAM_WEBHOOK_SECRET",
+  "TELEGRAM_API_BASE",
+  "TELEGRAM_RELAY_SECRET",
 ] as const;
-const SECRET_KEYS = new Set(["TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET"]);
+const SECRET_KEYS = new Set(["TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET", "TELEGRAM_RELAY_SECRET"]);
 
 async function main() {
   for (const key of KEYS) {
@@ -25,7 +27,7 @@ async function main() {
 
   const token = await getTelegramConfig("TELEGRAM_BOT_TOKEN");
   if (token) {
-    const res = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+    const res = await telegramFetch(token, "/getWebhookInfo");
     const info = await res.json();
     const r = info.result ?? {};
     console.log("\nwebhook:", {
