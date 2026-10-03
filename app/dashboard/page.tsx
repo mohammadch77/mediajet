@@ -350,9 +350,10 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
         <div>
           <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Dashboard</div>
-          <h1 className="font-display text-[clamp(1.6rem,4vw,2.4rem)] font-extrabold mt-2">
-            سلام، {displayName}
-          </h1>
+          <div className="flex items-center gap-3 mt-2">
+            <h1 className="font-display text-[clamp(1.6rem,4vw,2.4rem)] font-extrabold min-w-0">سلام، {displayName}</h1>
+            <ThemeToggle />
+          </div>
         </div>
         <div className="flex items-center gap-4 flex-wrap">
           <Link
@@ -364,7 +365,6 @@ export default function DashboardPage() {
           <Link href="/" className="text-dim text-[.9rem] hover:text-text transition">
             ← بازگشت به صفحه‌ی اصلی
           </Link>
-          <ThemeToggle />
         </div>
       </div>
 
