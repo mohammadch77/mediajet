@@ -529,9 +529,18 @@ export default function HomeClient({
           <a href="/blog" className="text-dim hover:text-text transition">وبلاگ</a>
           <a href="/affiliate" className="text-dim hover:text-text transition">همکاری در فروش</a>
         </div>
-        <p className="max-w-[60ch] mx-auto mt-4 text-[.78rem] text-muted leading-[1.85]">
-          {content["footer.copyright"]}
-        </p>
+        <p className="max-w-[60ch] mx-auto mt-4 text-[.78rem] text-muted leading-[1.85]"
+          dangerouslySetInnerHTML={{
+            __html: (content["footer.copyright"] || "").replace(
+              /\(https?:\/\/[^\)]+\)/g,
+              (match) => {
+                const url = match.slice(1, -1);
+                const domain = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+                return `(<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline hover:text-text transition">${domain}</a>)`;
+              }
+            ),
+          }}
+        />
       </footer>
 
       <OrderDrawer open={open} category={drawerCat} linkEntry={linkEntry} onClose={close} />
