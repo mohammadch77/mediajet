@@ -536,7 +536,7 @@ export default function HomeClient({
               (match) => {
                 const url = match.slice(1, -1);
                 const domain = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-                return `(<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline hover:text-text transition">${domain}</a>)`;
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline hover:text-text transition">${domain}</a>`;
               }
             ),
           }}
