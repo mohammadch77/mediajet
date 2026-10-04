@@ -43,7 +43,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "بدنه‌ی درخواست نامعتبر است." }, { status: 400 });
   }
 
-  await setSetting(input.key, input.value, admin.id);
+  try {
+    await setSetting(input.key, input.value, admin.id);
+  } catch (error) {
+    // معمولاً یعنی ENCRYPTION_KEY در .env سرور تنظیم نشده یا ۶۴ کاراکتر هگز نیست.
+    console.error("[admin settings] ذخیره ناموفق:", error);
+    return NextResponse.json(
+      { error: "ذخیره‌ی تنظیم ناموفق بود. کلید رمزنگاری سرور (ENCRYPTION_KEY) را بررسی کن." },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }

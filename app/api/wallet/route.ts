@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { ensureWallet } from "@/lib/wallet";
 import { rialToTomanLabel } from "@/lib/money";
 import { getCurrentUser } from "@/lib/session";
 import { getPaymentSettings } from "@/lib/paymentSettings";
@@ -12,14 +12,8 @@ export async function GET() {
     return NextResponse.json({ error: "برای مشاهده‌ی کیف پول باید وارد شوید." }, { status: 401 });
   }
 
-  const wallet = await prisma.wallet.findUnique({
-    where: { userId: currentUser.id },
-    include: { transactions: { orderBy: { createdAt: "desc" } } },
-  });
-
-  if (!wallet) {
-    return NextResponse.json({ error: "کیف پول یافت نشد." }, { status: 404 });
-  }
+  // کاربری که کیف پول ندارد (مثلاً ادمین ساخته‌شده با اسکریپت) خطا نمی‌گیرد؛ کیف پول صفر برایش ساخته می‌شود.
+  const wallet = await ensureWallet(currentUser.id);
 
   // حداقل مبلغ شارژ عمومی و غیرحساس است؛ برای نمایش در فرم شارژ به کلاینت برمی‌گردد.
   const { walletMinChargeRial } = await getPaymentSettings();

@@ -21,6 +21,14 @@ const querySchema = z
       if (!val.to || Number.isNaN(Date.parse(val.to))) {
         ctx.addIssue({ code: "custom", message: "تاریخ پایان نامعتبر است.", path: ["to"] });
       }
+      if (val.from && val.to && !Number.isNaN(Date.parse(val.from)) && !Number.isNaN(Date.parse(val.to))) {
+        const days = (Date.parse(val.to) - Date.parse(val.from)) / 86_400_000;
+        if (days < 0) {
+          ctx.addIssue({ code: "custom", message: "تاریخ شروع باید قبل از تاریخ پایان باشد.", path: ["from"] });
+        } else if (days > 366) {
+          ctx.addIssue({ code: "custom", message: "بازه‌ی گزارش نباید بیشتر از یک سال باشد.", path: ["to"] });
+        }
+      }
     }
   });
 

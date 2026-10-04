@@ -26,6 +26,8 @@ const ALLOWED_TAGS = [
   "blockquote",
   "hr",
   "span",
+  "code",
+  "pre",
 ];
 
 const ALLOWED_ATTR = ["href", "target", "rel", "class"];

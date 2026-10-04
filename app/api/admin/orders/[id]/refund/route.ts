@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, SessionError } from "@/lib/session";
 import { refundOrder, RefundError } from "@/lib/refund";
+import { WalletError } from "@/lib/wallet";
 import { validateInput, refundOrderInput, ValidationError } from "@/lib/validation";
 
 // POST /api/admin/orders/:id/refund  { reason }
@@ -30,9 +31,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const status = await refundOrder(admin.id, params.id, input.reason);
     return NextResponse.json({ status });
   } catch (error) {
-    if (error instanceof RefundError) {
+    if (error instanceof RefundError || error instanceof WalletError) {
       return NextResponse.json({ error: error.message }, { status: 422 });
     }
-    throw error;
+    // هر خطای پیش‌بینی‌نشده‌ی دیگر هم باید پیام فارسی JSON بدهد، نه صفحه‌ی خالی ۵۰۰.
+    console.error("[admin refund]", error);
+    return NextResponse.json({ error: "بازگشت وجه انجام نشد؛ خطای داخلی سرور." }, { status: 500 });
   }
 }

@@ -12,6 +12,20 @@ const UNIQUE_VIOLATION = "P2002";
 
 type WalletRow = { id: string; balanceRial: bigint };
 
+/**
+ * تضمین می‌کند کاربر کیف پول دارد (idempotent و امن در برابر درخواست هم‌زمان).
+ * کاربرانی که خارج از مسیر ورود عادی ساخته شده‌اند (مثلاً ادمین ساخته‌شده با اسکریپت)
+ * ممکن است کیف پول نداشته باشند؛ این تابع آن را با موجودی صفر می‌سازد.
+ */
+export async function ensureWallet(userId: string) {
+  return prisma.wallet.upsert({
+    where: { userId },
+    create: { userId, balanceRial: 0n },
+    update: {},
+    include: { transactions: { orderBy: { createdAt: "desc" } } },
+  });
+}
+
 async function lockWallet(
   tx: Prisma.TransactionClient,
   userId: string,

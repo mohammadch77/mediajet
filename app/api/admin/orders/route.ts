@@ -45,7 +45,10 @@ export async function GET(req: NextRequest) {
     ...(search
       ? {
           OR: [
-            ...(searchOrderNumber !== null ? [{ orderNumber: searchOrderNumber }] : []),
+            // orderNumber در دیتابیس Int32 است؛ عدد بزرگ‌تر باعث خطای کوئری (۵۰۰) می‌شد.
+            ...(searchOrderNumber !== null && searchOrderNumber <= 2147483647
+              ? [{ orderNumber: searchOrderNumber }]
+              : []),
             { items: { some: { sourceSite: { contains: search, mode: "insensitive" } } } },
             { items: { some: { category: { contains: search, mode: "insensitive" } } } },
             { user: { mobile: { contains: search, mode: "insensitive" } } },

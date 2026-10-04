@@ -20,6 +20,12 @@ function hashToken(token: string): string {
 export async function findOrCreateUserByMobile(mobile: string, ip?: string): Promise<User> {
   const existing = await prisma.user.findUnique({ where: { mobile } });
   if (existing) {
+    // کاربر موجودی که کیف پول ندارد (مثلاً ادمین ساخته‌شده با اسکریپت) در اولین ورود کیف پول می‌گیرد.
+    await prisma.wallet.upsert({
+      where: { userId: existing.id },
+      create: { userId: existing.id, balanceRial: 0n },
+      update: {},
+    });
     return existing;
   }
 

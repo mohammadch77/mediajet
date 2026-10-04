@@ -17,6 +17,30 @@ export default function AdminPagesList() {
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PageRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [newSlug, setNewSlug] = useState("");
+  const [newTitle, setNewTitle] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  async function create() {
+    setCreating(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/pages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: newSlug.trim(), title: newTitle.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "خطا در ساخت صفحه.");
+      setNewSlug("");
+      setNewTitle("");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطا در ساخت صفحه.");
+    } finally {
+      setCreating(false);
+    }
+  }
 
   async function load() {
     setError(null);
@@ -66,6 +90,37 @@ export default function AdminPagesList() {
           {error}
         </div>
       )}
+
+      <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5 mb-5">
+        <h2 className="font-display font-bold text-[.95rem] mb-1">صفحه‌ی جدید</h2>
+        <p className="text-dim text-[.78rem] mb-3">
+          برای لینک‌های فوتر از نامک‌های about، terms و faq استفاده کن (آدرس: /p/about و ...).
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            placeholder="نامک (slug) — فقط حروف انگلیسی کوچک، عدد و خط تیره"
+            value={newSlug}
+            onChange={(e) => setNewSlug(e.target.value)}
+            dir="ltr"
+            className="flex-1 bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
+          />
+          <input
+            type="text"
+            placeholder="عنوان صفحه"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            className="flex-1 bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
+          />
+          <button
+            onClick={create}
+            disabled={creating || !newSlug.trim() || !newTitle.trim()}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary2 text-white font-bold text-[.85rem] disabled:opacity-50 transition"
+          >
+            {creating ? "در حال ساخت…" : "ساخت صفحه"}
+          </button>
+        </div>
+      </div>
 
       {!pages && !error && <div className="text-dim text-[.85rem]">در حال بارگذاری…</div>}
 

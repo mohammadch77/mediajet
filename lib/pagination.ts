@@ -8,9 +8,13 @@ const MAX_PAGE_SIZE = 50;
 export type PageParams = { page: number; pageSize: number; skip: number; take: number };
 
 export function parsePageParams(req: NextRequest, prefix = ""): PageParams {
-  const pageRaw = Number(req.nextUrl.searchParams.get(`${prefix}page`) ?? "1");
+  // بدون پیشوند: page / pageSize؛ با پیشوند camelCase: مثلاً ordersPage / ordersPageSize
+  // (همان نامی که UI می‌فرستد؛ قبلاً orderspage ساخته می‌شد و صفحه‌بندی هیچ‌وقت کار نمی‌کرد).
+  const pageKey = prefix ? `${prefix}Page` : "page";
+  const pageSizeKey = prefix ? `${prefix}PageSize` : "pageSize";
+  const pageRaw = Number(req.nextUrl.searchParams.get(pageKey) ?? "1");
   const pageSizeRaw = Number(
-    req.nextUrl.searchParams.get(`${prefix}pageSize`) ?? String(DEFAULT_PAGE_SIZE)
+    req.nextUrl.searchParams.get(pageSizeKey) ?? String(DEFAULT_PAGE_SIZE)
   );
 
   const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? Math.floor(pageRaw) : 1;
