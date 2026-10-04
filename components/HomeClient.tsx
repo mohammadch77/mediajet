@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { CATEGORIES, ALL_SITES, type Category } from "@/data/categories";
 import SiteLogo from "@/components/SiteLogo";
@@ -50,6 +50,73 @@ function useReveal() {
     document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
+}
+
+/**
+ * متن را به نودهای React تبدیل می‌کند و هر آدرس http(s) (با یا بدون پرانتز) را
+ * به لینک کلیک‌پذیر (نمایش فقط دامنه) تبدیل می‌کند. HTML خام تزریق نمی‌شود، پس امن است.
+ */
+function renderWithLinks(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  const re = /\(?(https?:\/\/[^\s()]+)\)?/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) nodes.push(text.slice(last, m.index));
+    const url = m[1];
+    const label = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    nodes.push(
+      <a key={m.index} href={url} target="_blank" rel="noopener noreferrer" className="underline hover:text-text transition">
+        {label}
+      </a>
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes;
+}
+
+/** بخش «تماس با ما» در فوتر؛ فقط فیلدهایی که ادمین پر کرده نمایش داده می‌شوند. */
+function ContactBlock({ content }: { content: Record<string, string> }) {
+  const phone = content["contact.phone"]?.trim();
+  const email = content["contact.email"]?.trim();
+  const address = content["contact.address"]?.trim();
+  const telegram = content["contact.telegram"]?.trim();
+  const hours = content["contact.hours"]?.trim();
+  const description = content["contact.description"]?.trim();
+  if (!phone && !email && !address && !telegram && !hours && !description) return null;
+
+  const telegramHref = telegram
+    ? /^https?:\/\//.test(telegram)
+      ? telegram
+      : `https://t.me/${telegram.replace(/^@/, "")}`
+    : null;
+
+  return (
+    <div className="max-w-[60ch] mx-auto mt-6 text-[.82rem] leading-[1.9]">
+      <div className="font-bold text-text mb-1.5">تماس با ما</div>
+      {description && <p className="m-0 mb-2">{description}</p>}
+      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
+        {phone && (
+          <a href={`tel:${phone.replace(/\s+/g, "")}`} dir="ltr" className="text-dim hover:text-text transition">
+            {phone}
+          </a>
+        )}
+        {email && (
+          <a href={`mailto:${email}`} dir="ltr" className="text-dim hover:text-text transition">
+            {email}
+          </a>
+        )}
+        {telegramHref && (
+          <a href={telegramHref} target="_blank" rel="noopener noreferrer" className="text-dim hover:text-text transition">
+            تلگرام پشتیبانی
+          </a>
+        )}
+      </div>
+      {address && <div className="mt-1">{address}</div>}
+      {hours && <div className="mt-1">ساعات کاری: {hours}</div>}
+    </div>
+  );
 }
 
 export default function HomeClient({
@@ -529,18 +596,10 @@ export default function HomeClient({
           <a href="/blog" className="text-dim hover:text-text transition">وبلاگ</a>
           <a href="/affiliate" className="text-dim hover:text-text transition">همکاری در فروش</a>
         </div>
-        <p className="max-w-[60ch] mx-auto mt-4 text-[.78rem] text-muted leading-[1.85]"
-          dangerouslySetInnerHTML={{
-            __html: (content["footer.copyright"] || "").replace(
-              /\(https?:\/\/[^\)]+\)/g,
-              (match) => {
-                const url = match.slice(1, -1);
-                const domain = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline hover:text-text transition">${domain}</a>`;
-              }
-            ),
-          }}
-        />
+        <ContactBlock content={content} />
+        <p className="max-w-[60ch] mx-auto mt-4 text-[.78rem] text-muted leading-[1.85]">
+          {renderWithLinks(content["footer.copyright"] || "")}
+        </p>
       </footer>
 
       <OrderDrawer open={open} category={drawerCat} linkEntry={linkEntry} onClose={close} />
