@@ -1,4 +1,5 @@
 import { z, ZodError, type ZodSchema } from "zod";
+import { CONTENT_DEFS, type ContentKey } from "./content";
 
 export class ValidationError extends Error {
   constructor(message: string) {
@@ -351,30 +352,9 @@ export const deleteSettingInput = z.object({
 
 export type UpdateSettingInput = z.infer<typeof updateSettingInput>;
 
-const contentKeyValues = [
-  "hero.eyebrow",
-  "hero.title_line1",
-  "hero.title_line2",
-  "hero.subtitle",
-  "hero.button_primary",
-  "hero.button_secondary",
-  "contact.phone",
-  "contact.email",
-  "contact.address",
-  "contact.telegram",
-  "contact.hours",
-  "contact.description",
-  "footer.tagline",
-  "footer.copyright",
-  "footer.social_instagram",
-  "footer.social_telegram",
-  "header.nav1_label",
-  "header.nav1_href",
-  "header.nav2_label",
-  "header.nav2_href",
-  "header.nav3_label",
-  "header.nav3_href",
-] as const;
+// کلیدهای مجاز محتوا مستقیم از CONTENT_DEFS (منبع واحد حقیقت) گرفته می‌شوند تا با
+// اضافه‌شدن فیلد جدید در lib/content.ts، اعتبارسنجی هم‌زمان به‌روز بماند.
+const contentKeyValues = CONTENT_DEFS.map((d) => d.key) as unknown as [ContentKey, ...ContentKey[]];
 
 const contentFieldInput = z.object({
   key: z.enum(contentKeyValues, {
