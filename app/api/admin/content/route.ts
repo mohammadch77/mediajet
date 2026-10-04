@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin, SessionError } from "@/lib/session";
 import { validateInput, ValidationError, updateContentInput } from "@/lib/validation";
 import { listContentRows, setContent } from "@/lib/content";
@@ -46,6 +47,10 @@ export async function POST(req: NextRequest) {
   for (const field of input.fields) {
     await setContent(field.key, field.value, admin.id);
   }
+
+  // کش صفحه‌ی اصلی و سایر صفحاتی که محتوا نمایش می‌دهند پاک می‌شود.
+  revalidatePath("/");
+  revalidatePath("/p/[slug]", "page");
 
   return NextResponse.json({ ok: true });
 }
