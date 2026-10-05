@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { confirmOrderPayment, PaymentError } from "@/lib/payment";
+import { GatewayError } from "@/lib/gateway";
 import { rialToTomanLabel } from "@/lib/money";
 import { notifyOrderCreated } from "@/lib/telegram";
 import { prisma } from "@/lib/db";
@@ -42,6 +43,9 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
   } catch (error) {
     if (error instanceof PaymentError) {
       dashboardUrl.searchParams.set("order", "failed");
+    } else if (error instanceof GatewayError) {
+      // تأیید با درگاه قطعی نشد؛ پرداخت در وضعیت قبلی مانده و با callback بعدی قابل پیگیری است.
+      dashboardUrl.searchParams.set("order", "pending");
     } else {
       throw error;
     }

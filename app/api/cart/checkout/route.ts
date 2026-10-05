@@ -10,7 +10,7 @@ import { accrueOrderCommissionInTx } from "@/lib/affiliate";
 import { assertTransition, type OrderStatus } from "@/lib/orderState";
 import { getCurrentUser } from "@/lib/session";
 import { notifyOrderCreated } from "@/lib/telegram";
-import { getGateway } from "@/lib/gateway";
+import { getGateway, buildCallbackUrl, GatewayError } from "@/lib/gateway";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 import { getCartItems, clearCartInTx } from "@/lib/cart";
 
@@ -91,9 +91,16 @@ export async function POST(req: NextRequest) {
   // برای پرداخت درگاهی، تلاش پرداخت پیش از تراکنش ساخته می‌شود (همان ترتیب مسیر ثبت سفارش تکی).
   let gatewayAttempt: { authority: string; redirectUrl: string } | null = null;
   if (paymentMethod === "gateway") {
-    const callbackUrl = new URL("/api/orders/payment/callback", req.url).toString();
-    const gateway = await getGateway();
-    gatewayAttempt = await gateway.requestPayment(payableTotalRial, callbackUrl);
+    const callbackUrl = buildCallbackUrl("/api/orders/payment/callback", req.url);
+    try {
+      const gateway = await getGateway();
+      gatewayAttempt = await gateway.requestPayment(payableTotalRial, callbackUrl, "پرداخت سفارش گت‌استوک");
+    } catch (error) {
+      if (error instanceof GatewayError) {
+        return NextResponse.json({ error: error.message }, { status: 502 });
+      }
+      throw error;
+    }
   }
 
   try {

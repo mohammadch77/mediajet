@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { confirmCharge, PaymentError } from "@/lib/payment";
+import { GatewayError } from "@/lib/gateway";
 
 // GET/POST /api/wallet/charge/callback
 // بازگشت از درگاه پرداخت با Authority و Status. تأیید و شارژ کیف پول این‌جا اتفاق می‌افتد
@@ -22,6 +23,9 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
   } catch (error) {
     if (error instanceof PaymentError) {
       dashboardUrl.searchParams.set("charge", "failed");
+    } else if (error instanceof GatewayError) {
+      // تأیید با درگاه قطعی نشد؛ پرداخت در وضعیت قبلی مانده و با callback بعدی قابل پیگیری است.
+      dashboardUrl.searchParams.set("charge", "pending");
     } else {
       throw error;
     }

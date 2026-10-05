@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/db";
-import { getGateway } from "@/lib/gateway";
+import { getGateway, buildCallbackUrl, GatewayError } from "@/lib/gateway";
 import { validateInput, walletChargeInput, ValidationError } from "@/lib/validation";
 import { getCurrentUser } from "@/lib/session";
 import { getPaymentSettings } from "@/lib/paymentSettings";
@@ -55,10 +55,19 @@ export async function POST(req: NextRequest) {
   }
 
   const idempotencyKey = crypto.randomUUID();
-  const callbackUrl = new URL("/api/wallet/charge/callback", req.url).toString();
+  const callbackUrl = buildCallbackUrl("/api/wallet/charge/callback", req.url);
 
-  const gateway = await getGateway();
-  const { authority, redirectUrl } = await gateway.requestPayment(amountRial, callbackUrl);
+  let authority: string;
+  let redirectUrl: string;
+  try {
+    const gateway = await getGateway();
+    ({ authority, redirectUrl } = await gateway.requestPayment(amountRial, callbackUrl, "شارژ کیف پول گت‌استوک"));
+  } catch (error) {
+    if (error instanceof GatewayError) {
+      return NextResponse.json({ error: error.message }, { status: 502 });
+    }
+    throw error;
+  }
 
   await prisma.payment.create({
     data: {

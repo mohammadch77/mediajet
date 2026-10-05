@@ -8,6 +8,9 @@ import { clearCartInTx } from "./cart";
 import { accrueOrderCommissionInTx } from "./affiliate";
 import { assertTransition, type OrderStatus } from "./orderState";
 
+// تأیید با درگاه واقعی یک فراخوانی شبکه داخل تراکنش است؛ timeout پیش‌فرض ۵ ثانیه کافی نیست.
+const VERIFY_TX_TIMEOUT_MS = 30_000;
+
 export class PaymentError extends Error {
   constructor(message: string) {
     super(message);
@@ -84,7 +87,7 @@ export async function confirmCharge(
     );
 
     return { status: "verified" as PaymentStatus };
-  });
+  }, { timeout: VERIFY_TX_TIMEOUT_MS });
 }
 
 // ---------------------------------------------------------------------------
@@ -228,5 +231,5 @@ export async function confirmOrderPayment(
       orderStatus: "queued" as OrderStatus,
       queued: { orderId: order.id, priceRial: order.totalPriceRial },
     };
-  });
+  }, { timeout: VERIFY_TX_TIMEOUT_MS });
 }

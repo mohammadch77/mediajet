@@ -79,8 +79,8 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [chargeNotice, setChargeNotice] = useState<"success" | "failed" | null>(null);
-  const [orderNotice, setOrderNotice] = useState<"success" | "failed" | null>(null);
+  const [chargeNotice, setChargeNotice] = useState<"success" | "failed" | "pending" | null>(null);
+  const [orderNotice, setOrderNotice] = useState<"success" | "failed" | "pending" | null>(null);
   const [chargeAmountToman, setChargeAmountToman] = useState("");
   const [charging, setCharging] = useState(false);
   const [chargeError, setChargeError] = useState<string | null>(null);
@@ -241,7 +241,7 @@ export default function DashboardPage() {
     }
 
     const charge = params.get("charge");
-    if (charge === "success" || charge === "failed") {
+    if (charge === "success" || charge === "failed" || charge === "pending") {
       setChargeNotice(charge);
       setTab("wallet");
       router.replace("/dashboard");
@@ -249,7 +249,7 @@ export default function DashboardPage() {
 
     // بازگشت از درگاه برای پرداخت مستقیم سفارش
     const order = params.get("order");
-    if (order === "success" || order === "failed") {
+    if (order === "success" || order === "failed" || order === "pending") {
       setOrderNotice(order);
       setTab("orders");
       router.replace("/dashboard");
@@ -382,6 +382,17 @@ export default function DashboardPage() {
       {chargeNotice === "failed" && (
         <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-6">
           شارژ کیف پول ناموفق بود یا لغو شد.
+        </div>
+      )}
+
+      {chargeNotice === "pending" && (
+        <div className="bg-[rgb(var(--c-primary)/.1)] border border-[rgb(var(--c-primary2)/.3)] rounded-2xl p-4 mb-6">
+          تأیید پرداخت با درگاه هنوز قطعی نشده است. اگر مبلغ از حساب شما کسر شده، چند دقیقه صبر کنید و سپس با پشتیبانی تماس بگیرید.
+        </div>
+      )}
+      {orderNotice === "pending" && (
+        <div className="bg-[rgb(var(--c-primary)/.1)] border border-[rgb(var(--c-primary2)/.3)] rounded-2xl p-4 mb-6">
+          تأیید پرداخت با درگاه هنوز قطعی نشده است. اگر مبلغ از حساب شما کسر شده، چند دقیقه صبر کنید و سپس با پشتیبانی تماس بگیرید.
         </div>
       )}
 
