@@ -251,9 +251,6 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         </h3>
         <p className="text-dim text-[.88rem] mb-5">
           {titles[step].subtitle}
-          {(step === "code" || step === "forgotSent") && (
-            <span className="block text-[.78rem] mt-1">(در حالت آزمایشی، پیامک در کنسول سرور چاپ می‌شود.)</span>
-          )}
         </p>
 
         {step === "credentials" && pendingUser ? (

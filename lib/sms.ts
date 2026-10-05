@@ -11,6 +11,8 @@ export interface SmsPanel {
   sendSms(mobile: string, text: string): Promise<void>;
   /** کد تأیید (OTP) را می‌فرستد؛ اگر پترن تنظیم شده باشد از مسیر پیامک الگویی، وگرنه متن ساده. */
   sendOtp(mobile: string, code: string): Promise<void>;
+  /** کد بازیابی رمز را می‌فرستد؛ با پترن بازیابی (یا پترن OTP) و در نبودِ هر دو، متن ساده. */
+  sendResetCode(mobile: string, code: string): Promise<void>;
 }
 
 /** خطای ارسال پیامک؛ پیام آن فارسی و برای نمایش به کاربر/ادمین امن است (بدون کلید یا جزئیات داخلی). */
@@ -30,6 +32,10 @@ class MockSmsPanel implements SmsPanel {
   async sendOtp(mobile: string, code: string): Promise<void> {
     await this.sendSms(mobile, `کد ورود گت‌استوک: ${code}`);
   }
+
+  async sendResetCode(mobile: string, code: string): Promise<void> {
+    await this.sendSms(mobile, `کد بازیابی رمز گت‌استوک: ${code}`);
+  }
 }
 
 const IRANPAYAMAK_BASE = "https://api.iranpayamak.com/ws/v1";
@@ -40,6 +46,7 @@ class IranPayamakSmsPanel implements SmsPanel {
     private readonly apiKey: string,
     private readonly lineNumber: string,
     private readonly otpPatternCode: string | null,
+    private readonly resetPatternCode: string | null,
   ) {}
 
   private async post(path: string, payload: Record<string, unknown>): Promise<void> {
@@ -73,17 +80,26 @@ class IranPayamakSmsPanel implements SmsPanel {
     await this.post("/sms/simple", { text, recipients: [mobile] });
   }
 
+  private async sendPattern(pattern: string, mobile: string, code: string): Promise<void> {
+    // پترن باید متغیری به نام code داشته باشد (مثلاً «کد ورود شما به گت استوک: %code%»).
+    await this.post("/sms/pattern", { code: pattern, attributes: { code }, recipient: mobile });
+  }
+
   async sendOtp(mobile: string, code: string): Promise<void> {
     if (this.otpPatternCode) {
-      // پترن باید متغیری به نام code داشته باشد (مثلاً «کد ورود شما به گت استوک: %code%»).
-      await this.post("/sms/pattern", {
-        code: this.otpPatternCode,
-        attributes: { code },
-        recipient: mobile,
-      });
+      await this.sendPattern(this.otpPatternCode, mobile, code);
       return;
     }
     await this.sendSms(mobile, `کد ورود گت‌استوک: ${code}`);
+  }
+
+  async sendResetCode(mobile: string, code: string): Promise<void> {
+    const pattern = this.resetPatternCode ?? this.otpPatternCode;
+    if (pattern) {
+      await this.sendPattern(pattern, mobile, code);
+      return;
+    }
+    await this.sendSms(mobile, `کد بازیابی رمز گت‌استوک: ${code}`);
   }
 }
 
@@ -94,10 +110,11 @@ class IranPayamakSmsPanel implements SmsPanel {
  * - هر دو هست → ایران‌پیامک (کد OTP با پترن اگر SMS_OTP_PATTERN_CODE تنظیم شده باشد).
  */
 export async function getSmsPanel(): Promise<SmsPanel> {
-  const [apiKey, lineNumber, otpPatternCode] = await Promise.all([
+  const [apiKey, lineNumber, otpPatternCode, resetPatternCode] = await Promise.all([
     getSetting("SMS_PANEL_API_KEY"),
     getSetting("SMS_LINE_NUMBER"),
     getSetting("SMS_OTP_PATTERN_CODE"),
+    getSetting("SMS_RESET_PATTERN_CODE"),
   ]);
 
   if (!apiKey) {
@@ -110,5 +127,10 @@ export async function getSmsPanel(): Promise<SmsPanel> {
     console.error("[پیامک] SMS_LINE_NUMBER (شماره‌ی خط ارسال) در تنظیمات ادمین پر نشده است.");
     throw new SmsError("سرویس پیامک هنوز کامل تنظیم نشده است؛ با پشتیبانی تماس بگیر.");
   }
-  return new IranPayamakSmsPanel(apiKey, lineNumber, otpPatternCode?.trim() || null);
+  return new IranPayamakSmsPanel(
+    apiKey,
+    lineNumber,
+    otpPatternCode?.trim() || null,
+    resetPatternCode?.trim() || null,
+  );
 }

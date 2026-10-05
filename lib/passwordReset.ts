@@ -103,7 +103,9 @@ export async function requestPasswordReset(mobile: string): Promise<void> {
 
   try {
     const sms = await getSmsPanel();
-    await sms.sendSms(mobile, lines.join("\n"));
+    // حالت «code» از مسیر پترن می‌رود (خط‌های پترنی متن آزاد را رد می‌کنند)؛ حالت‌های لینک متن ساده‌اند.
+    if (mode === "code") await sms.sendResetCode(mobile, code);
+    else await sms.sendSms(mobile, lines.join("\n"));
   } catch (error) {
     // پاسخ API باید برای همه‌ی شماره‌ها یکسان بماند (جلوگیری از لو رفتن وجود حساب)؛ پس خطای
     // ارسال فقط لاگ می‌شود و کاربر می‌تواند بعد از فاصله‌ی مجاز دوباره درخواست بدهد.
