@@ -14,7 +14,8 @@ export class OtpError extends Error {
 }
 
 const CODE_LENGTH = 6;
-const CODE_TTL_MS = 2 * 60 * 1000; // ۲ دقیقه
+const CODE_TTL_MS = 5 * 60 * 1000; // ۵ دقیقه (پیامک ممکن است با تأخیر برسد)
+const MAX_ACTIVE_CODES = 3; // حداکثر چند کد اخیرِ منقضی‌نشده هم‌زمان معتبرند
 const MAX_ATTEMPTS = 5;
 const RESEND_COOLDOWN_MS = 60 * 1000; // هر شماره هر ۶۰ ثانیه یک‌بار
 
@@ -46,20 +47,15 @@ export async function requestOtp(mobile: string): Promise<void> {
   const codeHash = hashCode(mobile, code);
   const expiresAt = new Date(Date.now() + CODE_TTL_MS);
 
-  const [, created] = await prisma.$transaction([
-    // ابطال کدهای قبلیِ استفاده‌نشده‌ی این شماره؛ فقط آخرین کد معتبر است.
-    prisma.otpCode.updateMany({
-      where: { mobile, usedAt: null },
-      data: { usedAt: new Date() },
-    }),
-    prisma.otpCode.create({
-      data: { mobile, codeHash, expiresAt },
-    }),
-  ]);
+  // کدهای قبلیِ منقضی‌نشده باطل نمی‌شوند: اگر پیامک قبلی با تأخیر برسد و کاربر در همین فاصله
+  // «ارسال مجدد» زده باشد، کد قدیمی هنوز معتبر است (verifyOtp فقط چند کد اخیر را می‌پذیرد).
+  const created = await prisma.otpCode.create({
+    data: { mobile, codeHash, expiresAt },
+  });
 
   try {
     const smsPanel = await getSmsPanel();
-    await smsPanel.sendSms(mobile, `کد ورود گت‌استوک: ${code}`);
+    await smsPanel.sendOtp(mobile, code);
   } catch (error) {
     // کدی که هرگز به دست کاربر نرسیده نباید فاصله‌ی ۶۰ ثانیه‌ای را فعال نگه دارد؛ کاربر باید بتواند دوباره تلاش کند.
     await prisma.otpCode.delete({ where: { id: created.id } }).catch(() => {});
@@ -67,37 +63,42 @@ export async function requestOtp(mobile: string): Promise<void> {
   }
 }
 
-/** کد OTP را تأیید می‌کند. در صورت موفقیت، کد را used می‌کند تا دوباره قابل استفاده نباشد. */
+/**
+ * کد OTP را تأیید می‌کند. تا MAX_ACTIVE_CODES کد اخیرِ منقضی‌نشده پذیرفته می‌شود (پیامک دیررسیده)؛
+ * هر حدس نادرست از سقف تلاش همه‌ی آن‌ها کم می‌کند. در موفقیت، همه‌ی کدهای باز این شماره used می‌شوند.
+ */
 export async function verifyOtp(mobile: string, code: string): Promise<void> {
-  const otp = await prisma.otpCode.findFirst({
-    where: { mobile, usedAt: null },
+  const candidates = await prisma.otpCode.findMany({
+    where: { mobile, usedAt: null, expiresAt: { gt: new Date() } },
     orderBy: { createdAt: "desc" },
+    take: MAX_ACTIVE_CODES,
   });
 
-  if (!otp) {
-    throw new OtpError("کد معتبری برای این شماره یافت نشد.");
+  if (candidates.length === 0) {
+    const anyUnused = await prisma.otpCode.findFirst({ where: { mobile, usedAt: null } });
+    throw new OtpError(
+      anyUnused ? "کد منقضی شده است. کد جدید درخواست کنید." : "کد معتبری برای این شماره یافت نشد.",
+    );
   }
 
-  if (otp.expiresAt.getTime() < Date.now()) {
-    throw new OtpError("کد منقضی شده است. کد جدید درخواست کنید.");
-  }
-
-  if (otp.attempts >= MAX_ATTEMPTS) {
+  const open = candidates.filter((c) => c.attempts < MAX_ATTEMPTS);
+  if (open.length === 0) {
     throw new OtpError("تعداد تلاش‌های مجاز برای این کد تمام شده است.");
   }
 
   const codeHash = hashCode(mobile, code);
+  const match = open.find((c) => c.codeHash === codeHash);
 
-  if (codeHash !== otp.codeHash) {
-    await prisma.otpCode.update({
-      where: { id: otp.id },
+  if (!match) {
+    await prisma.otpCode.updateMany({
+      where: { id: { in: open.map((c) => c.id) } },
       data: { attempts: { increment: 1 } },
     });
     throw new OtpError("کد وارد شده نادرست است.");
   }
 
-  await prisma.otpCode.update({
-    where: { id: otp.id },
+  await prisma.otpCode.updateMany({
+    where: { mobile, usedAt: null },
     data: { usedAt: new Date() },
   });
 }

@@ -9,6 +9,8 @@ import { getSetting } from "./settings";
 export interface SmsPanel {
   /** یک پیامک متنی به شماره‌ی داده‌شده ارسال می‌کند؛ در صورت شکست SmsError پرتاب می‌کند. */
   sendSms(mobile: string, text: string): Promise<void>;
+  /** کد تأیید (OTP) را می‌فرستد؛ اگر پترن تنظیم شده باشد از مسیر پیامک الگویی، وگرنه متن ساده. */
+  sendOtp(mobile: string, code: string): Promise<void>;
 }
 
 /** خطای ارسال پیامک؛ پیام آن فارسی و برای نمایش به کاربر/ادمین امن است (بدون کلید یا جزئیات داخلی). */
@@ -24,6 +26,10 @@ class MockSmsPanel implements SmsPanel {
   async sendSms(mobile: string, text: string): Promise<void> {
     console.log(`[پیامک شبیه‌سازی] موبایل ${mobile} → ${text}`);
   }
+
+  async sendOtp(mobile: string, code: string): Promise<void> {
+    await this.sendSms(mobile, `کد ورود گت‌استوک: ${code}`);
+  }
 }
 
 const IRANPAYAMAK_BASE = "https://api.iranpayamak.com/ws/v1";
@@ -33,24 +39,20 @@ class IranPayamakSmsPanel implements SmsPanel {
   constructor(
     private readonly apiKey: string,
     private readonly lineNumber: string,
+    private readonly otpPatternCode: string | null,
   ) {}
 
-  async sendSms(mobile: string, text: string): Promise<void> {
+  private async post(path: string, payload: Record<string, unknown>): Promise<void> {
     let res: Response;
     try {
-      res = await fetch(`${IRANPAYAMAK_BASE}/sms/simple`, {
+      res = await fetch(`${IRANPAYAMAK_BASE}${path}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
           "Api-Key": this.apiKey,
         },
-        body: JSON.stringify({
-          text,
-          line_number: this.lineNumber,
-          recipients: [mobile],
-          number_format: "english",
-        }),
+        body: JSON.stringify({ ...payload, line_number: this.lineNumber, number_format: "english" }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
     } catch (error) {
@@ -62,9 +64,26 @@ class IranPayamakSmsPanel implements SmsPanel {
     const ok = res.ok && (body?.status === undefined || body.status === "success");
     if (!ok) {
       // کلید API هرگز لاگ نمی‌شود؛ فقط کد وضعیت و پیام سرویس‌دهنده (برای عیب‌یابی ادمین در لاگ سرور).
-      console.error(`[پیامک] ایران‌پیامک خطا برگرداند (HTTP ${res.status}):`, JSON.stringify(body));
+      console.error(`[پیامک] ایران‌پیامک خطا برگرداند (${path}، HTTP ${res.status}):`, JSON.stringify(body));
       throw new SmsError("ارسال پیامک ناموفق بود؛ چند دقیقه‌ی دیگر دوباره تلاش کن.");
     }
+  }
+
+  async sendSms(mobile: string, text: string): Promise<void> {
+    await this.post("/sms/simple", { text, recipients: [mobile] });
+  }
+
+  async sendOtp(mobile: string, code: string): Promise<void> {
+    if (this.otpPatternCode) {
+      // پترن باید متغیری به نام code داشته باشد (مثلاً «کد ورود شما به گت استوک: %code%»).
+      await this.post("/sms/pattern", {
+        code: this.otpPatternCode,
+        attributes: { code },
+        recipient: mobile,
+      });
+      return;
+    }
+    await this.sendSms(mobile, `کد ورود گت‌استوک: ${code}`);
   }
 }
 
@@ -72,10 +91,14 @@ class IranPayamakSmsPanel implements SmsPanel {
  * انتخاب پیاده‌سازی پنل پیامک فعال:
  * - کلید API نیست → MockSmsPanel (فقط توسعه؛ در production هشدار چاپ می‌شود چون کد فقط در لاگ می‌ماند).
  * - کلید هست ولی شماره‌ی خط نیست → خطا (ارسال بی‌صدا به Mock باعث گم شدن کد کاربران می‌شد).
- * - هر دو هست → ایران‌پیامک.
+ * - هر دو هست → ایران‌پیامک (کد OTP با پترن اگر SMS_OTP_PATTERN_CODE تنظیم شده باشد).
  */
 export async function getSmsPanel(): Promise<SmsPanel> {
-  const [apiKey, lineNumber] = await Promise.all([getSetting("SMS_PANEL_API_KEY"), getSetting("SMS_LINE_NUMBER")]);
+  const [apiKey, lineNumber, otpPatternCode] = await Promise.all([
+    getSetting("SMS_PANEL_API_KEY"),
+    getSetting("SMS_LINE_NUMBER"),
+    getSetting("SMS_OTP_PATTERN_CODE"),
+  ]);
 
   if (!apiKey) {
     if (process.env.NODE_ENV === "production") {
@@ -87,5 +110,5 @@ export async function getSmsPanel(): Promise<SmsPanel> {
     console.error("[پیامک] SMS_LINE_NUMBER (شماره‌ی خط ارسال) در تنظیمات ادمین پر نشده است.");
     throw new SmsError("سرویس پیامک هنوز کامل تنظیم نشده است؛ با پشتیبانی تماس بگیر.");
   }
-  return new IranPayamakSmsPanel(apiKey, lineNumber);
+  return new IranPayamakSmsPanel(apiKey, lineNumber, otpPatternCode?.trim() || null);
 }
