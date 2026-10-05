@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateInput, passwordLoginInput, ValidationError } from "@/lib/validation";
 import { verifyEmailPassword } from "@/lib/password";
-import { createSession } from "@/lib/session";
+import { createSession, DISABLED_ACCOUNT_MESSAGE } from "@/lib/session";
 import { authUserPayload } from "@/lib/authUser";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/clientIp";
@@ -12,7 +12,12 @@ const IP_LIMIT = 10;
 const EMAIL_LIMIT = 5;
 const WINDOW_MS = 15 * 60_000;
 
-const INVALID_CREDENTIALS = "ایمیل یا رمز عبور نادرست است.";
+const LOGIN_ERRORS = {
+  not_found: { message: "کاربری با این ایمیل ثبت‌نام نکرده است.", status: 404 },
+  no_password: { message: "برای این حساب رمز عبور تنظیم نشده است؛ با کد پیامکی وارد شوید.", status: 401 },
+  wrong_password: { message: "رمز عبور نادرست است.", status: 401 },
+  disabled: { message: DISABLED_ACCOUNT_MESSAGE, status: 403 },
+} as const;
 
 // POST /api/auth/login
 // ورود با ایمیل و رمز عبور، بدون پیامک.
@@ -39,11 +44,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const user = await verifyEmailPassword(input.email, input.password);
-  if (!user) {
-    return NextResponse.json({ error: INVALID_CREDENTIALS }, { status: 401 });
+  const result = await verifyEmailPassword(input.email, input.password);
+  if (!result.ok) {
+    const { message, status } = LOGIN_ERRORS[result.reason];
+    return NextResponse.json({ error: message }, { status });
   }
 
-  await createSession(user.id, getClientIp(req));
-  return NextResponse.json({ user: await authUserPayload(user) });
+  await createSession(result.user.id, getClientIp(req));
+  return NextResponse.json({ user: await authUserPayload(result.user) });
 }

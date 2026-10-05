@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateInput, requestOtpInput, ValidationError } from "@/lib/validation";
 import { requestOtp, OtpError } from "@/lib/otp";
 import { SmsError } from "@/lib/sms";
+import { assertMobileEligible, AccountError } from "@/lib/accountGuard";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/clientIp";
 
@@ -26,8 +27,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    await assertMobileEligible(input.mobile, input.purpose);
     await requestOtp(input.mobile);
   } catch (error) {
+    if (error instanceof AccountError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     if (error instanceof OtpError) {
       return NextResponse.json({ error: error.message }, { status: 429 });
     }

@@ -136,14 +136,20 @@ const mobileField = z
   .string({ error: "شماره موبایل الزامی است." })
   .regex(/^09\d{9}$/, "شماره موبایل معتبر نیست.");
 
+// هدف درخواست کد: ورود (حساب باید وجود داشته باشد) یا ثبت‌نام (شماره نباید قبلاً ثبت شده باشد).
+// پیش‌فرض login است تا کلاینتِ قدیمیِ باز مانده هرگز ناخواسته حساب نسازد.
+const otpPurposeField = z.enum(["login", "signup"]).default("login");
+
 export const requestOtpInput = z.object({
   mobile: mobileField,
+  purpose: otpPurposeField,
 });
 
 export type RequestOtpInput = z.infer<typeof requestOtpInput>;
 
 export const verifyOtpInput = z.object({
   mobile: mobileField,
+  purpose: otpPurposeField,
   code: z
     .string({ error: "کد تأیید الزامی است." })
     .regex(/^\d{6}$/, "کد تأیید باید ۶ رقم باشد."),
@@ -304,6 +310,13 @@ export const changeUserRoleInput = z.object({
 });
 
 export type ChangeUserRoleInput = z.infer<typeof changeUserRoleInput>;
+
+export const setUserStatusInput = z.object({
+  disabled: z.boolean({ error: requiredOrInvalidType("وضعیت جدید الزامی است.", "وضعیت نامعتبر است.") }),
+  reason: z.string().trim().max(300, "دلیل حداکثر ۳۰۰ کاراکتر باشد.").optional(),
+});
+
+export type SetUserStatusInput = z.infer<typeof setUserStatusInput>;
 
 /** آدرس پایه‌ی https بدون query/hash (برای آدرس رله‌ی تلگرام). */
 function isHttpsBaseUrl(value: string): boolean {

@@ -6,6 +6,7 @@ import { toJalaliDate } from "@/lib/jalali";
 import { ROLE_LABELS, ALL_ROLES, type Role } from "@/lib/roles";
 import Pagination from "@/components/admin/Pagination";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import UserActions from "@/components/admin/UserActions";
 
 type UserRow = {
   id: string;
@@ -13,6 +14,7 @@ type UserRow = {
   name: string | null;
   role: Role;
   createdAt: string;
+  disabledAt: string | null;
   walletBalanceRial: string;
   orderCount: number;
 };
@@ -24,6 +26,14 @@ type ListResponse = {
   pageSize: number;
   totalPages: number;
 };
+
+function DisabledBadge() {
+  return (
+    <span className="mr-2 px-2 py-0.5 rounded-full text-[.68rem] font-bold bg-[rgb(var(--c-accent)/.14)] text-accent2">
+      غیرفعال
+    </span>
+  );
+}
 
 function RoleBadge({ role }: { role: Role }) {
   const styles: Record<Role, string> = {
@@ -123,7 +133,7 @@ export default function AdminUsersPage() {
         <>
           {/* دسکتاپ: جدول */}
           <div className="hidden md:block bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl overflow-x-auto">
-            <table className="w-full text-[.85rem] min-w-[760px]">
+            <table className="w-full text-[.85rem] min-w-[900px]">
               <thead>
                 <tr className="text-dim text-[.78rem] border-b border-[rgb(var(--c-primary2)/.14)]">
                   <th className="text-right font-semibold px-5 py-3.5">موبایل</th>
@@ -140,6 +150,7 @@ export default function AdminUsersPage() {
                   <tr key={u.id} className="border-b border-[rgb(var(--c-primary2)/.08)] last:border-0">
                     <td dir="ltr" className="text-left px-5 py-3.5 font-semibold">
                       {u.mobile}
+                      {u.disabledAt && <DisabledBadge />}
                     </td>
                     <td className="px-5 py-3.5">{u.name ?? "—"}</td>
                     <td className="px-5 py-3.5">
@@ -149,9 +160,12 @@ export default function AdminUsersPage() {
                     <td className="px-5 py-3.5">{rialToTomanLabel(Number(u.walletBalanceRial))}</td>
                     <td className="px-5 py-3.5">{toPersianDigits(u.orderCount)}</td>
                     <td className="px-5 py-3.5">
-                      <Link href={`/admin/users/${u.id}`} className="text-cyan hover:underline text-[.8rem] font-bold">
-                        جزئیات ←
-                      </Link>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <Link href={`/admin/users/${u.id}`} className="text-cyan hover:underline text-[.8rem] font-bold">
+                          جزئیات ←
+                        </Link>
+                        <UserActions user={u} onChanged={load} compact />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -167,7 +181,10 @@ export default function AdminUsersPage() {
                 className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span dir="ltr" className="font-bold">{u.mobile}</span>
+                  <span dir="ltr" className="font-bold">
+                    {u.mobile}
+                    {u.disabledAt && <DisabledBadge />}
+                  </span>
                   <RoleBadge role={u.role} />
                 </div>
                 <div className="text-dim text-[.8rem] mb-1">{u.name ?? "بدون نام"}</div>
@@ -180,8 +197,9 @@ export default function AdminUsersPage() {
                     جزئیات ←
                   </Link>
                 </div>
-                <div className="mt-3">
+                <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
                   <RoleSelect user={u} onRequestChange={(role) => setPendingChange({ user: u, role })} />
+                  <UserActions user={u} onChanged={load} compact />
                 </div>
               </div>
             ))}

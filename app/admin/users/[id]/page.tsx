@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { rialToTomanLabel, toPersianDigits } from "@/lib/money";
 import { toJalaliDateTime } from "@/lib/jalali";
 import { ROLE_LABELS, type Role } from "@/lib/roles";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/orderState";
 import Pagination from "@/components/admin/Pagination";
+import UserActions from "@/components/admin/UserActions";
 
 type Paginated<T> = { items: T[]; total: number; page: number; pageSize: number; totalPages: number };
 
@@ -36,6 +37,8 @@ type DetailResponse = {
     name: string | null;
     role: Role;
     createdAt: string;
+    disabledAt: string | null;
+    disabledReason: string | null;
     walletBalanceRial: string;
     referrer: { id: string; mobile: string; referralCode: string | null } | null;
     isAffiliate: boolean;
@@ -135,6 +138,7 @@ function ReferrerBox({
 
 export default function AdminUserDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [data, setData] = useState<DetailResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ordersPage, setOrdersPage] = useState(1);
@@ -194,7 +198,17 @@ export default function AdminUserDetailPage() {
           <span className="text-dim">موجودی کیف پول: </span>
           <span className="font-bold">{rialToTomanLabel(Number(user.walletBalanceRial))}</span>
         </div>
+        <div className="mr-auto">
+          <UserActions user={user} onChanged={load} onDeleted={() => router.push("/admin/users")} />
+        </div>
       </div>
+
+      {user.disabledAt && (
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-6 text-[.88rem]">
+          این حساب از {toJalaliDateTime(user.disabledAt)} غیرفعال است
+          {user.disabledReason ? ` — دلیل: ${user.disabledReason}` : ""}.
+        </div>
+      )}
 
       <ReferrerBox userId={user.id} referrer={user.referrer} isAffiliate={user.isAffiliate} onChange={load} />
 

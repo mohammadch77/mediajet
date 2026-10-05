@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
         name: u.name,
         role: u.role,
         createdAt: u.createdAt.toISOString(),
+        disabledAt: u.disabledAt?.toISOString() ?? null,
         walletBalanceRial: (u.wallet?.balanceRial ?? 0n).toString(),
         orderCount: u._count.orders,
       })),

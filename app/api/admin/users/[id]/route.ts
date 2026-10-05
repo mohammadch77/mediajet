@@ -60,6 +60,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       name: user.name,
       role: user.role,
       createdAt: user.createdAt.toISOString(),
+      disabledAt: user.disabledAt?.toISOString() ?? null,
+      disabledReason: user.disabledReason,
       walletBalanceRial: (user.wallet?.balanceRial ?? 0n).toString(),
       // همکاری در فروش: معرفِ این کاربر، و اگر خودش همکار است لینک به صفحه‌ی همکاری‌اش.
       referrer: user.referredBy,
@@ -92,4 +94,76 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       txPageParams
     ),
   });
+}
+
+// DELETE /api/admin/users/:id
+// حذف دائمی کاربر از دیتابیس؛ فقط admin. کاربری که سفارش، پرداخت یا تراکنش کیف پول دارد حذف نمی‌شود
+// (دفتر مالی append-only است و حذفش حسابداری را می‌شکند)؛ برای او باید «غیرفعال‌سازی» را زد.
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  let admin;
+  try {
+    admin = await requireAdmin();
+  } catch (error) {
+    if (error instanceof SessionError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    throw error;
+  }
+
+  if (admin.id === params.id) {
+    return NextResponse.json({ error: "نمی‌توانید حساب خودتان را حذف کنید." }, { status: 400 });
+  }
+
+  const target = await prisma.user.findUnique({
+    where: { id: params.id },
+    include: { wallet: { select: { id: true, balanceRial: true } } },
+  });
+  if (!target) {
+    return NextResponse.json({ error: "کاربر پیدا نشد." }, { status: 404 });
+  }
+  if (target.role !== "user") {
+    return NextResponse.json({ error: "ابتدا نقش این کاربر را به «کاربر عادی» برگردانید، بعد حذفش کنید." }, { status: 400 });
+  }
+
+  const [orders, payments, walletTx, referrals, hasAffiliate] = await Promise.all([
+    prisma.order.count({ where: { userId: target.id } }),
+    prisma.payment.count({ where: { userId: target.id } }),
+    target.wallet ? prisma.walletTransaction.count({ where: { walletId: target.wallet.id } }) : Promise.resolve(0),
+    prisma.user.count({ where: { referredById: target.id } }),
+    prisma.affiliateAccount.count({ where: { userId: target.id } }),
+  ]);
+  if (orders + payments + walletTx + referrals + hasAffiliate > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "این کاربر سفارش، پرداخت، تراکنش کیف پول یا سابقه‌ی همکاری دارد و حذف دائمی آن دفتر مالی را خراب می‌کند. به‌جای حذف، «غیرفعال‌سازی» را بزنید.",
+      },
+      { status: 409 },
+    );
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.session.deleteMany({ where: { userId: target.id } });
+      await tx.passwordReset.deleteMany({ where: { userId: target.id } });
+      await tx.notification.deleteMany({ where: { userId: target.id } });
+      await tx.supportMessage.deleteMany({ where: { userId: target.id } });
+      await tx.cartItem.deleteMany({ where: { cart: { userId: target.id } } });
+      await tx.cart.deleteMany({ where: { userId: target.id } });
+      await tx.wallet.deleteMany({ where: { userId: target.id } });
+      await tx.otpCode.deleteMany({ where: { mobile: target.mobile } });
+      await tx.user.delete({ where: { id: target.id } });
+    });
+  } catch (error) {
+    // کلید خارجی دیگری (مثلاً سابقه‌ی لاگ) هنوز به کاربر اشاره می‌کند.
+    if ((error as { code?: string }).code === "P2003") {
+      return NextResponse.json(
+        { error: "این کاربر هنوز در سوابق دیگری استفاده شده؛ به‌جای حذف، غیرفعالش کنید." },
+        { status: 409 },
+      );
+    }
+    throw error;
+  }
+
+  return NextResponse.json({ ok: true });
 }

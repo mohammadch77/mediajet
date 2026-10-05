@@ -5,6 +5,7 @@ import { findOrCreateUserByMobile, createSession } from "@/lib/session";
 import { authUserPayload } from "@/lib/authUser";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/clientIp";
+import { assertMobileEligible, AccountError } from "@/lib/accountGuard";
 
 const IP_LIMIT = 20;
 const WINDOW_MS = 15 * 60_000;
@@ -27,8 +28,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    await assertMobileEligible(input.mobile, input.purpose);
     await verifyOtp(input.mobile, input.code);
   } catch (error) {
+    if (error instanceof AccountError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     if (error instanceof OtpError) {
       return NextResponse.json({ error: error.message }, { status: 422 });
     }

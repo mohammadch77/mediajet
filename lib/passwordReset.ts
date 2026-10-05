@@ -15,6 +15,7 @@ import { prisma } from "./db";
 import { getSmsPanel } from "./sms";
 import { getSetting } from "./settings";
 import { hashPassword } from "./password";
+import { DISABLED_ACCOUNT_MESSAGE } from "./session";
 
 export type ResetMode = "code" | "link" | "both";
 
@@ -73,8 +74,8 @@ export async function getResetMode(): Promise<ResetMode> {
  * یا در فاصله‌ی کوتاه از درخواست قبلی بی‌صدا کاری نمی‌کند — پاسخ API در همه‌ی حالت‌ها یکسان است.
  */
 export async function requestPasswordReset(mobile: string): Promise<void> {
-  const user = await prisma.user.findUnique({ where: { mobile }, select: { id: true } });
-  if (!user) return;
+  const user = await prisma.user.findUnique({ where: { mobile }, select: { id: true, disabledAt: true } });
+  if (!user || user.disabledAt) return;
 
   const last = await prisma.passwordReset.findFirst({ where: { userId: user.id }, orderBy: { createdAt: "desc" } });
   if (last && Date.now() - last.createdAt.getTime() < RESEND_COOLDOWN_MS) return;
@@ -119,6 +120,7 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
   if (!reset || reset.usedAt || reset.expiresAt.getTime() < Date.now()) {
     throw new PasswordResetError(INVALID_LINK);
   }
+  await assertNotDisabled(reset.userId);
   await applyNewPassword(reset.id, reset.userId, newPassword, INVALID_LINK);
   return reset.userId;
 }
@@ -143,8 +145,14 @@ export async function resetPasswordWithCode(mobile: string, code: string, newPas
     throw new PasswordResetError(INVALID_CODE);
   }
 
+  await assertNotDisabled(user.id);
   await applyNewPassword(reset.id, user.id, newPassword, INVALID_CODE);
   return user.id;
+}
+
+async function assertNotDisabled(userId: string) {
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { disabledAt: true } });
+  if (u?.disabledAt) throw new PasswordResetError(DISABLED_ACCOUNT_MESSAGE);
 }
 
 async function applyNewPassword(resetId: string, userId: string, newPassword: string, invalidMessage: string) {

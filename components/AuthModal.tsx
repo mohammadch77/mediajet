@@ -1,6 +1,6 @@
 "use client";
 // مودال ورود:
-//   ورود با ایمیل/رمز (بدون پیامک) | ورود/ثبت‌نام با موبایل (OTP)
+//   ورود با ایمیل/رمز (بدون پیامک) | ورود با موبایل (OTP) | ثبت‌نام با موبایل (OTP)
 //   بعد از OTP، اگر کاربر هنوز ایمیل/رمز ندارد (ثبت‌نام جدید یا کاربر قدیمی) → مرحله‌ی تنظیم ایمیل/رمز (قابل رد کردن)
 //   فراموشی رمز → پیامک کد و/یا لینک (بسته به تنظیم PASSWORD_RESET_SMS_MODE)
 
@@ -15,10 +15,13 @@ const MOBILE_PATTERN = /^09\d{9}$/;
 
 type Step = "password" | "mobile" | "code" | "credentials" | "forgot" | "forgotSent";
 type ResetMode = "code" | "link" | "both";
+type Purpose = "login" | "signup";
 
 export default function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { login, setUser } = useAuth();
   const [step, setStep] = useState<Step>("password");
+  // هدف جریان موبایل: ورود (حساب باید وجود داشته باشد) یا ثبت‌نام (شماره نباید ثبت شده باشد).
+  const [purpose, setPurpose] = useState<Purpose>("login");
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
   const [email, setEmail] = useState("");
@@ -36,6 +39,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
   useEffect(() => {
     if (!open) {
       setStep("password");
+      setPurpose("login");
       setMobile("");
       setCode("");
       setEmail("");
@@ -119,7 +123,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
   const requestOtp = () => {
     if (!requireMobile()) return;
     return run(async () => {
-      await postJson("/api/auth/request-otp", { mobile });
+      await postJson("/api/auth/request-otp", { mobile, purpose });
       goTo("code");
       setCountdown(RESEND_SECONDS);
     });
@@ -131,7 +135,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
       return;
     }
     return run(async () => {
-      const data = await postJson<{ user: AuthUser }>("/api/auth/verify-otp", { mobile, code });
+      const data = await postJson<{ user: AuthUser }>("/api/auth/verify-otp", { mobile, code, purpose });
       finishLogin(data.user);
     });
   };
@@ -177,7 +181,10 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
 
   const titles: Record<Step, { title: string; subtitle: string }> = {
     password: { title: "ورود به حساب", subtitle: "با ایمیل و رمز عبورت وارد شو." },
-    mobile: { title: "ورود / ثبت‌نام با موبایل", subtitle: "شماره موبایلت را وارد کن تا کد تأیید برایت ارسال شود." },
+    mobile:
+      purpose === "signup"
+        ? { title: "ثبت‌نام با موبایل", subtitle: "شماره موبایلت را وارد کن تا کد تأیید برایت ارسال شود." }
+        : { title: "ورود با کد پیامکی", subtitle: "شماره‌ی موبایل حسابت را وارد کن تا کد تأیید برایت ارسال شود." },
     code: { title: "کد تأیید را وارد کن", subtitle: `کد ۶ رقمی برای شماره‌ی ${toPersianDigits(mobile)} پیامک شد.` },
     credentials: {
       title: "ورود بدون پیامک",
@@ -224,20 +231,26 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         </div>
 
         {showTabs && (
-          <div className="grid grid-cols-2 gap-1 p-1 mt-4 rounded-full bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.14)]">
+          <div className="grid grid-cols-3 gap-1 p-1 mt-4 rounded-full bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.14)]">
             {(
               [
-                ["password", "ایمیل و رمز"],
-                ["mobile", "کد پیامکی"],
+                ["password", "login", "ایمیل و رمز"],
+                ["mobile", "login", "کد پیامکی"],
+                ["mobile", "signup", "ثبت‌نام"],
               ] as const
-            ).map(([id, label]) => (
+            ).map(([id, tabPurpose, label]) => (
               <button
-                key={id}
+                key={label}
                 type="button"
-                onClick={() => goTo(id)}
+                onClick={() => {
+                  setPurpose(tabPurpose);
+                  goTo(id);
+                }}
                 className={
-                  "font-body cursor-pointer border-none text-[.86rem] font-bold py-2 rounded-full transition " +
-                  (step === id ? "bg-gradient-to-br from-primary to-primary2 text-white" : "bg-transparent text-dim hover:text-text")
+                  "font-body cursor-pointer border-none text-[.82rem] font-bold py-2 rounded-full transition " +
+                  (step === id && (id === "password" || purpose === tabPurpose)
+                    ? "bg-gradient-to-br from-primary to-primary2 text-white"
+                    : "bg-transparent text-dim hover:text-text")
                 }
               >
                 {label}
@@ -389,7 +402,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                   : {
                       password: "ورود",
                       mobile: "ارسال کد تأیید",
-                      code: "تأیید و ورود",
+                      code: purpose === "signup" ? "تأیید و ثبت‌نام" : "تأیید و ورود",
                       forgot: "ارسال پیامک بازیابی",
                       forgotSent: "تغییر رمز و ورود",
                       credentials: "",
@@ -408,7 +421,14 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
           {step === "password" && (
             <span>
               حساب نداری؟{" "}
-              <button type="button" onClick={() => goTo("mobile")} className="text-cyan font-semibold hover:underline bg-transparent border-none cursor-pointer">
+              <button
+                type="button"
+                onClick={() => {
+                  setPurpose("signup");
+                  goTo("mobile");
+                }}
+                className="text-cyan font-semibold hover:underline bg-transparent border-none cursor-pointer"
+              >
                 ثبت‌نام با شماره موبایل
               </button>
             </span>

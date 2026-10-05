@@ -12,6 +12,8 @@ import { REF_COOKIE, findAffiliateIdByCode, normalizeReferralCode, notifyNewRefe
 const SESSION_COOKIE = "mediajet_session";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // ۳۰ روز
 
+export const DISABLED_ACCOUNT_MESSAGE = "حساب شما توسط مدیر غیرفعال شده است. برای پیگیری با پشتیبانی تماس بگیرید.";
+
 function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
@@ -51,6 +53,10 @@ export async function findOrCreateUserByMobile(mobile: string, ip?: string): Pro
 
 /** نشست جدید می‌سازد و توکن خام را در کوکی httpOnly می‌گذارد. */
 export async function createSession(userId: string, ip?: string): Promise<void> {
+  // آخرین خط دفاع: مسیرهای ورود خودشان وضعیت را چک می‌کنند، ولی نشست برای کاربر غیرفعال هرگز ساخته نمی‌شود.
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { disabledAt: true } });
+  if (!target || target.disabledAt) throw new SessionError(DISABLED_ACCOUNT_MESSAGE);
+
   const token = crypto.randomBytes(32).toString("hex");
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
@@ -86,6 +92,10 @@ export async function getCurrentUser(): Promise<User | null> {
   });
 
   if (!session || session.expiresAt.getTime() < Date.now()) {
+    return null;
+  }
+  // کاربر غیرفعال‌شده حتی با نشست معتبر قدیمی (کوکی باقی‌مانده) هیچ دسترسی ندارد.
+  if (session.user.disabledAt) {
     return null;
   }
 
