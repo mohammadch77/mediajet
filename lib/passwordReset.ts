@@ -101,8 +101,14 @@ export async function requestPasswordReset(mobile: string): Promise<void> {
   if (mode !== "code") lines.push(link);
   lines.push("اعتبار: ۱ ساعت. اگر شما درخواست نداده‌اید، این پیام را نادیده بگیرید.");
 
-  const sms = await getSmsPanel();
-  await sms.sendSms(mobile, lines.join("\n"));
+  try {
+    const sms = await getSmsPanel();
+    await sms.sendSms(mobile, lines.join("\n"));
+  } catch (error) {
+    // پاسخ API باید برای همه‌ی شماره‌ها یکسان بماند (جلوگیری از لو رفتن وجود حساب)؛ پس خطای
+    // ارسال فقط لاگ می‌شود و کاربر می‌تواند بعد از فاصله‌ی مجاز دوباره درخواست بدهد.
+    console.error("[بازیابی رمز] ارسال پیامک ناموفق بود:", error instanceof Error ? error.message : error);
+  }
 }
 
 /** با توکن لینک، رمز جدید را تنظیم می‌کند و userId را برمی‌گرداند. */

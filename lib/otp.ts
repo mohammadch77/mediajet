@@ -46,7 +46,7 @@ export async function requestOtp(mobile: string): Promise<void> {
   const codeHash = hashCode(mobile, code);
   const expiresAt = new Date(Date.now() + CODE_TTL_MS);
 
-  await prisma.$transaction([
+  const [, created] = await prisma.$transaction([
     // ابطال کدهای قبلیِ استفاده‌نشده‌ی این شماره؛ فقط آخرین کد معتبر است.
     prisma.otpCode.updateMany({
       where: { mobile, usedAt: null },
@@ -57,8 +57,14 @@ export async function requestOtp(mobile: string): Promise<void> {
     }),
   ]);
 
-  const smsPanel = await getSmsPanel();
-  await smsPanel.sendSms(mobile, `کد ورود گت‌استوک: ${code}`);
+  try {
+    const smsPanel = await getSmsPanel();
+    await smsPanel.sendSms(mobile, `کد ورود گت‌استوک: ${code}`);
+  } catch (error) {
+    // کدی که هرگز به دست کاربر نرسیده نباید فاصله‌ی ۶۰ ثانیه‌ای را فعال نگه دارد؛ کاربر باید بتواند دوباره تلاش کند.
+    await prisma.otpCode.delete({ where: { id: created.id } }).catch(() => {});
+    throw error;
+  }
 }
 
 /** کد OTP را تأیید می‌کند. در صورت موفقیت، کد را used می‌کند تا دوباره قابل استفاده نباشد. */

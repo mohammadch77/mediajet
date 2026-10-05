@@ -1,5 +1,6 @@
 import { z, ZodError, type ZodSchema } from "zod";
 import { CONTENT_DEFS, type ContentKey } from "./content";
+import { SETTING_DEFS, type SettingKey } from "./settings";
 
 export class ValidationError extends Error {
   constructor(message: string) {
@@ -314,18 +315,9 @@ function isHttpsBaseUrl(value: string): boolean {
   }
 }
 
-const settingKeyValues = [
-  "ZARINPAL_MERCHANT_ID",
-  "SMS_PANEL_API_KEY",
-  "PASSWORD_RESET_SMS_MODE",
-  "TELEGRAM_BOT_TOKEN",
-  "TELEGRAM_CHAT_FINANCE",
-  "TELEGRAM_CHAT_OPERATOR",
-  "TELEGRAM_CHAT_SUPPORT",
-  "TELEGRAM_WEBHOOK_SECRET",
-  "TELEGRAM_API_BASE",
-  "TELEGRAM_RELAY_SECRET",
-] as const;
+// کلیدهای مجاز تنظیمات مستقیم از SETTING_DEFS (منبع واحد حقیقت) گرفته می‌شوند؛ با اضافه‌شدن
+// تنظیم جدید در lib/settings.ts اعتبارسنجی هم‌زمان به‌روز می‌ماند (لیست دستی قبلاً از آن عقب می‌ماند).
+const settingKeyValues = SETTING_DEFS.map((d) => d.key) as unknown as [SettingKey, ...SettingKey[]];
 
 export const updateSettingInput = z.object({
   key: z.enum(settingKeyValues, {

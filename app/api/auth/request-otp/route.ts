@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateInput, requestOtpInput, ValidationError } from "@/lib/validation";
 import { requestOtp, OtpError } from "@/lib/otp";
+import { SmsError } from "@/lib/sms";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/clientIp";
 
@@ -29,6 +30,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof OtpError) {
       return NextResponse.json({ error: error.message }, { status: 429 });
+    }
+    if (error instanceof SmsError) {
+      // خطای سرویس‌دهنده‌ی پیامک، نه محدودیت نرخ: ۵۰۲ با پیام فارسی تا UI آن را نشان دهد.
+      return NextResponse.json({ error: error.message }, { status: 502 });
     }
     throw error;
   }

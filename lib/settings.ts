@@ -20,7 +20,14 @@ export const SETTING_DEFS = [
     key: "SMS_PANEL_API_KEY",
     group: "sms",
     label: "کلید API پنل پیامک",
-    description: "کلید سرویس ارسال پیامک برای ارسال کد OTP و اطلاع‌رسانی‌ها.",
+    description: "کلید API ایران‌پیامک (از پنل کاربری ایران‌پیامک) برای ارسال کد ورود (OTP) و بازیابی رمز.",
+  },
+  {
+    key: "SMS_LINE_NUMBER",
+    group: "sms",
+    label: "شماره‌ی خط ارسال پیامک",
+    description:
+      "شماره‌ی خط (اختصاصی یا خدماتی) که پیامک‌ها از آن ارسال می‌شوند، دقیقاً مثل پنل ایران‌پیامک. بدون این مقدار، ارسال واقعی انجام نمی‌شود.",
   },
   {
     key: "PASSWORD_RESET_SMS_MODE",
