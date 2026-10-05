@@ -30,6 +30,9 @@ export const CONTENT_DEFS = [
   { key: "footer.copyright", group: "footer", label: "متن کپی‌رایت / پانوشت", defaultValue: "این یک ماکاپ اولیه است. توجه: مدل دانلود از اکانت اشتراکی و فروش تک‌فایل ممکن است با شرایط لایسنس پلتفرم‌های مبدأ مغایرت داشته باشد و نیازمند بررسی حقوقی است." },
   { key: "footer.social_instagram", group: "footer", label: "لینک اینستاگرام", defaultValue: "" },
   { key: "footer.social_telegram", group: "footer", label: "لینک تلگرام", defaultValue: "" },
+  // نماد اعتماد الکترونیکی (اینماد): فقط شناسه و کد؛ تگ نهایی در کد ساخته می‌شود (HTML خام از ادمین پذیرفته نمی‌شود).
+  { key: "footer.enamad_id", group: "footer", label: "نماد اعتماد (اینماد) - شناسه (id)", defaultValue: "8047067" },
+  { key: "footer.enamad_code", group: "footer", label: "نماد اعتماد (اینماد) - کد (Code)", defaultValue: "uU8k4kixIIjIr2gRXVBDvonZfTv9E5Eb" },
 
   // هدر - آیتم‌های منو (هر آیتم به‌صورت کلید جدا: متن و لینک)
   { key: "header.nav1_label", group: "header", label: "منو ۱ - متن", defaultValue: "چطور کار می‌کند" },

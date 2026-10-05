@@ -76,6 +76,30 @@ function renderWithLinks(text: string): ReactNode[] {
   return nodes;
 }
 
+/**
+ * نماد اعتماد الکترونیکی (اینماد). فقط شناسه‌ی عددی و کد حروف/عدد پذیرفته می‌شود و تگ اینجا ساخته می‌شود؛
+ * مقدار نامعتبر یا خالی = نمایش داده نمی‌شود (جلوگیری از تزریق در آدرس).
+ */
+function EnamadSeal({ content }: { content: Record<string, string> }) {
+  const id = (content["footer.enamad_id"] ?? "").trim();
+  const code = (content["footer.enamad_code"] ?? "").trim();
+  if (!/^\d{1,12}$/.test(id) || !/^[A-Za-z0-9]{8,64}$/.test(code)) return null;
+  const query = `id=${id}&Code=${code}`;
+  return (
+    <div className="flex justify-center mt-4">
+      <a href={`https://trustseal.enamad.ir/?${query}`} target="_blank" rel="noopener" referrerPolicy="origin">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          referrerPolicy="origin"
+          src={`https://trustseal.enamad.ir/logo.aspx?${query}`}
+          alt="نماد اعتماد الکترونیکی"
+          className="cursor-pointer max-h-[90px] w-auto"
+        />
+      </a>
+    </div>
+  );
+}
+
 /** بخش «تماس با ما» در فوتر؛ فقط فیلدهایی که ادمین پر کرده نمایش داده می‌شوند. */
 function ContactBlock({ content }: { content: Record<string, string> }) {
   const phone = content["contact.phone"]?.trim();
@@ -597,6 +621,7 @@ export default function HomeClient({
           <a href="/affiliate" className="text-dim hover:text-text transition">همکاری در فروش</a>
         </div>
         <ContactBlock content={content} />
+        <EnamadSeal content={content} />
         <p className="max-w-[60ch] mx-auto mt-4 text-[.78rem] text-muted leading-[1.85]">
           {renderWithLinks(content["footer.copyright"] || "")}
         </p>
