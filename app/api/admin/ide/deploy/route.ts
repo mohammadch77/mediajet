@@ -6,6 +6,9 @@ import { getDeployStatus, latestDeployId, startDeploy } from "@/lib/ide/deploy";
 import { validateInput, ValidationError } from "@/lib/validation";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 
+// ایستا نشود: وضعیت فلگ محیطی و session باید در هر درخواست خوانده شود، نه موقع build.
+export const dynamic = "force-dynamic";
+
 // deploy مسیر پرخطر است: حداکثر ۵ بار در ۱۰ دقیقه برای هر ادمین.
 const DEPLOY_RATE_LIMIT = 5;
 const DEPLOY_RATE_WINDOW_MS = 10 * 60_000;

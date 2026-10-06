@@ -3,6 +3,9 @@ import { ideGuard, ideErrorResponse } from "@/lib/ide/guard";
 import { ideAudit } from "@/lib/ide/audit";
 import { buildProjectZip } from "@/lib/ide/zip";
 
+// ایستا نشود: وضعیت فلگ محیطی و session باید در هر درخواست خوانده شود، نه موقع build.
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/ide/zip — دانلود کل کد منبع (بدون node_modules/.next/.git/.env و کلیدها)
 export async function GET() {
   const guard = await ideGuard();

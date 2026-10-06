@@ -5,6 +5,9 @@ import { ideAudit } from "@/lib/ide/audit";
 import { applyZipPlan } from "@/lib/ide/zip";
 import { validateInput, ValidationError } from "@/lib/validation";
 
+// ایستا نشود: وضعیت فلگ محیطی و session باید در هر درخواست خوانده شود، نه موقع build.
+export const dynamic = "force-dynamic";
+
 const applyInput = z.object({ planId: z.string({ error: "شناسه‌ی پیش‌نمایش الزامی است." }).min(10).max(100) });
 
 // POST /api/admin/ide/zip/apply { planId } — اعمال پیش‌نمایشِ تأییدشده (با پشتیبان‌گیری از فایل‌های جایگزین‌شده)

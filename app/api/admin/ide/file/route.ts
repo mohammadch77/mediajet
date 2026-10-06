@@ -4,6 +4,9 @@ import { ideAudit } from "@/lib/ide/audit";
 import { createTextFile, deleteFile, readTextFile, saveTextFile } from "@/lib/ide/files";
 import { validateInput, ValidationError, ideCreateInput, ideSaveInput } from "@/lib/validation";
 
+// ایستا نشود: وضعیت فلگ محیطی و session باید در هر درخواست خوانده شود، نه موقع build.
+export const dynamic = "force-dynamic";
+
 async function parseBody<T>(req: NextRequest, schema: Parameters<typeof validateInput>[0]): Promise<T | NextResponse> {
   try {
     return validateInput(schema, await req.json()) as T;

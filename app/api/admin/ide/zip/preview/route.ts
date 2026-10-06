@@ -3,6 +3,9 @@ import { ideGuard, ideErrorResponse } from "@/lib/ide/guard";
 import { MAX_ZIP_UPLOAD_BYTES, planZipApply } from "@/lib/ide/zip";
 import { IdeError } from "@/lib/ide/paths";
 
+// ایستا نشود: وضعیت فلگ محیطی و session باید در هر درخواست خوانده شود، نه موقع build.
+export const dynamic = "force-dynamic";
+
 // POST /api/admin/ide/zip/preview — بدنه‌ی خام فایل زیپ (Content-Type: application/zip).
 // فقط پیش‌نمایش تغییرات؛ هیچ فایلی تا مرحله‌ی تأیید (apply) عوض نمی‌شود.
 export async function POST(req: NextRequest) {

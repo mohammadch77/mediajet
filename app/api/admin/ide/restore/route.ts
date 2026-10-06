@@ -4,6 +4,9 @@ import { ideAudit } from "@/lib/ide/audit";
 import { restoreVersion } from "@/lib/ide/files";
 import { validateInput, ValidationError, ideRestoreInput } from "@/lib/validation";
 
+// ایستا نشود: وضعیت فلگ محیطی و session باید در هر درخواست خوانده شود، نه موقع build.
+export const dynamic = "force-dynamic";
+
 // POST /api/admin/ide/restore { path, versionId } — بازگرداندن یک نسخه‌ی پشتیبان
 export async function POST(req: NextRequest) {
   const guard = await ideGuard();

@@ -6,6 +6,9 @@ import { verifyPasswordHash } from "@/lib/password";
 import { validateInput, ValidationError, ideUnlockInput } from "@/lib/validation";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 
+// ایستا نشود: وضعیت فلگ محیطی و session باید در هر درخواست خوانده شود، نه موقع build.
+export const dynamic = "force-dynamic";
+
 // حدس رمز: حداکثر ۵ تلاش در ۱۰ دقیقه برای هر ادمین.
 const UNLOCK_RATE_LIMIT = 5;
 const UNLOCK_RATE_WINDOW_MS = 10 * 60_000;

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { ideGuard, ideErrorResponse } from "@/lib/ide/guard";
 import { listTree } from "@/lib/ide/files";
 
+// ایستا نشود: وضعیت فلگ محیطی و session باید در هر درخواست خوانده شود، نه موقع build.
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/ide/tree?path= — محتوای یک پوشه (یک سطح).
 export async function GET(req: NextRequest) {
   const guard = await ideGuard();

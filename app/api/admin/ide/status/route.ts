@@ -4,6 +4,9 @@ import { ideGuard, ideEnabled } from "@/lib/ide/guard";
 import { IDE_UNLOCK_COOKIE, verifyUnlockToken } from "@/lib/ide/unlock";
 import { IDE_ROOT } from "@/lib/ide/paths";
 
+// ایستا نشود: وضعیت فلگ محیطی و session باید در هر درخواست خوانده شود، نه موقع build.
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/ide/status — صفحه با این می‌فهمد ابزار روشن است، قفل است یا باز.
 export async function GET() {
   if (!ideEnabled()) return NextResponse.json({ enabled: false, unlocked: false, hasPassword: false });
