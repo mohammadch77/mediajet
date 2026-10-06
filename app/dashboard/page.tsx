@@ -589,6 +589,7 @@ export default function DashboardPage() {
                         {STATUS_LABELS[o.status]}
                       </span>
                       {o.status === "awaiting_payment" && (
+                        <>
                         <button
                           type="button"
                           onClick={() => handlePayOrder(o.id)}
@@ -605,6 +606,7 @@ export default function DashboardPage() {
                         >
                           انصراف
                         </button>
+                        </>
                       )}
                     </div>
                   </div>
