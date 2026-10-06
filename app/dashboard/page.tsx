@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
-import { toPersianDigits } from "@/lib/money";
+import { toPersianDigits, toEnglishDigits } from "@/lib/money";
 import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
 import { STATUS_LABELS, ITEM_STATUS_LABELS, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
 import { CATEGORIES } from "@/data/categories";
@@ -477,17 +477,26 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
-                  <input
-                    type="number"
-                    min={1}
-                    placeholder="یا مبلغ دلخواه به تومان"
-                    value={chargeAmountToman}
-                    onChange={(e) => {
-                      setChargeAmountToman(e.target.value);
-                      setChargeError(null);
-                    }}
-                    className="bg-[rgba(255,255,255,.1)] border border-[rgba(255,255,255,.25)] text-white placeholder-[rgba(255,255,255,.6)] rounded-full px-4 py-2.5 text-[.9rem] w-full sm:w-[180px] outline-none focus:border-white"
-                  />
+                  <div className="relative w-full sm:w-[220px]">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      dir="ltr"
+                      placeholder="یا مبلغ دلخواه"
+                      value={chargeAmountToman ? Number(chargeAmountToman).toLocaleString("en-US") : ""}
+                      onChange={(e) => {
+                        // فقط رقم؛ ارقام فارسی/عربی تبدیل و جداکننده‌ها حذف می‌شوند. نمایش با جداکننده‌ی سه‌رقمی است.
+                        const digits = toEnglishDigits(e.target.value).replace(/\D/g, "").replace(/^0+/, "").slice(0, 12);
+                        setChargeAmountToman(digits);
+                        setChargeError(null);
+                      }}
+                      className="bg-[rgba(255,255,255,.1)] border border-[rgba(255,255,255,.25)] text-white placeholder-[rgba(255,255,255,.6)] rounded-full pl-16 pr-4 py-2.5 text-[.9rem] w-full outline-none focus:border-white text-right"
+                    />
+                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[.85rem] text-[rgba(255,255,255,.75)]">
+                      تومان
+                    </span>
+                  </div>
                   <button
                     onClick={handleCharge}
                     disabled={charging}
