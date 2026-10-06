@@ -3,20 +3,27 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toJalaliDateTime } from "@/lib/jalali";
-import { STATUS_LABELS, isRefundable, type OrderStatus } from "@/lib/orderState";
+import { STATUS_LABELS, ITEM_STATUS_LABELS, isRefundable, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
+
+type OrderDetailItem = {
+  id: string;
+  position: number;
+  categoryTitle: string;
+  sourceSite: string;
+  productUrl: string;
+  status: OrderItemStatus;
+  delivery: { fileUrl: string | null; fileName: string | null; isLarge: boolean; deliveredAt: string } | null;
+};
 
 type OrderDetail = {
   id: string;
   orderNumber: string;
-  category: string | null;
-  sourceSite: string | null;
-  productUrl: string | null;
+  items: OrderDetailItem[];
   priceLabel: string;
   status: OrderStatus;
   createdAt: string;
   updatedAt: string;
   user: { id: string; mobile: string; name: string | null };
-  delivery: { fileUrl: string | null; fileName: string | null; isLarge: boolean; deliveredAt: string } | null;
   events: { id: string; fromStatus: string | null; toStatus: string; actor: string; note: string | null; createdAt: string }[];
 };
 
@@ -113,14 +120,14 @@ export default function AdminOrderDetailPage() {
       <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-5 sm:p-6 mb-6">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <h1 className="font-display text-xl font-extrabold">
-            <span dir="ltr" className="latin">{order.orderNumber}</span> · {order.category}
+            <span dir="ltr" className="latin">{order.orderNumber}</span> · {order.items[0]?.categoryTitle ?? "—"}
+            {order.items.length > 1 && <span className="text-dim text-[.85rem] font-normal"> (+{order.items.length - 1} آیتم دیگر)</span>}
           </h1>
           <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)]">
             {STATUS_LABELS[order.status]}
           </span>
         </div>
         <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2 text-[.85rem]">
-          <div><span className="text-dim">سایت: </span>{order.sourceSite}</div>
           <div><span className="text-dim">مبلغ: </span>{order.priceLabel}</div>
           <div>
             <span className="text-dim">کاربر: </span>
@@ -131,33 +138,49 @@ export default function AdminOrderDetailPage() {
           </div>
           <div><span className="text-dim">ثبت: </span>{toJalaliDateTime(order.createdAt)}</div>
           <div><span className="text-dim">آخرین به‌روزرسانی: </span>{toJalaliDateTime(order.updatedAt)}</div>
-          <div className="sm:col-span-2 min-w-0">
-            <span className="text-dim">لینک محصول: </span>
-            <a href={order.productUrl ?? undefined} target="_blank" rel="noreferrer" dir="ltr" className="text-cyan hover:underline break-all">
-              {order.productUrl}
-            </a>
-          </div>
         </div>
 
-        {order.delivery && (
-          <div className="mt-4 pt-4 border-t border-[rgb(var(--c-primary2)/.14)] text-[.85rem]">
-            {order.delivery.isLarge ? (
-              <span className="text-dim">فایل حجیم است؛ از طریق پشتیبانی تلگرام تحویل داده می‌شود.</span>
-            ) : (
-              <>
-                <span className="text-dim">فایل تحویلی: </span>
-                {order.delivery.fileUrl ? (
-                  <a href={order.delivery.fileUrl} target="_blank" rel="noreferrer" dir="ltr" className="text-cyan hover:underline">
-                    {order.delivery.fileName ?? order.delivery.fileUrl}
-                  </a>
-                ) : (
-                  <span className="text-dim">—</span>
-                )}
-                <span className="text-dim"> — {toJalaliDateTime(order.delivery.deliveredAt)}</span>
-              </>
-            )}
-          </div>
-        )}
+        <div className="mt-4 pt-4 border-t border-[rgb(var(--c-primary2)/.14)] flex flex-col gap-3">
+          {order.items.map((item, i) => (
+            <div key={item.id} className="rounded-xl border border-[rgb(var(--c-primary2)/.14)] bg-[rgb(var(--c-ov)/.03)] p-3.5 text-[.85rem]">
+              <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                <div className="font-display font-bold">
+                  {order.items.length > 1 && <span className="text-dim font-normal">آیتم {i + 1} · </span>}
+                  {item.categoryTitle}
+                  <span className="text-dim font-normal"> · {item.sourceSite}</span>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)]">
+                  {ITEM_STATUS_LABELS[item.status]}
+                </span>
+              </div>
+              <div className="min-w-0 mb-1">
+                <span className="text-dim">لینک محصول: </span>
+                <a href={item.productUrl} target="_blank" rel="noreferrer noopener" dir="ltr" className="text-cyan hover:underline break-all">
+                  {item.productUrl}
+                </a>
+              </div>
+              {item.delivery && (
+                <div className="mt-1.5">
+                  {item.delivery.isLarge ? (
+                    <span className="text-dim">فایل حجیم است؛ از طریق پشتیبانی تلگرام تحویل داده می‌شود.</span>
+                  ) : (
+                    <>
+                      <span className="text-dim">فایل تحویلی: </span>
+                      {item.delivery.fileUrl ? (
+                        <a href={item.delivery.fileUrl} target="_blank" rel="noreferrer noopener" dir="ltr" className="text-cyan hover:underline">
+                          {item.delivery.fileName ?? item.delivery.fileUrl}
+                        </a>
+                      ) : (
+                        <span className="text-dim">—</span>
+                      )}
+                      <span className="text-dim"> — {toJalaliDateTime(item.delivery.deliveredAt)}</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       {isRefundable(order.status) && <RefundBox orderId={order.id} priceLabel={order.priceLabel} onDone={load} />}

@@ -8,7 +8,8 @@ import Pagination from "@/components/admin/Pagination";
 type OrderRow = {
   id: string;
   orderNumber: string;
-  category: string;
+  categoryTitle: string | null;
+  itemCount: number;
   sourceSite: string;
   priceLabel: string;
   status: OrderStatus;
@@ -29,6 +30,12 @@ const ALL_STATUSES: OrderStatus[] = [
   "failed",
   "refunded",
 ];
+
+/** عنوان دسته‌ی سفارش؛ سفارش چندآیتمی «+N» می‌گیرد. */
+function orderCategoryLabel(o: { categoryTitle: string | null; itemCount: number }): string {
+  if (!o.categoryTitle) return "—";
+  return o.itemCount > 1 ? `${o.categoryTitle} (+${o.itemCount - 1})` : o.categoryTitle;
+}
 
 export default function AdminOrdersPage() {
   const [data, setData] = useState<ListResponse | null>(null);
@@ -132,7 +139,7 @@ export default function AdminOrdersPage() {
                       <div dir="ltr" className="text-left font-semibold">{o.user.mobile}</div>
                       <div className="text-dim text-[.75rem]">{o.user.name ?? "بدون نام"}</div>
                     </td>
-                    <td className="px-5 py-3.5">{o.category}</td>
+                    <td className="px-5 py-3.5">{orderCategoryLabel(o)}</td>
                     <td className="px-5 py-3.5">{o.sourceSite}</td>
                     <td className="px-5 py-3.5">{o.priceLabel}</td>
                     <td className="px-5 py-3.5">
@@ -160,7 +167,7 @@ export default function AdminOrdersPage() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-display font-bold">
-                    {o.category} <span dir="ltr" className="latin text-dim text-[.78rem]">{o.orderNumber}</span>
+                    {orderCategoryLabel(o)} <span dir="ltr" className="latin text-dim text-[.78rem]">{o.orderNumber}</span>
                   </span>
                   <span className="px-2.5 py-1 rounded-full text-[.72rem] font-bold bg-[rgb(var(--c-ov)/.06)]">
                     {STATUS_LABELS[o.status]}

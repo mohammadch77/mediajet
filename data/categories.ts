@@ -120,6 +120,11 @@ const LEGACY_SITE_NAMES: Record<string, SiteName> = {
   Envato: S.envatoElements,
 };
 
+/** عنوان فارسی یک دسته از روی شناسه‌اش (همه‌ی پنل‌ها از همین تابع استفاده می‌کنند)؛ شناسه‌ی ناشناس همان شناسه برمی‌گردد. */
+export function categoryTitle(id: string): string {
+  return categoryById(id)?.title ?? id;
+}
+
 /** نام سایت را به نام رسمی فعلی تبدیل می‌کند (نام‌های قدیمی هم پذیرفته می‌شوند). */
 export function canonicalSiteName(site: string): string {
   return LEGACY_SITE_NAMES[site] ?? site;

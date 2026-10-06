@@ -13,7 +13,7 @@ type Paginated<T> = { items: T[]; total: number; page: number; pageSize: number;
 
 type OrderRow = {
   id: string;
-  category: string;
+  categoryTitle: string | null;
   sourceSite: string;
   priceLabel: string;
   status: OrderStatus;
@@ -231,7 +231,7 @@ export default function AdminUserDetailPage() {
               <tbody>
                 {orders.items.map((o) => (
                   <tr key={o.id} className="border-b border-[rgb(var(--c-primary2)/.08)] last:border-0">
-                    <td className="px-4 py-3">{o.category}</td>
+                    <td className="px-4 py-3">{o.categoryTitle ?? "—"}</td>
                     <td className="px-4 py-3">{o.sourceSite}</td>
                     <td className="px-4 py-3">{o.priceLabel}</td>
                     <td className="px-4 py-3">

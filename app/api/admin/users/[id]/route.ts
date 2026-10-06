@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireAdmin, SessionError } from "@/lib/session";
 import { rialToTomanLabel } from "@/lib/money";
 import { parsePageParams, paginatedResult } from "@/lib/pagination";
+import { categoryTitle } from "@/data/categories";
 
 // GET /api/admin/users/:id
 // جزئیات یک کاربر به‌همراه سفارش‌ها و تراکنش‌های کیف پول (هر دو صفحه‌بندی‌شده). فقط admin.
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     orders: paginatedResult(
       orders.map((o) => ({
         id: o.id,
-        category: o.items[0]?.category ?? null,
+        categoryTitle: o.items[0] ? categoryTitle(o.items[0].category) : null,
         sourceSite: o.items[0]?.sourceSite ?? null,
         priceLabel: rialToTomanLabel(Number(o.totalPriceRial)),
         status: o.status,

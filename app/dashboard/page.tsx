@@ -8,7 +8,7 @@ import { toPersianDigits } from "@/lib/money";
 import { useWalletCharge, formatTomanInput, tomanLabel } from "@/lib/useWalletCharge";
 import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
 import { STATUS_LABELS, ITEM_STATUS_LABELS, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
-import { CATEGORIES } from "@/data/categories";
+import { categoryTitle } from "@/data/categories";
 import WalletCard from "@/components/WalletCard";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import OrderPayDialog from "@/components/OrderPayDialog";
@@ -70,10 +70,6 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "messages", label: "پیام‌ها" },
   { id: "profile", label: "پروفایل" },
 ];
-
-function categoryTitle(id: string): string {
-  return CATEGORIES.find((c) => c.id === id)?.title ?? id;
-}
 
 export default function DashboardPage() {
   const router = useRouter();

@@ -4,6 +4,7 @@ import { requireAdmin, SessionError } from "@/lib/session";
 import { rialToTomanLabel, toEnglishDigits } from "@/lib/money";
 import { formatOrderNumber, parseOrderNumber } from "@/lib/orderNumber";
 import { parsePageParams, paginatedResult } from "@/lib/pagination";
+import { CATEGORIES, categoryTitle } from "@/data/categories";
 import type { Prisma } from "@prisma/client";
 import type { OrderStatus } from "@/lib/orderState";
 
@@ -39,6 +40,8 @@ export async function GET(req: NextRequest) {
   const search = (req.nextUrl.searchParams.get("search") ?? "").trim();
   const searchOrderNumber = parseOrderNumber(toEnglishDigits(search));
   const params = parsePageParams(req);
+  // ادمین عنوان فارسی دسته را جست‌وجو می‌کند («وکتور»)، اما در دیتابیس شناسه ذخیره است.
+  const matchingCategoryIds = search ? CATEGORIES.filter((c) => c.title.includes(search)).map((c) => c.id) : [];
 
   const where: Prisma.OrderWhereInput = {
     ...(statusParam ? { status: statusParam as OrderStatus } : {}),
@@ -51,6 +54,7 @@ export async function GET(req: NextRequest) {
               : []),
             { items: { some: { sourceSite: { contains: search, mode: "insensitive" } } } },
             { items: { some: { category: { contains: search, mode: "insensitive" } } } },
+            ...(matchingCategoryIds.length > 0 ? [{ items: { some: { category: { in: matchingCategoryIds } } } }] : []),
             { user: { mobile: { contains: search, mode: "insensitive" } } },
             { user: { name: { contains: search, mode: "insensitive" } } },
           ],
@@ -75,7 +79,8 @@ export async function GET(req: NextRequest) {
       orders.map((o) => ({
         id: o.id,
         orderNumber: formatOrderNumber(o.orderNumber),
-        category: o.items[0]?.category ?? null,
+        categoryTitle: o.items[0] ? categoryTitle(o.items[0].category) : null,
+        itemCount: o.items.length,
         sourceSite: o.items[0]?.sourceSite ?? null,
         priceLabel: rialToTomanLabel(Number(o.totalPriceRial)),
         status: o.status,

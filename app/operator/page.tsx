@@ -6,7 +6,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 import { toJalaliDateTime } from "@/lib/jalali";
 import { STATUS_LABELS, ITEM_STATUS_LABELS, operatorCanTransition, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
-import { CATEGORIES } from "@/data/categories";
+import { categoryTitle } from "@/data/categories";
 
 type OperatorItem = {
   id: string;
@@ -42,10 +42,6 @@ const ALL_STATUSES: OrderStatus[] = [
   "failed",
   "refunded",
 ];
-
-function categoryTitle(id: string): string {
-  return CATEGORIES.find((c) => c.id === id)?.title ?? id;
-}
 
 export default function OperatorPage() {
   const router = useRouter();
