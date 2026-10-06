@@ -55,7 +55,7 @@ function backupDirFor(rel: string): string {
   return path.join(IDE_BACKUP_DIR, "files", ...rel.split("/"));
 }
 
-async function backupCurrent(rel: string, abs: string): Promise<void> {
+export async function backupCurrent(rel: string, abs: string): Promise<void> {
   const current = await fs.readFile(abs).catch(() => null);
   if (!current) return;
   const dir = backupDirFor(rel);
@@ -87,7 +87,7 @@ export async function listVersions(relInput: string): Promise<VersionEntry[]> {
 
 // --- نوشتن ------------------------------------------------------------------
 
-async function atomicWrite(abs: string, content: Buffer, mode?: number): Promise<void> {
+export async function atomicWrite(abs: string, content: Buffer, mode?: number): Promise<void> {
   await fs.mkdir(path.dirname(abs), { recursive: true });
   const tmp = `${abs}.ide-${process.pid}-${Date.now()}.tmp`;
   await fs.writeFile(tmp, content, mode !== undefined ? { mode } : undefined);

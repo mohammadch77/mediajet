@@ -5,6 +5,8 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import IdeZipDialog from "@/components/admin/ide/IdeZipDialog";
+import IdeDeployDialog from "@/components/admin/ide/IdeDeployDialog";
 import IdeFileTree from "@/components/admin/ide/IdeFileTree";
 import { IdeRoutesPanel, IdeVersionsPanel } from "@/components/admin/ide/IdeSidePanels";
 
@@ -44,6 +46,7 @@ export default function AdminIdePage() {
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<Pending>(null);
+  const [dialog, setDialog] = useState<"zip" | "deploy" | null>(null);
 
   const active = files.find((f) => f.path === activePath) ?? null;
   const dirty = (f: OpenFile) => f.content !== f.original;
@@ -343,6 +346,22 @@ export default function AdminIdePage() {
           حذف فایل
         </button>
         <span className="flex-1" />
+        <a
+          href="/api/admin/ide/zip"
+          className={toolbarBtn + " border-[rgb(var(--c-primary2)/.3)] text-dim hover:text-text"}
+        >
+          دانلود زیپ کد
+        </a>
+        <button type="button" onClick={() => setDialog("zip")} className={toolbarBtn + " border-[rgb(var(--c-primary2)/.3)] text-dim hover:text-text"}>
+          آپلود زیپ
+        </button>
+        <button
+          type="button"
+          onClick={() => setDialog("deploy")}
+          className={toolbarBtn + " border-[rgb(var(--c-cyan)/.5)] text-cyan hover:bg-[rgb(var(--c-cyan)/.1)]"}
+        >
+          Deploy
+        </button>
         <button type="button" onClick={lock} className={toolbarBtn + " border-[rgb(var(--c-primary2)/.3)] text-dim"}>
           بستن قفل
         </button>
@@ -425,6 +444,32 @@ export default function AdminIdePage() {
             {sidebar}
           </div>
         </div>
+      )}
+
+      {dialog === "zip" && (
+        <IdeZipDialog
+          onClose={() => setDialog(null)}
+          onLocked={() => {
+            setDialog(null);
+            onLocked();
+          }}
+          onApplied={() => {
+            setTreeKey((k) => k + 1);
+            setVersionsKey((k) => k + 1);
+            // تب‌های باز ممکن است کهنه شده باشند؛ با بستن‌شان، باز کردن دوباره نسخه‌ی جدید را می‌خواند.
+            setFiles((prev) => prev.filter((f) => f.content !== f.original));
+            setActivePath((p) => (p && files.some((f) => f.path === p && f.content !== f.original) ? p : null));
+          }}
+        />
+      )}
+      {dialog === "deploy" && (
+        <IdeDeployDialog
+          onClose={() => setDialog(null)}
+          onLocked={() => {
+            setDialog(null);
+            onLocked();
+          }}
+        />
       )}
 
       <ConfirmDialog
