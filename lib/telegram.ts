@@ -137,7 +137,7 @@ async function notifyOrderCreatedAsync(params: {
 
   const financeChatId = await getTelegramConfig("TELEGRAM_CHAT_FINANCE");
   const operatorChatId = await getTelegramConfig("TELEGRAM_CHAT_OPERATOR");
-  const { orderCode, customerLine } = await describeOrder(orderId);
+  const { orderCode, customerLine, paymentMethodLine } = await describeOrder(orderId);
 
   if (financeChatId) {
     const financeText = [
@@ -146,6 +146,7 @@ async function notifyOrderCreatedAsync(params: {
       customerLine,
       `تعداد آیتم‌ها: ${toPersianDigits(items.length)}`,
       `مبلغ پرداختی: ${priceLabel}`,
+      paymentMethodLine,
     ].join("\n");
     void sendMessage(financeChatId, financeText);
   } else {
@@ -178,19 +179,78 @@ function describeUser(user: { mobile: string; name: string | null }): string {
   return user.name ? `${user.name} (${user.mobile})` : user.mobile;
 }
 
-async function describeOrder(orderId: string): Promise<{ orderCode: string; customerLine: string }> {
+const PAYMENT_METHOD_LINES: Record<string, string> = {
+  wallet: "روش پرداخت: 👛 کیف پول",
+  gateway: "روش پرداخت: 💳 آنلاین (درگاه بانکی)",
+};
+
+async function describeOrder(
+  orderId: string,
+): Promise<{ orderCode: string; customerLine: string; paymentMethodLine: string }> {
   try {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      select: { orderNumber: true, user: { select: { mobile: true, name: true } } },
+      select: { orderNumber: true, paymentMethod: true, user: { select: { mobile: true, name: true } } },
     });
     if (order) {
-      return { orderCode: formatOrderNumber(order.orderNumber), customerLine: `کاربر: ${describeUser(order.user)}` };
+      return {
+        orderCode: formatOrderNumber(order.orderNumber),
+        customerLine: `کاربر: ${describeUser(order.user)}`,
+        paymentMethodLine: PAYMENT_METHOD_LINES[order.paymentMethod] ?? `روش پرداخت: ${order.paymentMethod}`,
+      };
     }
   } catch (error) {
     console.error(`[تلگرام خطا] خواندن سفارش ${orderId} ناموفق بود:`, error);
   }
-  return { orderCode: orderId, customerLine: "کاربر: نامشخص" };
+  return { orderCode: orderId, customerLine: "کاربر: نامشخص", paymentMethodLine: "روش پرداخت: نامشخص" };
+}
+
+export type WalletChangeKind = "charge" | "admin_credit" | "admin_debit";
+
+const WALLET_CHANGE_TITLES: Record<WalletChangeKind, string> = {
+  charge: "💰 شارژ کیف پول (پرداخت آنلاین)",
+  admin_credit: "➕ افزایش دستی کیف پول توسط ادمین",
+  admin_debit: "➖ کاهش دستی کیف پول توسط ادمین",
+};
+
+/**
+ * هر تغییر مالیِ کیف پول که با ثبت سفارش همراه نیست (شارژ آنلاین، تعدیل دستی ادمین) را برای
+ * چت مالی می‌فرستد تا هیچ تراکنشی از دید مالی پنهان نماند. غیرمسدودکننده و بدون پرتاب خطا.
+ */
+export function notifyWalletChange(params: {
+  userId: string;
+  kind: WalletChangeKind;
+  amountRial: bigint;
+  balanceAfterRial: bigint;
+  /** فقط برای تعدیل دستی: دلیل ثبت‌شده و ادمین انجام‌دهنده */
+  reason?: string;
+  adminLabel?: string;
+}): void {
+  void notifyWalletChangeAsync(params).catch((error) =>
+    console.error("[تلگرام خطا] اطلاع‌رسانی تغییر کیف پول ناموفق بود:", error),
+  );
+}
+
+async function notifyWalletChangeAsync(params: Parameters<typeof notifyWalletChange>[0]): Promise<void> {
+  const financeChatId = await getTelegramConfig("TELEGRAM_CHAT_FINANCE");
+  if (!financeChatId) {
+    console.error("[تلگرام خطا] TELEGRAM_CHAT_FINANCE تنظیم نشده است.");
+    return;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: params.userId },
+    select: { mobile: true, name: true },
+  });
+  const lines = [
+    WALLET_CHANGE_TITLES[params.kind],
+    `کاربر: ${user ? describeUser(user) : "نامشخص"}`,
+    `مبلغ: ${rialToTomanLabel(Number(params.amountRial))}`,
+    `موجودی بعد از تغییر: ${rialToTomanLabel(Number(params.balanceAfterRial))}`,
+  ];
+  if (params.adminLabel) lines.push(`ادمین: ${params.adminLabel}`);
+  if (params.reason) lines.push(`دلیل: ${params.reason}`);
+  await sendMessage(financeChatId, lines.join("\n"));
 }
 
 /** فایل را از تلگرام دانلود می‌کند. بدون TELEGRAM_BOT_TOKEN (حالت شبیه‌سازی)، محتوای جعلی تولید می‌شود. */

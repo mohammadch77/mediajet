@@ -60,7 +60,7 @@ export const SETTING_DEFS = [
     key: "TELEGRAM_CHAT_FINANCE",
     group: "telegram",
     label: "چت مالی",
-    description: "شناسه‌ی چت تلگرام که اطلاع‌رسانی پرداخت هر سفارش به آن ارسال می‌شود.",
+    description: "شناسه‌ی چت تلگرام مالی: پرداخت هر سفارش (با روش پرداخت: کیف پول یا آنلاین)، شارژ آنلاین کیف پول و تعدیل دستی ادمین به آن ارسال می‌شود.",
   },
   {
     key: "TELEGRAM_CHAT_OPERATOR",

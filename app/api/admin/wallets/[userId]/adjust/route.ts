@@ -5,6 +5,7 @@ import { adjustWalletByAdmin } from "@/lib/walletAdjust";
 import { WalletError } from "@/lib/wallet";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 import { rialToTomanLabel } from "@/lib/money";
+import { notifyWalletChange } from "@/lib/telegram";
 
 // تعدیل دستی پول، مسیر حساس مالی است: حداکثر ۳۰ بار در دقیقه برای هر ادمین.
 const ADJUST_RATE_LIMIT = 30;
@@ -44,6 +45,14 @@ export async function POST(req: NextRequest, { params }: { params: { userId: str
       amountRial: BigInt(input.amountRial),
       reason: input.reason,
       idempotencyKey: input.idempotencyKey,
+    });
+    notifyWalletChange({
+      userId: params.userId,
+      kind: input.direction === "credit" ? "admin_credit" : "admin_debit",
+      amountRial: tx.amountRial,
+      balanceAfterRial: tx.balanceAfter,
+      reason: input.reason,
+      adminLabel: admin.name ? `${admin.name} (${admin.mobile})` : admin.mobile,
     });
     return NextResponse.json({
       ok: true,

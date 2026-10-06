@@ -48,7 +48,11 @@ async function lockPayment(tx: Prisma.TransactionClient, authority: string): Pro
 export async function confirmCharge(
   authority: string,
   gatewayStatusOk: boolean,
-): Promise<{ status: PaymentStatus }> {
+): Promise<{
+  status: PaymentStatus;
+  /** فقط وقتی شارژ در همین فراخوانی انجام شد مقدار دارد (callback تکراری null است) تا اطلاع‌رسانی دوباره نشود. */
+  credited: { userId: string; amountRial: bigint; balanceAfterRial: bigint } | null;
+}> {
   const gateway = await getGateway();
 
   return prisma.$transaction(async (tx) => {
@@ -56,12 +60,12 @@ export async function confirmCharge(
 
     // پرداخت قبلاً به نتیجه‌ی نهایی رسیده؛ callback تکراری چیزی تغییر نمی‌دهد.
     if (payment.status === "verified" || payment.status === "failed") {
-      return { status: payment.status };
+      return { status: payment.status, credited: null };
     }
 
     if (!gatewayStatusOk) {
       await tx.payment.update({ where: { id: payment.id }, data: { status: "failed" } });
-      return { status: "failed" as PaymentStatus };
+      return { status: "failed" as PaymentStatus, credited: null };
     }
 
     await tx.payment.update({ where: { id: payment.id }, data: { status: "paid" } });
@@ -69,7 +73,7 @@ export async function confirmCharge(
     const verifyResult = await gateway.verifyPayment(authority, payment.amountRial);
     if (!verifyResult.ok) {
       await tx.payment.update({ where: { id: payment.id }, data: { status: "failed" } });
-      return { status: "failed" as PaymentStatus };
+      return { status: "failed" as PaymentStatus, credited: null };
     }
 
     await tx.payment.update({
@@ -77,7 +81,7 @@ export async function confirmCharge(
       data: { status: "verified", refId: verifyResult.refId ?? null },
     });
 
-    await creditWalletInTx(
+    const creditTx = await creditWalletInTx(
       tx,
       payment.userId,
       payment.amountRial,
@@ -86,7 +90,10 @@ export async function confirmCharge(
       payment.idempotencyKey,
     );
 
-    return { status: "verified" as PaymentStatus };
+    return {
+      status: "verified" as PaymentStatus,
+      credited: { userId: payment.userId, amountRial: payment.amountRial, balanceAfterRial: creditTx.balanceAfter },
+    };
   }, { timeout: VERIFY_TX_TIMEOUT_MS });
 }
 

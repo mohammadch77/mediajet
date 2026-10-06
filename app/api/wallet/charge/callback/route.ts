@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { confirmCharge, PaymentError } from "@/lib/payment";
 import { GatewayError, buildResultUrl, CHARGE_RETURN_COOKIE } from "@/lib/gateway";
+import { notifyWalletChange } from "@/lib/telegram";
 
 // GET/POST /api/wallet/charge/callback
 // بازگشت از درگاه پرداخت با Authority و Status. تأیید و شارژ کیف پول این‌جا اتفاق می‌افتد
@@ -15,7 +16,11 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
 
   if (authority) {
     try {
-      await confirmCharge(authority, status === "OK");
+      const result = await confirmCharge(authority, status === "OK");
+      // اطلاع‌رسانی مالی فقط یک‌بار و فقط وقتی شارژ واقعاً در همین فراخوانی انجام شد.
+      if (result.credited) {
+        notifyWalletChange({ kind: "charge", ...result.credited });
+      }
     } catch (error) {
       // PaymentError: پرداخت یافت نشد (صفحه‌ی نتیجه پیام مناسب می‌دهد)؛
       // GatewayError: تأیید قطعی نشد و پرداخت «در انتظار» می‌ماند.
