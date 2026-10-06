@@ -34,7 +34,12 @@ export async function GET() {
   }
 
   const orders = await prisma.order.findMany({
-    where: { userId: currentUser.id },
+    where: {
+      userId: currentUser.id,
+      // سفارش پرداخت‌نشده‌ای که با حذف آیتم از سبد لغو شده، از فهرست کاربر کنار می‌رود
+      // (لغوِ بعد از پرداخت/بازگشت وجه همچنان نمایش داده می‌شود).
+      NOT: { status: "cancelled", events: { some: { fromStatus: "awaiting_payment", toStatus: "cancelled" } } },
+    },
     orderBy: { createdAt: "desc" },
     include: { items: { include: { delivery: true }, orderBy: { position: "asc" } } },
   });
