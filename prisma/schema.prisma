@@ -562,7 +562,7 @@ model AffiliateFraudFlag {
 model IdeAuditLog {
   id        String   @id @default(cuid())
   adminId   String
-  action    String // unlock | unlock_failed | save | create | delete | restore | zip_download | zip_apply | deploy
+  action    String // unlock | unlock_failed | save | create | delete | restore | zip_download | zip_apply | deploy | sync_push | sync_pull
   path      String?
   detail    String?
   createdAt DateTime @default(now())

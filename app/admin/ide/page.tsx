@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import IdeZipDialog from "@/components/admin/ide/IdeZipDialog";
 import IdeDeployDialog from "@/components/admin/ide/IdeDeployDialog";
+import IdeSyncDialog from "@/components/admin/ide/IdeSyncDialog";
 import IdeFileTree from "@/components/admin/ide/IdeFileTree";
 import { IdeRoutesPanel, IdeVersionsPanel } from "@/components/admin/ide/IdeSidePanels";
 
@@ -46,7 +47,7 @@ export default function AdminIdePage() {
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<Pending>(null);
-  const [dialog, setDialog] = useState<"zip" | "deploy" | null>(null);
+  const [dialog, setDialog] = useState<"zip" | "deploy" | "sync" | null>(null);
 
   const active = files.find((f) => f.path === activePath) ?? null;
   const dirty = (f: OpenFile) => f.content !== f.original;
@@ -355,6 +356,9 @@ export default function AdminIdePage() {
         <button type="button" onClick={() => setDialog("zip")} className={toolbarBtn + " border-[rgb(var(--c-primary2)/.3)] text-dim hover:text-text"}>
           آپلود زیپ
         </button>
+        <button type="button" onClick={() => setDialog("sync")} className={toolbarBtn + " border-[rgb(var(--c-primary2)/.3)] text-dim hover:text-text"}>
+          گیت‌هاب
+        </button>
         <button
           type="button"
           onClick={() => setDialog("deploy")}
@@ -459,6 +463,22 @@ export default function AdminIdePage() {
             // تب‌های باز ممکن است کهنه شده باشند؛ با بستن‌شان، باز کردن دوباره نسخه‌ی جدید را می‌خواند.
             setFiles((prev) => prev.filter((f) => f.content !== f.original));
             setActivePath((p) => (p && files.some((f) => f.path === p && f.content !== f.original) ? p : null));
+          }}
+        />
+      )}
+      {dialog === "sync" && (
+        <IdeSyncDialog
+          onClose={() => setDialog(null)}
+          onLocked={() => {
+            setDialog(null);
+            onLocked();
+          }}
+          onChanged={() => {
+            setTreeKey((k) => k + 1);
+            setVersionsKey((k) => k + 1);
+            // تب‌های بدون تغییر ذخیره‌نشده بسته می‌شوند تا نسخه‌ی جدید خوانده شود.
+            setFiles((prev) => prev.filter((f) => f.content !== f.original));
+            setActivePath(null);
           }}
         />
       )}

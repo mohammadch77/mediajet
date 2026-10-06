@@ -7,7 +7,7 @@ import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
 import { atomicWrite, backupCurrent, sha256 } from "./files";
-import { IDE_BACKUP_DIR, IDE_ROOT, IdeError, isBlockedSegment, normalizeRelPath, resolveSafe } from "./paths";
+import { IDE_BACKUP_DIR, IDE_ROOT, IdeError, isBlockedSegment, isNonSource, normalizeRelPath, resolveSafe } from "./paths";
 
 export const MAX_ZIP_UPLOAD_BYTES = 50 * 1024 * 1024; // ۵۰ مگابایت (فشرده)
 const MAX_ZIP_ENTRIES = 20_000;
@@ -16,16 +16,6 @@ const MAX_ZIP_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_DOWNLOAD_BYTES = 200 * 1024 * 1024;
 const STAGING_TTL_MS = 30 * 60 * 1000;
 const PLAN_LIST_LIMIT = 300;
-
-/** پوشه‌هایی که در دانلود نیستند (ساخته‌شده یا داده‌ی زمان اجرا). */
-const DOWNLOAD_EXCLUDED_DIRS = new Set(["storage", "out", "build", "dist"]);
-
-function skipForDownload(name: string, isDir: boolean, abs: string): boolean {
-  if (isBlockedSegment(name, isDir)) return true;
-  if (isDir && DOWNLOAD_EXCLUDED_DIRS.has(name)) return true;
-  if (!isDir && name.endsWith(".log")) return true;
-  return abs === IDE_BACKUP_DIR;
-}
 
 /** زیپ کل کد منبع پروژه (بدون node_modules، .next، .git، .env و کلیدها). */
 export async function buildProjectZip(): Promise<{ buffer: Buffer; fileCount: number }> {
@@ -39,7 +29,7 @@ export async function buildProjectZip(): Promise<{ buffer: Buffer; fileCount: nu
       const abs = path.join(dir, entry.name);
       const isDir = entry.isDirectory();
       if (!isDir && !entry.isFile()) continue; // symlink و موارد خاص دنبال نمی‌شوند
-      if (skipForDownload(entry.name, isDir, abs)) continue;
+      if (isNonSource(entry.name, isDir, abs)) continue;
       const rel = relDir ? `${relDir}/${entry.name}` : entry.name;
       if (isDir) {
         await walk(abs, rel);

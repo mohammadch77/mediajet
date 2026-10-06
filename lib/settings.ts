@@ -88,6 +88,25 @@ export const SETTING_DEFS = [
       "فقط برای سرور داخل ایران: آدرس Cloudflare Worker (پوشه‌ی telegram-relay/) که تماس‌ها با تلگرام از آن رد می‌شوند، مثل https://telegram-relay.example.workers.dev. اگر تنظیم نشود، اتصال مستقیم به api.telegram.org است. با «حذف مقدار» به حالت مستقیم برمی‌گردد.",
   },
   {
+    key: "GITHUB_TOKEN",
+    group: "github",
+    label: "توکن گیت‌هاب (همگام‌سازی کد)",
+    description:
+      "Personal Access Token برای ابزار توسعه‌ی پنل (همگام‌سازی کد با گیت‌هاب). فقط برای همین یک ریپو بساز: Fine-grained token با دسترسی Contents: Read and write و Metadata: Read-only. این توکن اجازه‌ی نوشتن روی ریپو را می‌دهد؛ جای دیگری به اشتراک نگذار.",
+  },
+  {
+    key: "GITHUB_REPO",
+    group: "github",
+    label: "ریپوی گیت‌هاب",
+    description: "به شکل owner/name، مثلاً mohammadch77/mediajet.",
+  },
+  {
+    key: "GITHUB_BRANCH",
+    group: "github",
+    label: "شاخه‌ی گیت‌هاب",
+    description: "شاخه‌ای که همگام‌سازی روی آن کار می‌کند. اگر خالی بماند، master.",
+  },
+  {
     key: "TELEGRAM_RELAY_SECRET",
     group: "telegram",
     label: "رمز رله‌ی تلگرام",

@@ -83,3 +83,14 @@ export async function resolveSafe(relInput: string): Promise<{ rel: string; abs:
   }
   return { rel, abs };
 }
+
+/** پوشه‌های داده/ساخته‌شده که نه در زیپ‌اند و نه در همگام‌سازی با گیت‌هاب. */
+const NON_SOURCE_DIRS = new Set(["storage", "out", "build", "dist"]);
+
+/** آیا این فایل/پوشه منبع پروژه نیست و باید از زیپ و همگام‌سازی کنار برود؟ */
+export function isNonSource(name: string, isDir: boolean, abs?: string): boolean {
+  if (isBlockedSegment(name, isDir)) return true;
+  if (isDir && NON_SOURCE_DIRS.has(name)) return true;
+  if (!isDir && name.endsWith(".log")) return true;
+  return abs !== undefined && abs === IDE_BACKUP_DIR;
+}

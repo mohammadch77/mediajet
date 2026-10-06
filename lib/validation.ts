@@ -626,3 +626,16 @@ export const ideRestoreInput = z.object({
   path: idePath,
   versionId: z.string({ error: "شناسه‌ی نسخه الزامی است." }).min(1).max(40),
 });
+
+export const ideSyncPushInput = z.object({
+  message: z
+    .string({ error: "پیام کامیت الزامی است." })
+    .trim()
+    .min(3, "پیام کامیت خیلی کوتاه است.")
+    .max(200, "پیام کامیت حداکثر ۲۰۰ نویسه است."),
+  paths: z.array(idePath).max(500).optional(),
+});
+
+export const ideSyncPullInput = z.object({
+  paths: z.array(idePath).max(500).optional(),
+});

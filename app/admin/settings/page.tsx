@@ -17,6 +17,7 @@ const GROUP_LABELS: Record<string, string> = {
   gateway: "درگاه پرداخت",
   sms: "پنل پیامک",
   telegram: "تلگرام",
+  github: "گیت‌هاب (ابزار توسعه)",
 };
 
 function StatusDot({ configured }: { configured: boolean }) {
