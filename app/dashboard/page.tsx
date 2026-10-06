@@ -547,6 +547,14 @@ export default function DashboardPage() {
                       <span className="px-3 py-1.5 rounded-full text-[.8rem] font-bold bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.14)]">
                         {STATUS_LABELS[o.status]}
                       </span>
+                      {o.status === "awaiting_payment" && (
+                        <Link
+                          href="/cart"
+                          className="px-4 py-1.5 rounded-full text-[.8rem] font-bold bg-gradient-to-br from-primary to-primary2 text-white transition hover:-translate-y-px"
+                        >
+                          ادامه‌ی پرداخت
+                        </Link>
+                      )}
                     </div>
                   </div>
 
