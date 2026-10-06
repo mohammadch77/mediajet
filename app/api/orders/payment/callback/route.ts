@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { confirmOrderPayment, PaymentError } from "@/lib/payment";
-import { GatewayError } from "@/lib/gateway";
+import { GatewayError, buildCallbackUrl } from "@/lib/gateway";
 import { rialToTomanLabel } from "@/lib/money";
 import { notifyOrderCreated } from "@/lib/telegram";
 import { prisma } from "@/lib/db";
@@ -14,7 +14,7 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
   const authority = url.searchParams.get("Authority");
   const status = url.searchParams.get("Status");
 
-  const dashboardUrl = new URL("/dashboard", req.url);
+  const dashboardUrl = new URL(buildCallbackUrl("/dashboard", req.url));
 
   if (!authority) {
     dashboardUrl.searchParams.set("order", "failed");

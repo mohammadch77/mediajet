@@ -25,6 +25,9 @@ export interface PaymentGateway {
   verifyPayment(authority: string, amountRial: bigint): Promise<GatewayVerifyResult>;
 }
 
+/** نام کوکی مقصد بازگشت پس از شارژ کیف پول (فقط مقدار «cart» معتبر است). */
+export const CHARGE_RETURN_COOKIE = "charge_return";
+
 /** خطای درگاه؛ پیام فارسی و امن برای نمایش به کاربر است (بدون مرچنت یا جزئیات داخلی). */
 export class GatewayError extends Error {
   constructor(message: string) {

@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/session";
 import { getPaymentSettings } from "@/lib/paymentSettings";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 import { rialToTomanLabel } from "@/lib/money";
+import { CHARGE_RETURN_COOKIE } from "@/lib/gateway";
 
 // شارژ کیف پول یک مسیر حساس مالی است: حداکثر ۱۰ تلاش در دقیقه برای هر کاربر.
 const CHARGE_RATE_LIMIT = 10;
@@ -80,5 +81,18 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ redirectUrl });
+  const response = NextResponse.json({ redirectUrl });
+  // مقصد بازگشت در کوکی کوتاه‌مدت نگه داشته می‌شود تا callback درگاه (که فقط Authority دارد) بداند کاربر را کجا برگرداند.
+  if (input.returnTo === "cart") {
+    response.cookies.set(CHARGE_RETURN_COOKIE, "cart", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 60,
+      path: "/",
+    });
+  } else {
+    response.cookies.delete(CHARGE_RETURN_COOKIE);
+  }
+  return response;
 }

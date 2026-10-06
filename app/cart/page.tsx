@@ -5,6 +5,7 @@ import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 import { useCart } from "@/lib/CartContext";
+import { useWalletCharge, formatTomanInput, tomanLabel } from "@/lib/useWalletCharge";
 
 type CartItem = {
   id: string;
@@ -32,11 +33,22 @@ export default function CartPage() {
   const [items, setItems] = useState<CartItem[] | null>(null);
   const [quote, setQuote] = useState<CartQuote | null>(null);
   const [walletBalanceRial, setWalletBalanceRial] = useState<bigint | null>(null);
+  const [walletMinChargeRial, setWalletMinChargeRial] = useState<number | null>(null);
+  const [chargeNotice, setChargeNotice] = useState<"success" | "failed" | "pending" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wallet");
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
+  // شارژ سریع: بعد از پرداخت کاربر به همین صفحه برمی‌گردد (returnTo = cart).
+  const {
+    amountToman: chargeAmountToman,
+    charging,
+    error: chargeError,
+    onAmountChange: onChargeAmountChange,
+    setPreset: setChargePreset,
+    startCharge,
+  } = useWalletCharge(walletMinChargeRial, "cart");
 
   const loadCart = useCallback(async () => {
     setError(null);
@@ -53,6 +65,7 @@ export default function CartPage() {
       if (walletRes.ok) {
         const walletData = await walletRes.json();
         setWalletBalanceRial(BigInt(walletData.balanceRial));
+        setWalletMinChargeRial(Number(walletData.walletMinChargeRial));
       }
 
       if (itemsData.items.length === 0) {
@@ -72,11 +85,35 @@ export default function CartPage() {
       router.replace("/");
       return;
     }
+    // بازگشت از درگاه پس از شارژ سریع: پیام نتیجه نشان داده و آدرس تمیز می‌شود.
+    const charge = new URLSearchParams(window.location.search).get("charge");
+    if (charge === "success" || charge === "failed" || charge === "pending") {
+      setChargeNotice(charge);
+      router.replace("/cart");
+    }
     loadCart();
   }, [loading, user, router, openAuthModal, loadCart]);
 
   const hasEnoughWalletBalance =
     quote && walletBalanceRial !== null ? walletBalanceRial >= BigInt(quote.walletTotalRial) : null;
+
+  // کسری موجودی (ریال) و مبلغ پیشنهادی شارژ: کسری، رو به بالا تا هزار تومان، و دست‌کم حداقل شارژ.
+  const shortfallRial =
+    quote && walletBalanceRial !== null && hasEnoughWalletBalance === false
+      ? BigInt(quote.walletTotalRial) - walletBalanceRial
+      : null;
+  const suggestedChargeToman =
+    shortfallRial !== null
+      ? Math.max(Math.ceil(Number(shortfallRial) / 10 / 1000) * 1000, Math.ceil((walletMinChargeRial ?? 0) / 10))
+      : null;
+
+  // با پیدا شدن کسری، مبلغ پیشنهادی یک‌بار در فیلد گذاشته می‌شود (کاربر می‌تواند عوضش کند).
+  useEffect(() => {
+    if (suggestedChargeToman !== null && chargeAmountToman === "") {
+      setChargePreset(suggestedChargeToman);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestedChargeToman]);
 
   // پیش‌فرض کیف پول است، مگر موجودی کافی نباشد؛ با بارگذاری/تغییر جمع سبد دوباره ارزیابی می‌شود.
   useEffect(() => {
@@ -151,7 +188,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="relative min-h-screen px-[5vw] py-16 max-w-[800px] mx-auto">
+    <div className="relative min-h-screen px-[5vw] py-10 sm:py-16 max-w-[800px] mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-4 mb-10">
         <div>
           <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Cart</div>
@@ -171,6 +208,22 @@ export default function CartPage() {
         </div>
       )}
 
+      {chargeNotice === "success" && (
+        <div className="bg-[rgb(var(--c-cyan)/.1)] border border-[rgb(var(--c-cyan)/.3)] text-cyan rounded-2xl p-4 mb-6">
+          شارژ کیف پول با موفقیت انجام شد. حالا می‌توانی سبد را از کیف پول پرداخت کنی.
+        </div>
+      )}
+      {chargeNotice === "failed" && (
+        <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-6">
+          شارژ کیف پول ناموفق بود یا لغو شد.
+        </div>
+      )}
+      {chargeNotice === "pending" && (
+        <div className="bg-[rgb(var(--c-primary)/.1)] border border-[rgb(var(--c-primary2)/.3)] rounded-2xl p-4 mb-6">
+          تأیید پرداخت با درگاه هنوز قطعی نشده است. اگر مبلغ از حساب شما کسر شده، چند دقیقه صبر کنید و سپس با پشتیبانی تماس بگیرید.
+        </div>
+      )}
+
       {!items ? (
         <div className="text-dim">در حال بارگذاری...</div>
       ) : items.length === 0 ? (
@@ -186,11 +239,11 @@ export default function CartPage() {
         </div>
       ) : (
         <>
-          <div className="grid gap-3.5 mb-8">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-3.5 mb-8">
             {items.map((item) => (
               <div
                 key={item.id}
-                className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-[18px_20px] flex items-center justify-between flex-wrap gap-3"
+                className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-[18px_20px] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2.5 flex-wrap mb-1.5">
@@ -202,12 +255,12 @@ export default function CartPage() {
                     target="_blank"
                     rel="noreferrer"
                     dir="ltr"
-                    className="text-dim text-[.78rem] block truncate max-w-[360px] hover:text-cyan transition"
+                    className="text-dim text-[.78rem] block truncate max-w-full sm:max-w-[360px] hover:text-cyan transition"
                   >
                     {item.productUrl}
                   </a>
                 </div>
-                <div className="flex items-center gap-3 flex-wrap shrink-0">
+                <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 border-t border-[rgb(var(--c-primary2)/.1)] pt-3 sm:border-t-0 sm:pt-0">
                   <span className="font-semibold text-[.95rem]">{item.priceLabel}</span>
                   <button
                     type="button"
@@ -224,7 +277,7 @@ export default function CartPage() {
           </div>
 
           {quote && (
-            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-[22px_24px] mb-6">
+            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-[22px_24px] mb-6">
               <div className="text-dim text-[.85rem] mb-3">جمع کل ({quote.itemCount} آیتم) — روش پرداخت را انتخاب کن</div>
               <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2.5 mb-1">
                 <button
@@ -242,7 +295,7 @@ export default function CartPage() {
                   <div className="font-display text-[1.2rem] font-extrabold text-success">{quote.walletTotalLabel}</div>
                   {hasEnoughWalletBalance === false && (
                     <div className="text-[.76rem] text-accent2 mt-1.5">
-                      موجودی کیف پول کافی نیست؛ از پنل کاربری شارژ کن یا از درگاه پرداخت کن.
+                      موجودی کیف پول کافی نیست؛ همین‌جا شارژ کن یا از درگاه پرداخت کن.
                     </div>
                   )}
                 </button>
@@ -258,6 +311,45 @@ export default function CartPage() {
                   <div className="font-display text-[1.2rem] font-extrabold text-primary2">{quote.gatewayTotalLabel}</div>
                 </button>
               </div>
+            </div>
+          )}
+
+          {shortfallRial !== null && (
+            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.3)] rounded-2xl p-4 sm:p-[20px_24px] mb-6">
+              <div className="font-display font-bold mb-1">شارژ سریع کیف پول</div>
+              <p className="text-dim text-[.85rem] mb-4">
+                موجودی فعلی {walletBalanceRial !== null ? tomanLabel(Number(walletBalanceRial) / 10) : "—"} تومان است و برای پرداخت سبد از کیف پول{" "}
+                {tomanLabel(Number(shortfallRial) / 10)} تومان کم داری. بعد از پرداخت، خودکار به همین صفحه برمی‌گردی.
+              </p>
+              <div className="flex flex-col min-[420px]:flex-row gap-3">
+                <div className="relative flex-1 min-w-0">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    dir="ltr"
+                    placeholder="مبلغ شارژ"
+                    value={formatTomanInput(chargeAmountToman)}
+                    onChange={(e) => onChargeAmountChange(e.target.value)}
+                    className="w-full bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.3)] text-text placeholder-dim rounded-full pl-16 pr-4 py-3 text-[.95rem] outline-none focus:border-primary2 text-right"
+                  />
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[.85rem] text-dim">تومان</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={startCharge}
+                  disabled={charging}
+                  className="font-body cursor-pointer border-none font-bold text-[.95rem] text-white bg-gradient-to-br from-primary to-primary2 px-6 py-3 rounded-full whitespace-nowrap transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {charging ? "در حال انتقال..." : "شارژ کیف پول"}
+                </button>
+              </div>
+              {walletMinChargeRial !== null && (
+                <div className="text-dim text-[.78rem] mt-2">حداقل شارژ {tomanLabel(walletMinChargeRial / 10)} تومان</div>
+              )}
+              {chargeError && (
+                <div className="text-accent2 bg-[rgb(var(--c-accent)/.1)] rounded-lg px-3 py-2 text-[.82rem] mt-3">{chargeError}</div>
+              )}
             </div>
           )}
 

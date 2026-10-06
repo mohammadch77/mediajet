@@ -45,6 +45,8 @@ export const walletChargeInput = z.object({
     .number({ error: requiredOrInvalidType("مبلغ الزامی است.", "مبلغ باید عدد باشد.") })
     .int("مبلغ باید عدد صحیح باشد.")
     .positive("مبلغ باید بزرگ‌تر از صفر باشد."),
+  // مقصد بازگشت پس از پرداخت؛ فقط مقدار فهرست‌شده مجاز است (جلوگیری از redirect دلخواه).
+  returnTo: z.literal("cart").optional(),
 });
 
 export type WalletChargeInput = z.infer<typeof walletChargeInput>;

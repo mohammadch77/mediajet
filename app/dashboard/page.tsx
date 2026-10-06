@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
-import { toPersianDigits, toEnglishDigits } from "@/lib/money";
+import { toPersianDigits } from "@/lib/money";
+import { useWalletCharge, formatTomanInput, tomanLabel } from "@/lib/useWalletCharge";
 import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
 import { STATUS_LABELS, ITEM_STATUS_LABELS, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
 import { CATEGORIES } from "@/data/categories";
@@ -81,9 +82,14 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [chargeNotice, setChargeNotice] = useState<"success" | "failed" | "pending" | null>(null);
   const [orderNotice, setOrderNotice] = useState<"success" | "failed" | "pending" | null>(null);
-  const [chargeAmountToman, setChargeAmountToman] = useState("");
-  const [charging, setCharging] = useState(false);
-  const [chargeError, setChargeError] = useState<string | null>(null);
+  const {
+    amountToman: chargeAmountToman,
+    charging,
+    error: chargeError,
+    onAmountChange: onChargeAmountChange,
+    setPreset: setChargePreset,
+    startCharge: handleCharge,
+  } = useWalletCharge(wallet ? Number(wallet.walletMinChargeRial) : null);
 
   const [messages, setMessages] = useState<SupportMessage[] | null>(null);
   const [hasUnread, setHasUnread] = useState(false);
@@ -297,43 +303,7 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
-  function minChargeTomanLabel(): string {
-    const minRial = wallet ? Number(wallet.walletMinChargeRial) : 1_000_000;
-    return toPersianDigits((minRial / 10).toLocaleString("en-US"));
-  }
-
-  async function handleCharge() {
-    setChargeError(null);
-    const toman = Number(chargeAmountToman);
-    if (!Number.isInteger(toman) || toman <= 0) {
-      setChargeError("مبلغ را به تومان و به‌صورت عدد صحیح وارد کن.");
-      return;
-    }
-
-    const amountRial = toman * 10;
-    const minRial = wallet ? Number(wallet.walletMinChargeRial) : 0;
-    if (minRial > 0 && amountRial < minRial) {
-      setChargeError(`حداقل شارژ کیف پول ${minChargeTomanLabel()} تومان است.`);
-      return;
-    }
-
-    setCharging(true);
-    try {
-      const res = await fetch("/api/wallet/charge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amountRial }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error ?? "خطا در شروع شارژ کیف پول.");
-      }
-      window.location.href = data.redirectUrl;
-    } catch (e) {
-      setChargeError(e instanceof Error ? e.message : "خطا در شروع شارژ کیف پول.");
-      setCharging(false);
-    }
-  }
+  const minChargeTomanLabel = tomanLabel((wallet ? Number(wallet.walletMinChargeRial) : 1_000_000) / 10);
 
   if (loading || !user) {
     return (
@@ -451,7 +421,7 @@ export default function DashboardPage() {
             <>
               <WalletCard balanceLabel={wallet.balanceLabel}>
                 <div className="text-[rgba(255,255,255,.75)] text-[.8rem] mb-3">
-                  حداقل شارژ {minChargeTomanLabel()} تومان
+                  حداقل شارژ {minChargeTomanLabel} تومان
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap mb-3">
@@ -459,10 +429,7 @@ export default function DashboardPage() {
                     <button
                       key={amount}
                       type="button"
-                      onClick={() => {
-                        setChargeAmountToman(String(amount));
-                        setChargeError(null);
-                      }}
+                      onClick={() => setChargePreset(amount)}
                       disabled={charging}
                       className={
                         "font-body cursor-pointer text-[.85rem] font-bold px-4 py-2 rounded-full transition disabled:opacity-60 disabled:cursor-not-allowed border " +
@@ -484,13 +451,8 @@ export default function DashboardPage() {
                       autoComplete="off"
                       dir="ltr"
                       placeholder="یا مبلغ دلخواه"
-                      value={chargeAmountToman ? Number(chargeAmountToman).toLocaleString("en-US") : ""}
-                      onChange={(e) => {
-                        // فقط رقم؛ ارقام فارسی/عربی تبدیل و جداکننده‌ها حذف می‌شوند. نمایش با جداکننده‌ی سه‌رقمی است.
-                        const digits = toEnglishDigits(e.target.value).replace(/\D/g, "").replace(/^0+/, "").slice(0, 12);
-                        setChargeAmountToman(digits);
-                        setChargeError(null);
-                      }}
+                      value={formatTomanInput(chargeAmountToman)}
+                      onChange={(e) => onChargeAmountChange(e.target.value)}
                       className="bg-[rgba(255,255,255,.1)] border border-[rgba(255,255,255,.25)] text-white placeholder-[rgba(255,255,255,.6)] rounded-full pl-16 pr-4 py-2.5 text-[.9rem] w-full outline-none focus:border-white text-right"
                     />
                     <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[.85rem] text-[rgba(255,255,255,.75)]">

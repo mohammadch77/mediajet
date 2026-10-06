@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { confirmCharge, PaymentError } from "@/lib/payment";
-import { GatewayError } from "@/lib/gateway";
+import { GatewayError, buildCallbackUrl, CHARGE_RETURN_COOKIE } from "@/lib/gateway";
 
 // GET/POST /api/wallet/charge/callback
 // بازگشت از درگاه پرداخت با Authority و Status. تأیید و شارژ کیف پول این‌جا اتفاق می‌افتد
@@ -10,11 +10,19 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
   const authority = url.searchParams.get("Authority");
   const status = url.searchParams.get("Status");
 
-  const dashboardUrl = new URL("/dashboard", req.url);
+  // اگر شارژ از صفحه‌ی سبد خرید شروع شده، کاربر به همان‌جا برمی‌گردد؛ وگرنه داشبورد.
+  const returnToCart = req.cookies.get(CHARGE_RETURN_COOKIE)?.value === "cart";
+  const dashboardUrl = new URL(buildCallbackUrl(returnToCart ? "/cart" : "/dashboard", req.url));
+
+  const redirect = () => {
+    const res = NextResponse.redirect(dashboardUrl);
+    res.cookies.delete(CHARGE_RETURN_COOKIE);
+    return res;
+  };
 
   if (!authority) {
     dashboardUrl.searchParams.set("charge", "failed");
-    return NextResponse.redirect(dashboardUrl);
+    return redirect();
   }
 
   try {
@@ -31,7 +39,7 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.redirect(dashboardUrl);
+  return redirect();
 }
 
 export async function GET(req: NextRequest) {
