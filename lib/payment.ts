@@ -173,6 +173,18 @@ export async function confirmOrderPayment(
       };
     }
 
+    // سفارش دیگر در انتظار پرداخت نیست (مثلاً با تلاش دیگری پرداخت شد یا لغو شد): این تلاش
+    // هرگز نباید verify شود، وگرنه پول بدون صف‌شدن سفارش گرفته می‌شود. وجه تأییدنشده را درگاه برمی‌گرداند.
+    if (order.status !== "awaiting_payment") {
+      await tx.payment.update({ where: { id: payment.id }, data: { status: "failed" } });
+      return {
+        status: "failed" as PaymentStatus,
+        orderId: order.id,
+        orderStatus: order.status,
+        queued: null,
+      };
+    }
+
     if (!gatewayStatusOk) {
       await tx.payment.update({ where: { id: payment.id }, data: { status: "failed" } });
       await recordPaymentFailure(tx, order, "پرداخت از سوی کاربر لغو شد یا درگاه آن را ناموفق اعلام کرد.");

@@ -97,11 +97,31 @@ export default function DashboardPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messageError, setMessageError] = useState<string | null>(null);
   const [downloadingItemId, setDownloadingItemId] = useState<string | null>(null);
+  const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
 
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [nameSaved, setNameSaved] = useState(false);
+
+  // پرداخت مجدد سفارش «در انتظار پرداخت»: سرور تلاش پرداخت تازه می‌سازد و کاربر به درگاه می‌رود.
+  async function handlePayOrder(orderId: string) {
+    if (payingOrderId) return;
+    setPayingOrderId(orderId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/pay`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        loadOrders();
+        throw new Error(data.error ?? "ایجاد پرداخت ناموفق بود؛ دوباره تلاش کنید.");
+      }
+      window.location.href = data.redirectUrl;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "ایجاد پرداخت ناموفق بود؛ دوباره تلاش کنید.");
+      setPayingOrderId(null);
+    }
+  }
 
   async function handleDownload(item: OrderItem) {
     if (!item.downloadUrl || downloadingItemId) return;
@@ -548,12 +568,14 @@ export default function DashboardPage() {
                         {STATUS_LABELS[o.status]}
                       </span>
                       {o.status === "awaiting_payment" && (
-                        <Link
-                          href="/cart"
-                          className="px-4 py-1.5 rounded-full text-[.8rem] font-bold bg-gradient-to-br from-primary to-primary2 text-white transition hover:-translate-y-px"
+                        <button
+                          type="button"
+                          onClick={() => handlePayOrder(o.id)}
+                          disabled={payingOrderId !== null}
+                          className="px-4 py-1.5 rounded-full text-[.8rem] font-bold bg-gradient-to-br from-primary to-primary2 text-white border-none cursor-pointer transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          ادامه‌ی پرداخت
-                        </Link>
+                          {payingOrderId === o.id ? "در حال انتقال..." : "پرداخت"}
+                        </button>
                       )}
                     </div>
                   </div>

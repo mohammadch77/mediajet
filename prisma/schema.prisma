@@ -165,12 +165,12 @@ enum TxType {
 // authority شناسه‌ی یکتای درگاه برای این تلاش پرداخت است.
 // idempotencyKey برای جلوگیری از شارژ تکراری در صورت فراخوانی مکرر callback به creditWallet داده می‌شود.
 // orderId فقط برای پرداخت مستقیم سفارش از درگاه پر می‌شود (پرداخت شارژ کیف پول null است).
-// یکتاست تا هر سفارش حداکثر یک تلاش پرداخت درگاهی داشته باشد و callback تکراری نتواند
-// سفارش را دوبار به صف بفرستد.
+// یک سفارش می‌تواند چند تلاش پرداخت داشته باشد؛ فقط یک تلاش در حالت initiated باز می‌ماند
+// (تلاش جدید، قبلی‌ها را failed می‌کند) و confirmOrderPayment با قفل سفارش جلوی صف‌شدن دوباره را می‌گیرد.
 model Payment {
   id             String        @id @default(cuid())
   userId         String
-  orderId        String?       @unique
+  orderId        String?
   amountRial     BigInt
   status         PaymentStatus @default(initiated)
   authority      String        @unique
@@ -186,6 +186,7 @@ model Payment {
   order Order? @relation(fields: [orderId], references: [id])
 
   @@index([userId])
+  @@index([orderId])
 }
 
 enum PaymentStatus {
@@ -214,7 +215,7 @@ model Order {
   user    User         @relation(fields: [userId], references: [id])
   events  OrderEvent[]
   items   OrderItem[]
-  payment Payment?
+  payments Payment[]
 
   @@index([userId])
   @@index([status])
