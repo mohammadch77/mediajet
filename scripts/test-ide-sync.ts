@@ -81,8 +81,8 @@ async function main() {
   st = await getSyncStatus(cfg);
   ok(st.items.length === 3 && st.items.every((i) => i.state === "push"), "سه تغییر محلی = push");
 
-  let res = await pushChanges(cfg, "test push");
-  ok(res.count === 3, "push سه فایل");
+  const pushed = await pushChanges(cfg, "test push");
+  ok(pushed.count === 3, "push سه فایل");
   ok(remoteFiles.get("a.txt") === gsha(Buffer.from("A2")) && !remoteFiles.has("src/b.ts") && remoteFiles.has("src/new.ts"), "ریموت به‌روز شد (ویرایش/حذف/جدید)");
   ok(remoteFiles.has(".env"), ".env ریموت دست‌نخورده");
   st = await getSyncStatus(cfg);
@@ -93,8 +93,8 @@ async function main() {
   headCommit = "c9"; headTree = snapshotTree();
   st = await getSyncStatus(cfg);
   ok(st.items.length === 3 && st.items.every((i) => i.state === "pull"), "سه تغییر ریموت = pull");
-  res = await pullChanges(cfg);
-  ok(res.count === 3 && (await r("a.txt")) === "A3" && (await r("src/c.ts")) === "C1", "pull اعمال شد");
+  const pulled = await pullChanges(cfg);
+  ok(pulled.count === 3 && (await r("a.txt")) === "A3" && (await r("src/c.ts")) === "C1", "pull اعمال شد");
   ok(!(await fs.stat(path.join(process.env.IDE_ROOT!, "src/new.ts")).then(() => true, () => false)), "حذف ریموت محلی شد");
   ok((await r(".env")) === "SECRET=1", ".env محلی دست‌نخورده");
 
