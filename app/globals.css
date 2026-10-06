@@ -94,3 +94,21 @@ body {
 .prose-page strong { color: var(--prose-strong); }
 .prose-page blockquote { border-inline-start: 3px solid rgba(138,124,255,.4); padding-inline-start: 1em; color: var(--prose-quote); margin: 1em 0; }
 .prose-page hr { border: none; border-top: 1px solid rgba(138,124,255,.2); margin: 1.5em 0; }
+
+/* صفحه‌های وضعیت (۴۰۴، بازیابی خطا): شناوری ملایم و چرخش لودر */
+@keyframes mj-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(2deg); }
+}
+@keyframes mj-spin { to { transform: rotate(360deg); } }
+@keyframes mj-glow {
+  0%, 100% { opacity: .55; }
+  50% { opacity: .95; }
+}
+.mj-float { animation: mj-float 6s ease-in-out infinite; }
+.mj-spin { animation: mj-spin .9s linear infinite; }
+.mj-glow { animation: mj-glow 3.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .mj-float, .mj-glow { animation: none; }
+  .mj-spin { animation-duration: 2.4s; }
+}

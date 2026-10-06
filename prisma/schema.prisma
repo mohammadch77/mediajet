@@ -570,3 +570,36 @@ model IdeAuditLog {
   @@index([createdAt])
   @@index([adminId])
 }
+
+// لاگ خطاهای برنامه (کاربر و سرور) برای پنل ادمین (/admin/errors). خطاهای یکسان با fingerprint
+// ادغام می‌شوند و فقط count/lastSeenAt بالا می‌رود تا یک باگِ پرتکرار هزاران ردیف نسازد.
+// file/line/column «بهترین مکان شناخته‌شده»‌اند: با source map به کد اصلی (مثلاً components/X.tsx:12:3)
+// برگردانده می‌شوند و اگر نشد، همان مکان خام باندل.
+model ErrorLog {
+  id             String    @id @default(cuid())
+  fingerprint    String    @unique
+  source         String // client | server
+  kind           String // error | unhandledrejection | boundary | api | network | server
+  message        String
+  stack          String? // استک خام (کوتاه‌شده)
+  resolvedStack  String? // استک با مسیر فایل‌های اصلی (از source map)
+  componentStack String?
+  file           String?
+  line           Int?
+  column         Int?
+  functionName   String?
+  locationMapped Boolean   @default(false) // آیا file/line از source map آمده؟
+  url            String? // مسیر صفحه (بدون query)
+  statusCode     Int?
+  digest         String?
+  userAgent      String?
+  lastUserId     String?
+  count          Int       @default(1)
+  status         String    @default("open") // open | resolved
+  resolvedAt     DateTime?
+  firstSeenAt    DateTime  @default(now())
+  lastSeenAt     DateTime  @default(now())
+
+  @@index([status, lastSeenAt])
+  @@index([lastSeenAt])
+}

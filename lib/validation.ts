@@ -674,3 +674,25 @@ export const ideSyncPushInput = z.object({
 export const ideSyncPullInput = z.object({
   paths: z.array(idePath).max(500).optional(),
 });
+
+
+// گزارش خطا از مرورگر کاربر (/api/client-errors). همه‌ی فیلدها سقف طول دارند؛ ورودی عمومی است.
+export const clientErrorInput = z.object({
+  kind: z.enum(["error", "unhandledrejection", "boundary", "api", "network"], { error: "نوع خطا نامعتبر است." }),
+  message: z.string({ error: "پیام خطا الزامی است." }).min(1).max(1000),
+  stack: z.string().max(12000).optional(),
+  componentStack: z.string().max(6000).optional(),
+  url: z.string().max(500).optional(),
+  statusCode: z.number().int().min(100).max(599).optional(),
+  digest: z.string().max(100).optional(),
+});
+
+export const adminErrorListQuery = z.object({
+  status: z.enum(["open", "resolved", "all"]).default("open"),
+  source: z.enum(["client", "server", "all"]).default("all"),
+  search: z.string().trim().max(200).default(""),
+});
+
+export const adminErrorUpdateInput = z.object({
+  status: z.enum(["open", "resolved"], { error: "وضعیت نامعتبر است." }),
+});

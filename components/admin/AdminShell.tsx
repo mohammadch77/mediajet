@@ -1,7 +1,7 @@
 "use client";
 // چیدمان اصلی پنل ادمین: سایدبار ناوبری + هدر بالا. ریسپانسیو (سایدبار کشویی روی موبایل).
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -34,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/pages", label: "صفحات", icon: <Icon path="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm8 0v5h5M8 13h8m-8 4h5" /> },
   { href: "/admin/blog", label: "وبلاگ", icon: <Icon path="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4Zm3 5h9m-9 4h9m-9 4h5" /> },
   { href: "/admin/ide", label: "ابزار توسعه", icon: <Icon path="m8 8-4 4 4 4m8-8 4 4-4 4m-3-10-2 12" /> },
+  { href: "/admin/errors", label: "خطاها", icon: <Icon path="M12 9v4m0 4h.01M10.3 3.9 2.4 17.5A2 2 0 0 0 4.1 20.5h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /> },
   { href: "/admin/reports", label: "گزارش‌ها", icon: <Icon path="M3 3v18h18M8 17V10m5 7V6m5 11v-4" /> },
 ];
 
@@ -46,8 +47,16 @@ export default function AdminShell({
   adminName: string | null;
   children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openErrors, setOpenErrors] = useState(0);
+  const [maintenance, setMaintenance] = useState(false);
+
+  // نشان تعداد خطاهای باز و هشدار حالت به‌روزرسانی؛ با هر تغییر مسیر تازه می‌شود.
+  useEffect(() => {
+    fetch("/api/admin/errors/summary").then((r) => (r.ok ? r.json() : null)).then((j) => j && setOpenErrors(j.open ?? 0)).catch(() => {});
+    fetch("/api/admin/maintenance").then((r) => (r.ok ? r.json() : null)).then((j) => j && setMaintenance(Boolean(j.enabled))).catch(() => {});
+  }, [pathname]);
   const router = useRouter();
   const { logout } = useAuth();
 
@@ -105,7 +114,10 @@ export default function AdminShell({
                 }
               >
                 {item.icon}
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
+                {item.href === "/admin/errors" && openErrors > 0 && (
+                  <span className="text-[.68rem] font-bold bg-accent text-white px-2 py-0.5 rounded-full">{openErrors > 99 ? "99+" : openErrors}</span>
+                )}
               </Link>
             );
           })}
@@ -154,6 +166,11 @@ export default function AdminShell({
           </div>
         </header>
 
+        {maintenance && (
+          <Link href="/admin/settings" className="block bg-accent text-white text-center text-[.82rem] font-bold px-4 py-2">
+            سایت در حالت «در حال به‌روزرسانی» است و کاربران صفحه‌ی تعمیر را می‌بینند. برای بازگرداندن به حالت عادی اینجا بزن.
+          </Link>
+        )}
         <main className="flex-1 px-4 sm:px-8 py-6 sm:py-8 max-w-[1400px] w-full mx-auto">{children}</main>
       </div>
     </div>

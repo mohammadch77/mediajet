@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="30">
+<meta name="robots" content="noindex">
+<title>در حال به‌روزرسانی — گت‌استوک</title>
+<style>
+:root{--bg:#0B0B1A;--bg2:#12122A;--surface:#181838;--text:#F2F2FF;--dim:#A4A4CC;--primary:#6B5BFF;--primary2:#8F82FF;--cyan:#27D9FF;--accent:#FF7A45;--line:rgba(143,130,255,.18)}
+@media(prefers-color-scheme:light){:root{--bg:#F6F6FD;--bg2:#FFFFFF;--surface:#FFFFFF;--text:#16163A;--dim:#5C5C85;--line:rgba(107,91,255,.2)}}
+*{box-sizing:border-box;margin:0}
+body{min-height:100vh;display:flex;flex-direction:column;font-family:Vazirmatn,Tahoma,"Segoe UI",sans-serif;color:var(--text);background:
+radial-gradient(60vw 60vw at 80% -10%,rgba(107,91,255,.2),transparent 60%),radial-gradient(50vw 50vw at 0% 20%,rgba(39,217,255,.1),transparent 60%),radial-gradient(50vw 50vw at 50% 120%,rgba(255,122,69,.12),transparent 60%),var(--bg)}
+header{padding:22px 24px;font-weight:800;font-size:1.15rem;display:flex;align-items:center;gap:10px}
+header i{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--primary),var(--cyan));display:inline-block}
+main{flex:1;display:grid;place-items:center;padding:24px 16px 48px}
+.card{width:100%;max-width:620px;text-align:center;background:linear-gradient(135deg,var(--surface),var(--bg2));border:1px solid var(--line);border-radius:28px;padding:44px 28px;box-shadow:0 40px 100px -40px rgba(0,0,0,.6)}
+.gear{width:96px;height:96px;margin:0 auto 22px;display:block;color:var(--primary2);animation:spin 9s linear infinite;filter:drop-shadow(0 0 24px rgba(107,91,255,.5))}
+.gear2{position:absolute}
+h1{font-size:clamp(1.5rem,5vw,2rem);font-weight:800;line-height:1.5;margin-bottom:12px}
+p{color:var(--dim);line-height:2;font-size:1rem;max-width:440px;margin:0 auto}
+.bar{margin:28px auto 6px;width:min(260px,70%);height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar b{display:block;height:100%;width:40%;border-radius:99px;background:linear-gradient(90deg,var(--primary),var(--cyan));animation:slide 1.6s ease-in-out infinite}
+small{display:block;color:var(--dim);font-size:.8rem;margin-top:14px}
+button{margin-top:22px;cursor:pointer;border:0;color:#fff;font:inherit;font-weight:700;padding:12px 26px;border-radius:99px;background:linear-gradient(135deg,var(--primary),var(--primary2))}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slide{0%{transform:translateX(250%)}100%{transform:translateX(-150%)}}
+@media(prefers-reduced-motion:reduce){.gear,.bar b{animation:none}}
+</style>
+</head>
+<body>
+<header><i></i>گت‌استوک</header>
+<main>
+<div class="card">
+<svg class="gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 2.5h3.4l.6 2.7 2.4-1.4 2.4 2.4-1.4 2.4 2.7.6v3.4l-2.7.6 1.4 2.4-2.4 2.4-2.4-1.4-.6 2.7h-3.4l-.6-2.7-2.4 1.4-2.4-2.4 1.4-2.4-2.7-.6V9.2l2.7-.6-1.4-2.4 2.4-2.4 2.4 1.4.6-2.7ZM9.5 12a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0Z"/></svg>
+<h1>در حال به‌روزرسانی هستیم</h1>
+<p>گت‌استوک برای ارائه‌ی تجربه‌ی بهتر چند دقیقه در دسترس نیست. سفارش‌ها و موجودی کیف پولت کاملاً امن است و بعد از بازگشت سایت، همه‌چیز سر جایش است.</p>
+<div class="bar"><b></b></div>
+<small>این صفحه خودکار هر ۳۰ ثانیه دوباره بررسی می‌کند.</small>
+<button onclick="location.reload()">بررسی دوباره</button>
+</div>
+</main>
+</body>
+</html>

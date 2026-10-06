@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import { CartProvider } from "@/lib/CartContext";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import ErrorReporter from "@/components/ErrorReporter";
 
 export const metadata: Metadata = {
   title: "گت‌استوک — هر فایلی از هر سایت استوک، فقط با یک لینک",
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
+        <ErrorReporter />
         <AuthProvider>
           <CartProvider>{children}</CartProvider>
         </AuthProvider>

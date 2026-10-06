@@ -91,6 +91,6 @@ const NON_SOURCE_DIRS = new Set(["storage", "out", "build", "dist"]);
 export function isNonSource(name: string, isDir: boolean, abs?: string): boolean {
   if (isBlockedSegment(name, isDir)) return true;
   if (isDir && NON_SOURCE_DIRS.has(name)) return true;
-  if (!isDir && name.endsWith(".log")) return true;
+  if (!isDir && (name.endsWith(".log") || name === "maintenance.flag")) return true;
   return abs !== undefined && abs === IDE_BACKUP_DIR;
 }

@@ -19,3 +19,6 @@ Thumbs.db
 
 *.tsbuildinfo
 next-env.d.ts
+
+# پرچم حالت به‌روزرسانی (فقط روی سرور)
+maintenance.flag

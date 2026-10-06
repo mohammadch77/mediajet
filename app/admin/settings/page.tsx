@@ -20,6 +20,72 @@ const GROUP_LABELS: Record<string, string> = {
   github: "گیت‌هاب (ابزار توسعه)",
 };
 
+type MaintenanceState = { enabled: boolean; nginxServing: boolean | null };
+
+/** کلید «حالت سایت»: عادی ⇄ در حال به‌روزرسانی. فایل پرچم را می‌نویسد و اثر واقعی روی nginx را می‌سنجد. */
+function MaintenanceSection() {
+  const [state, setState] = useState<MaintenanceState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/maintenance?verify=1")
+      .then((r) => r.json())
+      .then((j) => (j.error ? setError(j.error) : setState({ enabled: j.enabled, nginxServing: j.nginxServing })))
+      .catch(() => setError("خطا در دریافت وضعیت سایت."));
+  }, []);
+
+  async function toggle(enabled: boolean) {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/maintenance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled }) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "ناموفق بود.");
+      setState({ enabled: json.enabled, nginxServing: json.nginxServing });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "ناموفق بود.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mb-10 bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-5">
+      <h2 className="font-display font-bold text-[1.05rem] mb-1">حالت سایت</h2>
+      <p className="text-dim text-[.8rem] mb-4 leading-relaxed">
+        در حالت «در حال به‌روزرسانی»، کاربران صفحه‌ی به‌روزرسانی را می‌بینند؛ پنل ادمین، بازگشت درگاه پرداخت و وبهوک تلگرام کار می‌کنند. همین صفحه در زمان خرابی سرور هم خودکار نمایش داده می‌شود.
+      </p>
+      {error && <div className="text-accent2 text-[.82rem] mb-3">{error}</div>}
+      {!state ? (
+        <div className="text-dim text-[.85rem]">در حال بارگذاری…</div>
+      ) : (
+        <>
+          <div className="inline-flex rounded-full border border-[rgb(var(--c-primary2)/.2)] p-1 bg-[rgb(var(--c-ov)/.04)]">
+            {([false, true] as const).map((v) => (
+              <button
+                key={String(v)}
+                disabled={busy || state.enabled === v}
+                onClick={() => toggle(v)}
+                className={"px-5 py-2 rounded-full text-[.85rem] font-bold transition " + (state.enabled === v ? (v ? "bg-accent text-white" : "bg-success text-white") : "text-dim hover:text-text")}
+              >
+                {v ? "در حال به‌روزرسانی" : "عادی"}
+              </button>
+            ))}
+          </div>
+          {state.enabled && state.nginxServing === false && (
+            <div className="mt-3 text-warning text-[.8rem] leading-relaxed">
+              فایل پرچم ساخته شد، ولی nginx هنوز صفحه‌ی به‌روزرسانی را نشان نمی‌دهد. تکه‌های فایل deploy/nginx-snippets.conf را به nginx اضافه و reload کن.
+            </div>
+          )}
+          {state.enabled && state.nginxServing === true && <div className="mt-3 text-success text-[.8rem]">تأیید شد: کاربران همین الان صفحه‌ی به‌روزرسانی را می‌بینند.</div>}
+          {state.enabled && state.nginxServing === null && <div className="mt-3 text-dim text-[.8rem]">اثر روی nginx قابل بررسی نبود؛ سایت را در یک پنجره‌ی ناشناس باز کن.</div>}
+        </>
+      )}
+    </div>
+  );
+}
+
 function StatusDot({ configured }: { configured: boolean }) {
   return (
     <span className="flex items-center gap-1.5 text-[.78rem] font-bold">
@@ -302,6 +368,8 @@ export default function AdminSettingsPage() {
           مقدار کلیدهای حساس بعد از ذخیره هرگز نمایش داده نمی‌شود؛ فقط وضعیت «تنظیم شده / نشده» دیده می‌شود.
         </p>
       </div>
+
+      <MaintenanceSection />
 
       <PaymentSettingsSection />
 
