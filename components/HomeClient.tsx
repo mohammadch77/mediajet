@@ -5,7 +5,8 @@ import { CATEGORIES, ALL_SITES, type Category } from "@/data/categories";
 import SiteLogo from "@/components/SiteLogo";
 import { toPersianDigits } from "@/lib/money";
 import { useLinkDetect } from "@/lib/useLinkDetect";
-import { unsupportedSiteMessage, sitePresetEntry, type LinkEntry } from "@/lib/linkDetect";
+import { sitePresetEntry, type LinkEntry } from "@/lib/linkDetect";
+import { validateProductUrl } from "@/lib/productUrl";
 import OrderDrawer from "@/components/OrderDrawer";
 import AuthModal from "@/components/AuthModal";
 import NotificationBell from "@/components/NotificationBell";
@@ -176,14 +177,11 @@ export default function HomeClient({
   // دسته‌ی محصول همیشه در دراور از خود کاربر پرسیده می‌شود. اگر سایت پشتیبانی نشود،
   // پیام روشن همراه با لیست سایت‌های پشتیبانی‌شده نشان داده می‌شود.
   const handleHeroLink = () => {
-    const url = heroLink.trim();
-    if (!url) { setHeroError("لینک محصول را وارد کن."); return; }
-    if (!heroDetection.supported) {
-      setHeroError(unsupportedSiteMessage());
-      return;
-    }
+    // همان اعتبارسنجی سمت سرور (lib/productUrl.ts): scheme، دامنه‌ی واقعی سایت و صفحه‌ی محصول.
+    const checked = validateProductUrl(heroLink);
+    if (!checked.ok) { setHeroError(checked.error); return; }
     setHeroError(null);
-    setLinkEntry({ link: url, site: heroDetection.site, candidates: heroDetection.candidates });
+    setLinkEntry({ link: checked.url, site: heroDetection.site, candidates: heroDetection.candidates });
     setDrawerCat(null);
     setOpen(true);
   };

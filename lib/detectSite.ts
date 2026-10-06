@@ -1,10 +1,6 @@
-import { SITE_KEYS } from "@/data/categories";
+import { detectSiteFromInput } from "./productUrl";
 
-/** تشخیص نام سایت از روی لینک محصول. اگر شناسایی نشد، رشته‌ی خالی برمی‌گرداند. */
+/** تشخیص نام سایت از روی لینک محصول (فقط بر اساس نام دامنه). اگر شناسایی نشد، رشته‌ی خالی. */
 export function detectSite(url: string): string {
-  const low = url.toLowerCase();
-  for (const key in SITE_KEYS) {
-    if (low.includes(key)) return SITE_KEYS[key];
-  }
-  return "";
+  return detectSiteFromInput(url);
 }

@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { CATEGORIES, categoryHasSite, categoryById, type Category } from "@/data/categories";
 import { detectSite } from "@/lib/detectSite";
+import { validateProductUrl } from "@/lib/productUrl";
 import SiteLogo from "@/components/SiteLogo";
 import type { LinkEntry } from "@/lib/linkDetect";
 import { useAuth } from "@/lib/AuthContext";
@@ -148,12 +149,14 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
     if (submitStatus === "submitting") return;
     setSubmitError(null);
 
-    if (!link.trim()) {
-      setSubmitError("لینک محصول را وارد کن.");
-      return;
-    }
     if (!selectedSite) {
       setSubmitError("سایت مبدأ را انتخاب کن.");
+      return;
+    }
+    // همان اعتبارسنجی سمت سرور؛ لینک باید واقعاً مربوط به همین سایت و صفحه‌ی یک محصول باشد.
+    const checkedLink = validateProductUrl(link, selectedSite);
+    if (!checkedLink.ok) {
+      setSubmitError(checkedLink.error);
       return;
     }
 
@@ -173,7 +176,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
         body: JSON.stringify({
           categoryId: selectedCatId,
           site: selectedSite,
-          productUrl: link,
+          productUrl: checkedLink.url,
         }),
       });
       const data = await res.json();

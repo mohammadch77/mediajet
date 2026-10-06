@@ -1,4 +1,5 @@
 import { z, ZodError, type ZodSchema } from "zod";
+import { validateProductUrl, MAX_PRODUCT_URL_LENGTH } from "./productUrl";
 import { CONTENT_DEFS, type ContentKey } from "./content";
 import { SETTING_DEFS, type SettingKey } from "./settings";
 
@@ -27,6 +28,51 @@ function requiredOrInvalidType(requiredMsg: string, invalidTypeMsg: string) {
   return (iss: { input?: unknown }) => (iss.input === undefined ? requiredMsg : invalidTypeMsg);
 }
 
+
+// کلید یکتای درخواست (idempotency) از کلاینت می‌آید: فقط نویسه‌های امن و طول محدود.
+const idempotencyKeyField = z
+  .string({ error: "کلید یکتای درخواست الزامی است." })
+  .min(1, "کلید یکتای درخواست الزامی است.")
+  .max(128, "کلید یکتای درخواست نامعتبر است.")
+  .regex(/^[A-Za-z0-9._:-]+$/, "کلید یکتای درخواست نامعتبر است.");
+
+const categoryIdField = z
+  .string({ error: "دسته‌بندی الزامی است." })
+  .min(1, "دسته‌بندی الزامی است.")
+  .max(100, "دسته‌بندی نامعتبر است.");
+
+const siteField = z
+  .string({ error: "سایت الزامی است." })
+  .min(1, "سایت الزامی است.")
+  .max(100, "سایت نامعتبر است.");
+
+/**
+ * لینک محصول + سایت ادعاشده را با هم می‌سنجد (lib/productUrl.ts) و لینک نرمال‌شده را جایگزین می‌کند:
+ * فقط http/https، دامنه‌ی ثبت‌شده‌ی یک سایت پشتیبانی‌شده، هم‌خوان با «site»، و صفحه‌ی محصول (نه صفحه‌ی اصلی).
+ */
+function withValidProductUrl<T extends { productUrl: string; site: string }>(value: T, ctx: z.RefinementCtx): T {
+  const result = validateProductUrl(value.productUrl, value.site);
+  if (!result.ok) {
+    ctx.addIssue({ code: "custom", path: ["productUrl"], message: result.error });
+    return z.NEVER;
+  }
+  return { ...value, productUrl: result.url };
+}
+
+
+/** فقط آدرس http/https بدون نام‌کاربری/رمز (جلوگیری از javascript:، data:، ftp: و مانند آن در لینک‌هایی که نمایش داده می‌شوند). */
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (url.protocol === "https:" || url.protocol === "http:") && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}
+
+const httpUrlField = (invalidMessage: string) =>
+  z.string().trim().max(2000, invalidMessage).refine(isHttpUrl, invalidMessage);
+
 export const chargeInput = z.object({
   userId: z
     .string({ error: "شناسه‌ی کاربر الزامی است." })
@@ -51,48 +97,40 @@ export const walletChargeInput = z.object({
 
 export type WalletChargeInput = z.infer<typeof walletChargeInput>;
 
-export const createOrderInput = z.object({
-  categoryId: z
-    .string({ error: "دسته‌بندی الزامی است." })
-    .min(1, "دسته‌بندی الزامی است."),
-  site: z
-    .string({ error: "سایت الزامی است." })
-    .min(1, "سایت الزامی است."),
-  productUrl: z
-    .string({ error: "آدرس محصول الزامی است." })
-    .url("آدرس محصول معتبر نیست."),
-  paymentMethod: z.enum(["wallet", "gateway"], {
-    error: requiredOrInvalidType("روش پرداخت الزامی است.", "روش پرداخت نامعتبر است."),
-  }),
-  idempotencyKey: z
-    .string({ error: "کلید یکتای درخواست الزامی است." })
-    .min(1, "کلید یکتای درخواست الزامی است."),
-});
+export const createOrderInput = z
+  .object({
+    categoryId: categoryIdField,
+    site: siteField,
+    productUrl: z
+      .string({ error: "آدرس محصول الزامی است." })
+      .min(1, "آدرس محصول الزامی است.")
+      .max(MAX_PRODUCT_URL_LENGTH, "آدرس محصول خیلی طولانی است."),
+    paymentMethod: z.enum(["wallet", "gateway"], {
+      error: requiredOrInvalidType("روش پرداخت الزامی است.", "روش پرداخت نامعتبر است."),
+    }),
+    idempotencyKey: idempotencyKeyField,
+  })
+  .transform(withValidProductUrl);
 
 export type CreateOrderInput = z.infer<typeof createOrderInput>;
 
 export const quoteInput = z.object({
-  categoryId: z
-    .string({ error: "دسته‌بندی الزامی است." })
-    .min(1, "دسته‌بندی الزامی است."),
-  site: z
-    .string({ error: "سایت الزامی است." })
-    .min(1, "سایت الزامی است."),
+  categoryId: categoryIdField,
+  site: siteField,
 });
 
 export type QuoteInput = z.infer<typeof quoteInput>;
 
-export const addCartItemInput = z.object({
-  categoryId: z
-    .string({ error: "دسته‌بندی الزامی است." })
-    .min(1, "دسته‌بندی الزامی است."),
-  site: z
-    .string({ error: "سایت الزامی است." })
-    .min(1, "سایت الزامی است."),
-  productUrl: z
-    .string({ error: "آدرس محصول الزامی است." })
-    .url("آدرس محصول معتبر نیست."),
-});
+export const addCartItemInput = z
+  .object({
+    categoryId: categoryIdField,
+    site: siteField,
+    productUrl: z
+      .string({ error: "آدرس محصول الزامی است." })
+      .min(1, "آدرس محصول الزامی است.")
+      .max(MAX_PRODUCT_URL_LENGTH, "آدرس محصول خیلی طولانی است."),
+  })
+  .transform(withValidProductUrl);
 
 export type AddCartItemInput = z.infer<typeof addCartItemInput>;
 
@@ -100,9 +138,7 @@ export const cartCheckoutInput = z.object({
   paymentMethod: z.enum(["wallet", "gateway"], {
     error: requiredOrInvalidType("روش پرداخت الزامی است.", "روش پرداخت نامعتبر است."),
   }),
-  idempotencyKey: z
-    .string({ error: "کلید یکتای درخواست الزامی است." })
-    .min(1, "کلید یکتای درخواست الزامی است."),
+  idempotencyKey: idempotencyKeyField,
 });
 
 export type CartCheckoutInput = z.infer<typeof cartCheckoutInput>;
@@ -224,7 +260,7 @@ export const operatorStatusInput = z.object({
   toStatus: z.enum(orderStatusValues, {
     error: requiredOrInvalidType("وضعیت مقصد الزامی است.", "وضعیت مقصد نامعتبر است."),
   }),
-  note: z.string().optional(),
+  note: z.string().trim().max(500, "یادداشت نباید بیشتر از ۵۰۰ نویسه باشد.").optional(),
 });
 
 export type OperatorStatusInput = z.infer<typeof operatorStatusInput>;
@@ -232,7 +268,7 @@ export type OperatorStatusInput = z.infer<typeof operatorStatusInput>;
 export const operatorItemDeliverInput = z.object({
   fileUrl: z
     .string({ error: "لینک فایل تحویلی الزامی است." })
-    .url("لینک فایل تحویلی معتبر نیست."),
+    .pipe(httpUrlField("لینک فایل تحویلی معتبر نیست (فقط http یا https).")),
 });
 
 export type OperatorItemDeliverInput = z.infer<typeof operatorItemDeliverInput>;
@@ -434,8 +470,7 @@ export const updateBlogPostInput = z.object({
   contentHtml: z
     .string({ error: "محتوای نوشته الزامی است." })
     .max(200000, "محتوا خیلی طولانی است."),
-  coverImage: z
-    .url("آدرس عکس کاور نامعتبر است.")
+  coverImage: httpUrlField("آدرس عکس کاور نامعتبر است (فقط http یا https).")
     .max(1000, "آدرس عکس کاور خیلی طولانی است.")
     .optional()
     .or(z.literal("")),

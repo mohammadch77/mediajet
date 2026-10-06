@@ -1,5 +1,8 @@
-import { CATEGORIES, categoryHasSite, ALL_SITES, type Category } from "@/data/categories";
+import { CATEGORIES, categoryHasSite, type Category } from "@/data/categories";
 import { detectSite } from "./detectSite";
+import { unsupportedSiteMessage } from "./productUrl";
+
+export { unsupportedSiteMessage };
 
 export interface LinkDetection {
   supported: boolean;
@@ -18,10 +21,6 @@ export interface LinkEntry {
 /** ورودی دراور وقتی کاربر از روی کارتِ یک سایت مشخص شروع می‌کند (لینک هنوز خالی است). */
 export function sitePresetEntry(site: string): LinkEntry {
   return { link: "", site, candidates: CATEGORIES.filter((c) => categoryHasSite(c, site)) };
-}
-
-export function unsupportedSiteMessage(): string {
-  return `این سایت فعلاً پشتیبانی نمی‌شود. سایت‌های پشتیبانی‌شده: ${ALL_SITES.join("، ")}`;
 }
 
 /**

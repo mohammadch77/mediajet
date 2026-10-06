@@ -145,6 +145,12 @@ export const SITE_KEYS: Record<string, SiteName> = {
   vectorstock: S.vectorstock, yellowimages: S.yellowImages, designi: S.designi,
 };
 
+// نام دامنه‌ی واقعی بعضی سایت‌ها با کلید SITE_KEYS یکی نیست (مثلاً istockphoto.com برای istock).
+// تشخیص سایت فقط روی «نام دامنه‌ی ثبت‌شده» انجام می‌شود، نه هر جای لینک؛ پس این نام‌ها باید اینجا بیایند.
+export const SITE_KEY_ALIASES: Record<string, string[]> = {
+  istock: ["istockphoto"],
+};
+
 // بررسی یکدستی: هر سایتِ دارای قیمت باید با SITE_KEYS قابل تشخیص باشد.
 {
   const detectable = new Set(Object.values(SITE_KEYS));
