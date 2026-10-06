@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { getGateway, buildCallbackUrl, GatewayError } from "@/lib/gateway";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
+import { getOrderPayQuote, OrderPayError } from "@/lib/orderPay";
+import { rialToTomanLabel } from "@/lib/money";
 
 // پرداخت مجدد یک مسیر حساس مالی است: حداکثر ۱۰ تلاش در دقیقه برای هر کاربر.
 const REPAY_RATE_LIMIT = 10;
@@ -87,4 +89,29 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   }
 
   return NextResponse.json({ redirectUrl: attempt.redirectUrl });
+}
+
+// GET /api/orders/:id/pay — قیمت سفارش با هر دو روش پرداخت و موجودی کیف پول (برای انتخاب روش پرداخت)
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "برای پرداخت سفارش باید وارد شوید." }, { status: 401 });
+  }
+  const { id } = await params;
+  try {
+    const quote = await getOrderPayQuote(currentUser.id, id);
+    return NextResponse.json({
+      walletTotalRial: quote.walletTotalRial.toString(),
+      walletTotalLabel: rialToTomanLabel(Number(quote.walletTotalRial)),
+      gatewayTotalRial: quote.gatewayTotalRial.toString(),
+      gatewayTotalLabel: rialToTomanLabel(Number(quote.gatewayTotalRial)),
+      walletBalanceRial: quote.walletBalanceRial.toString(),
+      walletBalanceLabel: rialToTomanLabel(Number(quote.walletBalanceRial)),
+    });
+  } catch (error) {
+    if (error instanceof OrderPayError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    throw error;
+  }
 }

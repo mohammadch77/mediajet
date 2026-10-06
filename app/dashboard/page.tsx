@@ -11,6 +11,7 @@ import { STATUS_LABELS, ITEM_STATUS_LABELS, type OrderStatus, type OrderItemStat
 import { CATEGORIES } from "@/data/categories";
 import WalletCard from "@/components/WalletCard";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import OrderPayDialog from "@/components/OrderPayDialog";
 import CredentialsForm from "@/components/CredentialsForm";
 import { useVisiblePolling } from "@/lib/useVisiblePolling";
 
@@ -98,7 +99,7 @@ export default function DashboardPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messageError, setMessageError] = useState<string | null>(null);
   const [downloadingItemId, setDownloadingItemId] = useState<string | null>(null);
-  const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
+  const [payOrderId, setPayOrderId] = useState<string | null>(null);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
@@ -108,24 +109,6 @@ export default function DashboardPage() {
   const [nameSaved, setNameSaved] = useState(false);
 
   // پرداخت مجدد سفارش «در انتظار پرداخت»: سرور تلاش پرداخت تازه می‌سازد و کاربر به درگاه می‌رود.
-  async function handlePayOrder(orderId: string) {
-    if (payingOrderId) return;
-    setPayingOrderId(orderId);
-    setError(null);
-    try {
-      const res = await fetch(`/api/orders/${orderId}/pay`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        loadOrders();
-        throw new Error(data.error ?? "ایجاد پرداخت ناموفق بود؛ دوباره تلاش کنید.");
-      }
-      window.location.href = data.redirectUrl;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "ایجاد پرداخت ناموفق بود؛ دوباره تلاش کنید.");
-      setPayingOrderId(null);
-    }
-  }
-
   // انصراف از سفارش پرداخت‌نشده: سفارش لغو می‌شود و از این فهرست کنار می‌رود.
   async function handleCancelOrder() {
     if (!cancelOrderId || cancelling) return;
@@ -592,16 +575,14 @@ export default function DashboardPage() {
                         <>
                         <button
                           type="button"
-                          onClick={() => handlePayOrder(o.id)}
-                          disabled={payingOrderId !== null}
+                          onClick={() => setPayOrderId(o.id)}
                           className="px-4 py-1.5 rounded-full text-[.8rem] font-bold bg-gradient-to-br from-primary to-primary2 text-white border-none cursor-pointer transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          {payingOrderId === o.id ? "در حال انتقال..." : "پرداخت"}
+                          پرداخت
                         </button>
                         <button
                           type="button"
                           onClick={() => setCancelOrderId(o.id)}
-                          disabled={payingOrderId !== null}
                           className="px-4 py-1.5 rounded-full text-[.8rem] font-bold text-dim hover:text-text bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] cursor-pointer transition disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           انصراف
@@ -779,6 +760,22 @@ export default function DashboardPage() {
             />
           </div>
         </section>
+      )}
+
+      {payOrderId && (
+        <OrderPayDialog
+          orderId={payOrderId}
+          onClose={() => setPayOrderId(null)}
+          onPaid={() => {
+            setPayOrderId(null);
+            loadDashboard();
+          }}
+          onGoWallet={() => {
+            setPayOrderId(null);
+            setTab("wallet");
+          }}
+          onStale={loadOrders}
+        />
       )}
 
       <ConfirmDialog
