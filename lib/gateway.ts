@@ -46,6 +46,17 @@ export function buildCallbackUrl(path: string, reqUrl: string): string {
 }
 
 /**
+ * آدرس صفحه‌ی نتیجه‌ی پرداخت روی دامنه‌ی واقعی سایت. وضعیت از DB خوانده می‌شود،
+ * پس در URL فقط شناسه‌ی پرداخت (authority) و مقصد بازگشت می‌آید، نه نتیجه.
+ */
+export function buildResultUrl(reqUrl: string, authority: string | null, fromCart = false): string {
+  const url = new URL(buildCallbackUrl("/pay/result", reqUrl));
+  if (authority) url.searchParams.set("a", authority);
+  if (fromCart) url.searchParams.set("from", "cart");
+  return url.toString();
+}
+
+/**
  * درگاه شبیه‌سازی‌شده: هدایت به یک صفحه‌ی پرداخت داخلی (`/pay/mock`) با دکمه‌های
  * «پرداخت موفق» و «انصراف»، سپس بازگشت با همان پارامترهای Authority/Status که
  * درگاه واقعی (زرین‌پال) هم استفاده می‌کند.

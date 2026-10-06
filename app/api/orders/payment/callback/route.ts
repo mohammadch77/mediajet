@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { confirmOrderPayment, PaymentError } from "@/lib/payment";
-import { GatewayError, buildCallbackUrl } from "@/lib/gateway";
+import { GatewayError, buildResultUrl } from "@/lib/gateway";
 import { rialToTomanLabel } from "@/lib/money";
 import { notifyOrderCreated } from "@/lib/telegram";
 import { prisma } from "@/lib/db";
@@ -14,11 +14,8 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
   const authority = url.searchParams.get("Authority");
   const status = url.searchParams.get("Status");
 
-  const dashboardUrl = new URL(buildCallbackUrl("/dashboard", req.url));
-
   if (!authority) {
-    dashboardUrl.searchParams.set("order", "failed");
-    return NextResponse.redirect(dashboardUrl);
+    return NextResponse.redirect(buildResultUrl(req.url, null));
   }
 
   try {
@@ -38,20 +35,13 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
         items,
       });
     }
-
-    dashboardUrl.searchParams.set("order", result.status === "verified" ? "success" : "failed");
   } catch (error) {
-    if (error instanceof PaymentError) {
-      dashboardUrl.searchParams.set("order", "failed");
-    } else if (error instanceof GatewayError) {
-      // تأیید با درگاه قطعی نشد؛ پرداخت در وضعیت قبلی مانده و با callback بعدی قابل پیگیری است.
-      dashboardUrl.searchParams.set("order", "pending");
-    } else {
-      throw error;
-    }
+    // PaymentError: پرداخت یافت نشد؛ GatewayError: تأیید قطعی نشد و پرداخت «در انتظار» می‌ماند.
+    // در هر دو حالت صفحه‌ی نتیجه وضعیت واقعی را از DB نشان می‌دهد.
+    if (!(error instanceof PaymentError) && !(error instanceof GatewayError)) throw error;
   }
 
-  return NextResponse.redirect(dashboardUrl);
+  return NextResponse.redirect(buildResultUrl(req.url, authority));
 }
 
 export async function GET(req: NextRequest) {
