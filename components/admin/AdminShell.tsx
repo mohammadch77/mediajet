@@ -26,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin", label: "داشبورد", icon: <Icon path="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6V11h-6v9Zm0-16v5h6V4h-6Z" /> },
   { href: "/admin/users", label: "کاربران", icon: <Icon path="M17 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm11 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /> },
   { href: "/admin/orders", label: "سفارش‌ها", icon: <Icon path="M3 7h18M3 7l1.5 12a2 2 0 0 0 2 1.8h11a2 2 0 0 0 2-1.8L21 7M3 7l1-3h16l1 3M9 11v5m6-5v5" /> },
+  { href: "/admin/wallets", label: "کیف پول", icon: <Icon path="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2M3 7v10a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3M3 7h16a1 1 0 0 1 1 1v3m0 0h-4a2 2 0 0 0 0 4h4v-4Z" /> },
   { href: "/admin/transactions", label: "تراکنش‌ها", icon: <Icon path="M4 20V10m6 10V4m6 16v-7" /> },
   { href: "/admin/affiliate", label: "همکاری در فروش", icon: <Icon path="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1m2 5a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /> },
   { href: "/admin/settings", label: "تنظیمات", icon: <Icon path="M10.3 2.5h3.4l.6 2.7 2.4-1.4 2.4 2.4-1.4 2.4 2.7.6v3.4l-2.7.6 1.4 2.4-2.4 2.4-2.4-1.4-.6 2.7h-3.4l-.6-2.7-2.4 1.4-2.4-2.4 1.4-2.4-2.7-.6V9.2l2.7-.6-1.4-2.4 2.4-2.4 2.4 1.4.6-2.7ZM9.5 12a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0Z" /> },

@@ -581,3 +581,25 @@ export const resolveFraudFlagInput = z.object({
     .min(3, "نتیجه‌ی بررسی را بنویس.")
     .max(300, "نتیجه‌ی بررسی طولانی است."),
 });
+
+/** سقف هر تعدیل دستی کیف پول: ۱۰۰ میلیون تومان (۱ میلیارد ریال)؛ خطای تایپی صفر اضافه را می‌گیرد. */
+export const ADMIN_WALLET_ADJUST_MAX_RIAL = 1_000_000_000;
+
+// تعدیل دستی کیف پول توسط ادمین. شناسه‌ی کاربر از مسیر URL می‌آید و ادمین از session؛
+// idempotencyKey را کلاینت برای هر «فرم» می‌سازد تا دابل‌کلیک/ارسال مجدد، دوبار اعمال نشود.
+export const adminWalletAdjustInput = z.object({
+  direction: z.enum(["credit", "debit"], { error: "نوع عملیات باید افزایش یا کاهش باشد." }),
+  amountRial: z
+    .number({ error: requiredOrInvalidType("مبلغ الزامی است.", "مبلغ باید عدد باشد.") })
+    .int("مبلغ باید عدد صحیح باشد.")
+    .positive("مبلغ باید بزرگ‌تر از صفر باشد.")
+    .max(ADMIN_WALLET_ADJUST_MAX_RIAL, "مبلغ هر تعدیل حداکثر ۱۰۰ میلیون تومان است."),
+  reason: z
+    .string({ error: "دلیل تعدیل الزامی است." })
+    .trim()
+    .min(3, "دلیل تعدیل را حداقل در ۳ کاراکتر بنویس.")
+    .max(300, "دلیل حداکثر ۳۰۰ کاراکتر باشد."),
+  idempotencyKey: z.string({ error: "کلید یکتای درخواست الزامی است." }).min(8).max(100),
+});
+
+export type AdminWalletAdjustInput = z.infer<typeof adminWalletAdjustInput>;
