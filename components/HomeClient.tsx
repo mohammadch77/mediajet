@@ -23,9 +23,9 @@ import type { AffiliateProgramInfo } from "@/lib/affiliateSummary";
 const HeroScene = dynamic(() => import("@/components/HeroScene"), { ssr: false });
 
 const STEPS = [
-  { n: "01", title: "لینک را بفرست", desc: "آدرس محصول را از هر سایت پشتیبانی‌شده کپی کن و در فرم دسته‌ی مربوطه بگذار.", highlight: undefined as string | undefined },
-  { n: "02", title: "پرداخت جزئی", desc: "قیمت خودکار محاسبه می‌شود؛ از کیف پول یا درگاه مبلغ ناچیزی می‌پردازی.", highlight: "با کیف پول شارژشده، سفارش‌ها سریع‌تر و ارزان‌تر انجام می‌شوند — بدون رفتن به درگاه هر بار." as string | undefined },
-  { n: "03", title: "فایل را بگیر", desc: "فایل اصلی و باکیفیت را دانلود کرده و در پنلت آماده‌ی دانلود قرار می‌دهیم.", highlight: undefined as string | undefined },
+  { n: "1", title: "لینک را بفرست", desc: "آدرس محصول را از هر سایت پشتیبانی‌شده کپی کن و در فرم دسته‌ی مربوطه بگذار.", highlight: undefined as string | undefined },
+  { n: "2", title: "پرداخت جزئی", desc: "قیمت خودکار محاسبه می‌شود؛ از کیف پول یا درگاه مبلغ ناچیزی می‌پردازی.", highlight: "با کیف پول شارژشده، سفارش‌ها سریع‌تر و ارزان‌تر انجام می‌شوند — بدون رفتن به درگاه هر بار." as string | undefined },
+  { n: "3", title: "فایل را بگیر", desc: "فایل اصلی و باکیفیت را دانلود کرده و در پنلت آماده‌ی دانلود قرار می‌دهیم.", highlight: undefined as string | undefined },
 ];
 
 // تعداد دسته‌هایی که هر سایت پشتیبانی می‌کند، از روی CATEGORIES محاسبه می‌شود (منبع واحد حقیقت).
@@ -407,7 +407,7 @@ export default function HomeClient({
         <div className="grid grid-cols-3 gap-5 max-[820px]:grid-cols-1">
           {STEPS.map((s) => (
             <div key={s.n} className="reveal bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-[20px] p-[32px_26px] transition hover:-translate-y-2 hover:border-[rgb(var(--c-primary2)/.5)]">
-              <div className="latin text-[.85rem] font-bold text-accent w-10 h-10 rounded-xl bg-[rgb(var(--c-accent)/.12)] grid place-items-center mb-5">{s.n}</div>
+              <div className="latin text-[1.05rem] leading-none font-bold text-accent w-10 h-10 rounded-xl bg-[rgb(var(--c-accent)/.12)] flex items-center justify-center mb-5">{s.n}</div>
               <h3 className="font-display text-[1.25rem] mb-2">{s.title}</h3>
               <p className="text-dim text-[.95rem]">{s.desc}</p>
               {s.highlight && (
@@ -431,17 +431,19 @@ export default function HomeClient({
           <h2 className="font-display text-[clamp(1.7rem,4.5vw,2.8rem)] font-extrabold mt-3 mb-3.5">از تمام دسته‌ها پشتیبانی می‌کنیم</h2>
           <p className="text-dim max-w-[52ch] mx-auto">روی هر دسته بزن تا فرم سفارشش باز شود.</p>
         </div>
-        <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))]">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:[grid-template-columns:repeat(auto-fill,minmax(200px,1fr))]">
           {CATEGORIES.map((c) => (
             <div
               key={c.id}
               onClick={() => openCat(c)}
-              className="reveal group relative bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-[18px] p-[24px_22px] cursor-pointer transition hover:-translate-y-1.5 hover:border-[rgb(var(--c-cyan)/.4)] hover:shadow-[0_20px_40px_-20px_rgb(var(--c-cyan)/.3)]"
+              className="reveal group relative bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-[14px] sm:rounded-[18px] p-3 sm:p-[24px_22px] cursor-pointer transition hover:-translate-y-1.5 hover:border-[rgb(var(--c-cyan)/.4)] hover:shadow-[0_20px_40px_-20px_rgb(var(--c-cyan)/.3)]"
             >
-              <span className="absolute top-[22px] left-[22px] text-dim text-[1.1rem] transition group-hover:text-cyan group-hover:-translate-x-1">←</span>
-              <div className="text-[1.8rem] mb-3 drop-shadow-[0_4px_8px_rgba(0,0,0,.4)]">{c.icon}</div>
-              <h4 className="font-display text-[1.05rem] mb-[5px]">{c.title}</h4>
-              <div className="text-dim text-[.8rem]">{toPersianDigits(c.sites.length)} سایت پشتیبان</div>
+              <span className="hidden sm:block absolute top-[22px] left-[22px] text-dim text-[1.1rem] transition group-hover:text-cyan group-hover:-translate-x-1">←</span>
+              <div className="flex items-center gap-2 sm:block">
+                <div className="text-[1.35rem] sm:text-[1.8rem] sm:mb-3 shrink-0 drop-shadow-[0_4px_8px_rgba(0,0,0,.4)]">{c.icon}</div>
+                <h4 className="font-display text-[.9rem] sm:text-[1.05rem] leading-[1.4] sm:mb-[5px]">{c.title}</h4>
+              </div>
+              <div className="text-dim text-[.7rem] sm:text-[.8rem] mt-1.5 sm:mt-0">{toPersianDigits(c.sites.length)} سایت پشتیبان</div>
             </div>
           ))}
         </div>
