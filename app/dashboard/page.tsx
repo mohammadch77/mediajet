@@ -10,6 +10,7 @@ import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
 import { STATUS_LABELS, ITEM_STATUS_LABELS, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
 import { CATEGORIES } from "@/data/categories";
 import WalletCard from "@/components/WalletCard";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import CredentialsForm from "@/components/CredentialsForm";
 import { useVisiblePolling } from "@/lib/useVisiblePolling";
 
@@ -98,6 +99,8 @@ export default function DashboardPage() {
   const [messageError, setMessageError] = useState<string | null>(null);
   const [downloadingItemId, setDownloadingItemId] = useState<string | null>(null);
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -120,6 +123,24 @@ export default function DashboardPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "ایجاد پرداخت ناموفق بود؛ دوباره تلاش کنید.");
       setPayingOrderId(null);
+    }
+  }
+
+  // انصراف از سفارش پرداخت‌نشده: سفارش لغو می‌شود و از این فهرست کنار می‌رود.
+  async function handleCancelOrder() {
+    if (!cancelOrderId || cancelling) return;
+    setCancelling(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/orders/${cancelOrderId}/cancel`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "انصراف از سفارش ناموفق بود؛ دوباره تلاش کنید.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "انصراف از سفارش ناموفق بود؛ دوباره تلاش کنید.");
+    } finally {
+      setCancelOrderId(null);
+      setCancelling(false);
+      loadOrders();
     }
   }
 
@@ -576,6 +597,14 @@ export default function DashboardPage() {
                         >
                           {payingOrderId === o.id ? "در حال انتقال..." : "پرداخت"}
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => setCancelOrderId(o.id)}
+                          disabled={payingOrderId !== null}
+                          className="px-4 py-1.5 rounded-full text-[.8rem] font-bold text-dim hover:text-text bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] cursor-pointer transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          انصراف
+                        </button>
                       )}
                     </div>
                   </div>
@@ -749,6 +778,16 @@ export default function DashboardPage() {
           </div>
         </section>
       )}
+
+      <ConfirmDialog
+        open={cancelOrderId !== null}
+        title="انصراف از سفارش"
+        message="این سفارش پرداخت‌نشده لغو و از فهرست سفارش‌هایت حذف می‌شود. مبلغی از تو کسر نشده است."
+        confirmLabel="انصراف از سفارش"
+        busy={cancelling}
+        onConfirm={handleCancelOrder}
+        onCancel={() => setCancelOrderId(null)}
+      />
     </div>
   );
 }

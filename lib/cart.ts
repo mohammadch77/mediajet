@@ -8,6 +8,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { computePrice } from "@/lib/pricing";
+import { cancelUnpaidOrderInTx } from "@/lib/orderCancel";
 
 export class CartError extends Error {}
 
@@ -66,10 +67,8 @@ export async function removeCartItem(userId: string, cartItemId: string) {
 
 /**
  * سفارشِ ساخته‌شده از تسویه‌ی سبد که هنوز پرداخت نشده، تا وقتی آیتمش در سبد است قابل پرداخت است.
- * وقتی کاربر آن آیتم را از سبد حذف کرد، سفارش «در انتظار پرداخت»ِ مربوط لغو می‌شود (نه حذف فیزیکی:
- * audit trail فقط‌افزودنی است) و در فهرست سفارش‌های کاربر نمایش داده نمی‌شود (app/api/orders GET).
- * شرط status داخل updateMany، لغو را با callback هم‌زمان درگاه اتمیک می‌کند: سفارشِ همین لحظه
- * پرداخت‌شده (queued) دست نمی‌خورد. تلاش پرداخت باز همان سفارش هم failed می‌شود.
+ * وقتی کاربر آن آیتم را از سبد حذف کرد، سفارش «در انتظار پرداخت»ِ مربوط لغو می‌شود
+ * (جزئیات لغو: lib/orderCancel.ts).
  */
 async function cancelStaleCheckoutOrdersInTx(tx: Prisma.TransactionClient, userId: string, productUrl: string) {
   const stale = await tx.order.findMany({
@@ -83,21 +82,7 @@ async function cancelStaleCheckoutOrdersInTx(tx: Prisma.TransactionClient, userI
   });
 
   for (const { id } of stale) {
-    const { count } = await tx.order.updateMany({
-      where: { id, status: "awaiting_payment" },
-      data: { status: "cancelled" },
-    });
-    if (count === 0) continue;
-    await tx.orderEvent.create({
-      data: {
-        orderId: id,
-        fromStatus: "awaiting_payment",
-        toStatus: "cancelled",
-        actor: `user:${userId}`,
-        note: "آیتم از سبد خرید حذف شد؛ پرداخت‌نشده لغو شد.",
-      },
-    });
-    await tx.payment.updateMany({ where: { orderId: id, status: "initiated" }, data: { status: "failed" } });
+    await cancelUnpaidOrderInTx(tx, id, userId, "آیتم از سبد خرید حذف شد؛ پرداخت‌نشده لغو شد.");
   }
 }
 
