@@ -235,6 +235,14 @@ model OrderItem {
   // قابل اعتماد نیست چون آیتم‌های یک سفارش در یک دستور و با زمان یکسان ساخته می‌شوند.
   position   Int             @default(0)
   status     OrderItemStatus @default(pending)
+  // «دسته‌ی اشتباه»: وقتی اپراتور موقع دانلود می‌بیند دسته‌ی ثبت‌شده درست نبوده، یا دسته اصلاح می‌شود
+  // (قیمت بیشتر نمی‌شود) یا آیتم rejected و سهم آن به کیف پول برمی‌گردد؛ برای ممیزی و آمار دقت تشخیص.
+  refundedRial BigInt    @default(0)
+  mismatchFrom String?
+  mismatchTo   String?
+  mismatchById String?
+  mismatchAt   DateTime?
+  mismatchNote String?
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
 
@@ -249,6 +257,7 @@ enum OrderItemStatus {
   pending // در صف / در حال پردازش
   ready // فایل آماده‌ی دانلود است
   delivered // کاربر دانلود کرده یا اپراتور تحویل را نهایی کرده
+  rejected // دسته‌ی اشتباه ثبت شده بود؛ سهم این آیتم به کیف پول برگشت و آیتم لغو شد
 }
 
 enum OrderStatus {

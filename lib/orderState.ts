@@ -72,12 +72,13 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
 
 // وضعیت تحویل یک آیتم سفارش؛ مستقل از وضعیت کلی سفارش (lib/orderState.ts#OrderStatus)
 // و مستقل از بقیه‌ی آیتم‌های همان سفارش.
-export type OrderItemStatus = "pending" | "ready" | "delivered";
+export type OrderItemStatus = "pending" | "ready" | "delivered" | "rejected";
 
 export const ITEM_STATUS_LABELS: Record<OrderItemStatus, string> = {
   pending: "در حال پردازش",
   ready: "آماده‌ی دانلود",
   delivered: "تحویل‌شده",
+  rejected: "لغو (دسته‌ی اشتباه)",
 };
 
 /**
@@ -93,13 +94,15 @@ export const ITEM_STATUS_LABELS: Record<OrderItemStatus, string> = {
 export function deriveOrderStatusFromItems(
   itemStatuses: OrderItemStatus[],
 ): "processing" | "ready" | "delivered" {
-  if (itemStatuses.length === 0) {
-    throw new Error("سفارش بدون آیتم نمی‌تواند وضعیت داشته باشد.");
+  // آیتم‌های لغوشده (دسته‌ی اشتباه) در تعیین وضعیت سفارش حساب نمی‌شوند.
+  const active = itemStatuses.filter((s) => s !== "rejected");
+  if (active.length === 0) {
+    throw new Error("سفارش بدون آیتمِ فعال نمی‌تواند وضعیت داشته باشد.");
   }
-  if (itemStatuses.every((s) => s === "delivered")) {
+  if (active.every((s) => s === "delivered")) {
     return "delivered";
   }
-  if (itemStatuses.some((s) => s === "ready" || s === "delivered")) {
+  if (active.some((s) => s === "ready" || s === "delivered")) {
     return "ready";
   }
   return "processing";

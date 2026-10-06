@@ -265,6 +265,11 @@ export const operatorStatusInput = z.object({
 
 export type OperatorStatusInput = z.infer<typeof operatorStatusInput>;
 
+export const operatorCategoryMismatchInput = z.object({
+  correctCategory: categoryIdField,
+  note: z.string().trim().max(300, "یادداشت نباید بیشتر از ۳۰۰ نویسه باشد.").optional(),
+});
+
 export const operatorItemDeliverInput = z.object({
   fileUrl: z
     .string({ error: "لینک فایل تحویلی الزامی است." })
