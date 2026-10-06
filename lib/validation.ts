@@ -603,3 +603,26 @@ export const adminWalletAdjustInput = z.object({
 });
 
 export type AdminWalletAdjustInput = z.infer<typeof adminWalletAdjustInput>;
+
+// --- ابزار توسعه‌ی پنل ادمین (/api/admin/ide) ---
+const idePath = z.string({ error: "مسیر الزامی است." }).min(1, "مسیر الزامی است.").max(400, "مسیر خیلی طولانی است.");
+
+export const ideUnlockInput = z.object({
+  password: z.string({ error: "رمز عبور الزامی است." }).min(1, "رمز عبور الزامی است.").max(200),
+});
+
+export const ideSaveInput = z.object({
+  path: idePath,
+  content: z.string({ error: "محتوا الزامی است." }),
+  baseSha: z.string({ error: "شناسه‌ی نسخه‌ی باز‌شده الزامی است." }).length(64),
+});
+
+export const ideCreateInput = z.object({
+  path: idePath,
+  content: z.string().optional(),
+});
+
+export const ideRestoreInput = z.object({
+  path: idePath,
+  versionId: z.string({ error: "شناسه‌ی نسخه الزامی است." }).min(1).max(40),
+});

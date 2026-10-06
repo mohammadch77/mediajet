@@ -556,3 +556,17 @@ model AffiliateFraudFlag {
   @@index([affiliateId, resolvedAt])
   @@index([resolvedAt])
 }
+
+// ردّ حسابرسی ابزار توسعه‌ی پنل ادمین (/admin/ide): هر باز/قفل، ذخیره، حذف، بازگردانی،
+// آپلود/دانلود زیپ و deploy یک ردیف. فقط‌افزودنی است؛ هیچ update/delete در منطق سرویس مجاز نیست.
+model IdeAuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String // unlock | unlock_failed | save | create | delete | restore | zip_download | zip_apply | deploy
+  path      String?
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([adminId])
+}
