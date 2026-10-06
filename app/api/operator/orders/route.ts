@@ -56,6 +56,8 @@ export async function GET(req: NextRequest) {
         category: item.category,
         sourceSite: item.sourceSite,
         productUrl: item.productUrl,
+        priceRial: Number(item.priceRial),
+        refundedRial: Number(item.refundedRial),
         status: item.status,
         deliveryUrl: item.delivery?.fileUrl ?? null,
         isLarge: item.delivery?.isLarge ?? false,

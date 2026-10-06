@@ -12,6 +12,8 @@ type OrderDetailItem = {
   sourceSite: string;
   productUrl: string;
   status: OrderItemStatus;
+  refundedLabel: string | null;
+  mismatch: { from: string; to: string | null; note: string | null } | null;
   delivery: { fileUrl: string | null; fileName: string | null; isLarge: boolean; deliveredAt: string } | null;
 };
 
@@ -159,6 +161,13 @@ export default function AdminOrderDetailPage() {
                   {item.productUrl}
                 </a>
               </div>
+              {item.mismatch && (
+                <div className="mt-1.5 text-accent2 text-[.8rem]">
+                  دسته‌ی اشتباه: {item.mismatch.from} ← {item.mismatch.to ?? "—"}
+                  {item.refundedLabel ? ` · ${item.refundedLabel} به کیف پول برگشت` : " · فقط دسته اصلاح شد"}
+                  {item.mismatch.note ? ` · ${item.mismatch.note}` : ""}
+                </div>
+              )}
               {item.delivery && (
                 <div className="mt-1.5">
                   {item.delivery.isLarge ? (

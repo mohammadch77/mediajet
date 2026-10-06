@@ -41,6 +41,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         sourceSite: item.sourceSite,
         productUrl: item.productUrl,
         status: item.status,
+        refundedLabel: item.refundedRial > 0n ? rialToTomanLabel(Number(item.refundedRial)) : null,
+        mismatch: item.mismatchFrom ? { from: categoryTitle(item.mismatchFrom), to: item.mismatchTo ? categoryTitle(item.mismatchTo) : null, note: item.mismatchNote } : null,
         delivery: item.delivery
           ? {
               fileUrl: item.delivery.fileUrl,

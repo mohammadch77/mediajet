@@ -51,6 +51,8 @@ export function itemRefundShare(p: {
   return share;
 }
 
+type ItemRow = { id: string; category: string; sourceSite: string; priceRial: bigint; refundedRial: bigint; status: string };
+
 type OrderLockRow = { id: string; userId: string; orderNumber: number; status: OrderStatus; totalPriceRial: bigint };
 
 export type MismatchResult =
@@ -69,17 +71,17 @@ export async function reportCategoryMismatch(
   const actor = `operator:${operatorId}`;
 
   const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const rows = await tx.$queryRaw<OrderLockRow[]>`
+    const rows: OrderLockRow[] = await tx.$queryRaw<OrderLockRow[]>`
       SELECT id, "userId", "orderNumber", status::text AS status, "totalPriceRial"
       FROM "Order" WHERE id = ${orderId} FOR UPDATE
     `;
-    const order = rows[0];
+    const order: OrderLockRow | undefined = rows[0];
     if (!order) throw new MismatchError("سفارش پیدا نشد.", 404);
     if (!ACTIVE_ORDER_STATUSES.includes(order.status)) {
       throw new MismatchError("این سفارش در وضعیتی نیست که بتوان دسته‌ی آیتمش را اصلاح کرد.");
     }
 
-    const items = await tx.orderItem.findMany({ where: { orderId }, orderBy: { position: "asc" } });
+    const items: ItemRow[] = await tx.orderItem.findMany({ where: { orderId }, orderBy: { position: "asc" } });
     const index = items.findIndex((i) => i.id === itemId);
     const item = items[index];
     if (!item) throw new MismatchError("آیتم پیدا نشد.", 404);
@@ -145,7 +147,7 @@ export async function reportCategoryMismatch(
     if (activeOthers.length === 0) {
       // همه‌ی آیتم‌ها لغو شده‌اند: سفارش از مسیر state machine بسته می‌شود (بدون برگشت دوباره‌ی پول).
       orderClosed = true;
-      const path = REFUND_PATHS[order.status] ?? [];
+      const path: OrderStatus[] = REFUND_PATHS[order.status] ?? [];
       let current = order.status;
       for (const next of path) {
         assertTransition(current, next);

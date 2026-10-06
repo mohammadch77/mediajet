@@ -56,10 +56,14 @@ export async function refundOrder(adminId: string, orderId: string, reason: stri
     }
 
     const orderNumber = formatOrderNumber(order.orderNumber);
+    // آیتم‌هایی که قبلاً به‌علت «دسته‌ی اشتباه» جداگانه برگشت خورده‌اند (lib/categoryMismatch.ts) دوباره برنمی‌گردند.
+    const alreadyRefunded = (await tx.orderItem.aggregate({ where: { orderId: order.id }, _sum: { refundedRial: true } }))._sum.refundedRial ?? 0n;
+    const refundAmount: bigint = order.totalPriceRial - alreadyRefunded;
+    if (refundAmount <= 0n) throw new RefundError("کل مبلغ این سفارش قبلاً به کیف پول برگشت داده شده است.");
     await creditWalletInTx(
       tx,
       order.userId,
-      order.totalPriceRial,
+      refundAmount,
       order.id,
       `بازگشت وجه سفارش ${orderNumber}`,
       `refund:order:${order.id}`,
@@ -72,7 +76,7 @@ export async function refundOrder(adminId: string, orderId: string, reason: stri
       href: NOTIFICATION_HREF.orders,
     });
 
-    return { status: current, orderNumber, userId: order.userId, amountRial: order.totalPriceRial, reversal };
+    return { status: current, orderNumber, userId: order.userId, amountRial: refundAmount, reversal };
   });
 
   notifyFinanceOfRefund(adminId, reason, outcome);

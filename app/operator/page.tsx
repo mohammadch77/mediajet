@@ -6,7 +6,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 import { toJalaliDateTime } from "@/lib/jalali";
 import { STATUS_LABELS, ITEM_STATUS_LABELS, operatorCanTransition, type OrderStatus, type OrderItemStatus } from "@/lib/orderState";
-import { categoryTitle } from "@/data/categories";
+import { CATEGORIES, categoryHasSite, categoryTitle, sitePriceRial } from "@/data/categories";
+import { rialToTomanLabel } from "@/lib/money";
 
 type OperatorItem = {
   id: string;
@@ -14,6 +15,8 @@ type OperatorItem = {
   category: string;
   sourceSite: string;
   productUrl: string;
+  priceRial: number;
+  refundedRial: number;
   status: OrderItemStatus;
   deliveryUrl: string | null;
   isLarge: boolean;
@@ -52,6 +55,11 @@ export default function OperatorPage() {
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
   const [linkDrafts, setLinkDrafts] = useState<Record<string, string>>({});
+  // پنل «دسته‌ی اشتباه»: همزمان فقط برای یک آیتم باز است.
+  const [mismatchItemId, setMismatchItemId] = useState<string | null>(null);
+  const [mismatchCategory, setMismatchCategory] = useState("");
+  const [mismatchNote, setMismatchNote] = useState("");
+  const [notice, setNotice] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   async function loadOrders() {
@@ -97,6 +105,50 @@ export default function OperatorPage() {
       setError(e instanceof Error ? e.message : "خطا در تغییر وضعیت.");
     } finally {
       setBusyOrderId(null);
+    }
+  }
+
+  function openMismatch(itemId: string) {
+    setMismatchItemId(itemId);
+    setMismatchCategory("");
+    setMismatchNote("");
+    setError(null);
+  }
+
+  async function submitMismatch(orderId: string, item: OperatorItem) {
+    if (!mismatchCategory) {
+      setError("دسته‌ی درست را انتخاب کن.");
+      return;
+    }
+    const newPrice = sitePriceRial(mismatchCategory, item.sourceSite) ?? 0;
+    const refund = newPrice > item.priceRial;
+    const msg = refund
+      ? `دسته‌ی درست گران‌تر است؛ این آیتم لغو و مبلغ آن به کیف پول کاربر برگردانده می‌شود و کاربر باید دوباره ثبت کند. ادامه می‌دهی؟`
+      : "دسته‌ی این آیتم به دسته‌ی درست اصلاح می‌شود (بدون بازگشت وجه). ادامه می‌دهی؟";
+    if (!window.confirm(msg)) return;
+
+    setBusyItemId(item.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/operator/orders/${orderId}/items/${item.id}/category-mismatch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ correctCategory: mismatchCategory, note: mismatchNote.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "خطا در ثبت دسته‌ی اشتباه.");
+      setNotice(
+        data.kind === "refunded"
+          ? `آیتم لغو شد و ${rialToTomanLabel(data.refundedRial)} به کیف پول کاربر برگشت.`
+          : "دسته‌ی آیتم اصلاح شد.",
+      );
+      setMismatchItemId(null);
+      await loadOrders();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطا در ثبت دسته‌ی اشتباه.");
+    } finally {
+      setBusyItemId(null);
     }
   }
 
@@ -196,6 +248,9 @@ export default function OperatorPage() {
         </div>
       </div>
 
+      {notice && (
+        <div className="bg-[rgb(var(--c-cyan)/.1)] border border-[rgb(var(--c-cyan)/.3)] rounded-2xl p-4 mb-8">{notice}</div>
+      )}
       {error && (
         <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-8">
           {error}
@@ -356,7 +411,71 @@ export default function OperatorPage() {
                               >
                                 علامت به‌عنوان فایل بزرگ
                               </button>
+                              <button
+                                disabled={isItemBusy}
+                                onClick={() => (mismatchItemId === item.id ? setMismatchItemId(null) : openMismatch(item.id))}
+                                className="font-body cursor-pointer border border-[rgb(var(--c-primary2)/.3)] font-bold text-[.78rem] text-text bg-transparent px-4 py-2 rounded-full transition hover:-translate-y-px disabled:opacity-50"
+                              >
+                                دسته‌ی اشتباه است
+                              </button>
                             </div>
+
+                            {mismatchItemId === item.id && (
+                              <div className="mt-1 rounded-xl border border-[rgb(var(--c-accent)/.3)] bg-[rgb(var(--c-accent)/.06)] p-3 flex flex-col gap-2.5">
+                                <div className="text-[.78rem] text-dim leading-[1.8]">
+                                  دسته‌ی ثبت‌شده: <b className="text-text">{categoryTitle(item.category)}</b>. دسته‌ی درست را انتخاب کن.
+                                  اگر قیمتش بیشتر نباشد فقط دسته اصلاح می‌شود، وگرنه این آیتم لغو و مبلغش به کیف پول کاربر برمی‌گردد.
+                                </div>
+                                <select
+                                  value={mismatchCategory}
+                                  onChange={(e) => setMismatchCategory(e.target.value)}
+                                  className="bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] rounded-full px-4 py-2 text-[.82rem] outline-none focus:border-cyan"
+                                >
+                                  <option value="" className="bg-bg2">انتخاب دسته‌ی درست…</option>
+                                  {CATEGORIES.filter((c) => c.id !== item.category && categoryHasSite(c, item.sourceSite)).map((c) => (
+                                    <option key={c.id} value={c.id} className="bg-bg2">
+                                      {c.title}
+                                    </option>
+                                  ))}
+                                </select>
+                                {mismatchCategory && (
+                                  <div className="text-[.78rem] font-bold">
+                                    {(sitePriceRial(mismatchCategory, item.sourceSite) ?? 0) > item.priceRial
+                                      ? "⚠️ قیمت دسته‌ی درست بیشتر است: آیتم لغو و مبلغ به کیف پول برمی‌گردد."
+                                      : "✅ قیمت بیشتر نمی‌شود: فقط دسته اصلاح می‌شود."}
+                                  </div>
+                                )}
+                                <input
+                                  type="text"
+                                  maxLength={300}
+                                  placeholder="یادداشت (اختیاری)"
+                                  value={mismatchNote}
+                                  onChange={(e) => setMismatchNote(e.target.value)}
+                                  className="bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] rounded-full px-4 py-2 text-[.8rem] outline-none focus:border-cyan"
+                                />
+                                <div className="flex gap-2 flex-wrap">
+                                  <button
+                                    disabled={isItemBusy || !mismatchCategory}
+                                    onClick={() => submitMismatch(o.id, item)}
+                                    className="font-body cursor-pointer border-none font-bold text-[.8rem] text-white bg-gradient-to-br from-primary to-primary2 px-5 py-2 rounded-full disabled:opacity-50"
+                                  >
+                                    {isItemBusy ? "..." : "ثبت دسته‌ی درست"}
+                                  </button>
+                                  <button
+                                    onClick={() => setMismatchItemId(null)}
+                                    className="font-body cursor-pointer bg-transparent border border-[rgb(var(--c-primary2)/.2)] text-dim font-bold text-[.8rem] px-5 py-2 rounded-full"
+                                  >
+                                    انصراف
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {item.status === "rejected" && (
+                          <div className="text-accent2 text-[.76rem] mt-1.5">
+                            لغو شد (دسته‌ی اشتباه){item.refundedRial > 0 ? ` — ${rialToTomanLabel(item.refundedRial)} به کیف پول برگشت` : ""}
                           </div>
                         )}
 

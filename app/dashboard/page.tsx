@@ -605,7 +605,9 @@ export default function DashboardPage() {
                                   ? "bg-[rgb(var(--c-cyan)/.12)] text-cyan"
                                   : item.status === "ready"
                                     ? "bg-[rgb(var(--c-primary)/.16)] text-primary2"
-                                    : "bg-[rgb(var(--c-ov)/.06)] text-dim")
+                                    : item.status === "rejected"
+                                      ? "bg-[rgb(var(--c-accent)/.12)] text-accent2"
+                                      : "bg-[rgb(var(--c-ov)/.06)] text-dim")
                               }
                             >
                               {ITEM_STATUS_LABELS[item.status]}
