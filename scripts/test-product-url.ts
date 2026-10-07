@@ -33,7 +33,9 @@ ok(!good("ftp://freepik.com/a").ok, "ftp");
 ok(!good("https://freepik.com/").ok, "فقط صفحه‌ی اصلی");
 ok(!good("https://freepik.com").ok, "دامنه‌ی خالی بدون مسیر");
 ok(!good("").ok && !good("   ").ok, "خالی");
-ok(!good("https://freepik.com/a b").ok, "فاصله‌ی داخل لینک");
+// متن اطراف لینک (فاصله) دیگر خطا نیست: لینک واحد داخل متن استخراج می‌شود؛ ولی دو لینک رد می‌شود.
+const withText = good("https://freepik.com/free-vector/a_1.htm لطفاً این را بگیر");
+ok(withText.ok && withText.url === "https://freepik.com/free-vector/a_1.htm", "لینک واحد داخل متن استخراج می‌شود");
 ok(!good("https://freepik.com/a\nhttps://evil.com").ok, "دو لینک با خط جدید");
 ok(!good("https://freepik.com/" + "a".repeat(2100)).ok, "بیش از ۲۰۰۰ نویسه");
 ok(!good("http://localhost/item").ok && !good("http://127.0.0.1/item").ok, "localhost/IP");

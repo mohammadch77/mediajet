@@ -137,32 +137,7 @@ export function sitePriceRial(categoryId: string, site: string): number | undefi
   return cat.sitePricesRial[canonicalSiteName(site) as SiteName];
 }
 
-// نگاشت کلیدواژه‌ی دامنه به نام رسمی سایت، برای تشخیص سایت از روی لینک.
-// ترتیب مهم است: کلیدهای خاص‌تر قبل از کلیدهای عمومی‌تر.
-export const SITE_KEYS: Record<string, SiteName> = {
-  envato: S.envatoElements, // elements.envato.com و envato.com همه یک سایت‌اند
-  freepik: S.freepik, magnific: S.freepik, "stock.adobe": S.adobeStock, adobe: S.adobeStock,
-  shutterstock: S.shutterstock, vecteezy: S.vecteezy, motionarray: S.motionArray,
-  pngtree: S.pngtree, flaticon: S.flaticon, iconscout: S.iconscout, ui8: S.ui8,
-  pikbest: S.pikbest, "123rf": S.rf123, istock: S.istock, dreamstime: S.dreamstime,
-  artlist: S.artlist, storyblocks: S.storyblocks, lovepik: S.lovepik, rawpixel: S.rawpixel,
-  creativefabrica: S.creativeFabrica, depositphotos: S.depositphotos,
-  vectorstock: S.vectorstock, yellowimages: S.yellowImages, designi: S.designi,
-};
-
-// نام دامنه‌ی واقعی بعضی سایت‌ها با کلید SITE_KEYS یکی نیست (مثلاً istockphoto.com برای istock).
-// تشخیص سایت فقط روی «نام دامنه‌ی ثبت‌شده» انجام می‌شود، نه هر جای لینک؛ پس این نام‌ها باید اینجا بیایند.
-export const SITE_KEY_ALIASES: Record<string, string[]> = {
-  istock: ["istockphoto"],
-};
-
-// بررسی یکدستی: هر سایتِ دارای قیمت باید با SITE_KEYS قابل تشخیص باشد.
-{
-  const detectable = new Set(Object.values(SITE_KEYS));
-  for (const site of ALL_SITES) {
-    if (!detectable.has(site)) throw new Error(`سایت ${site} در SITE_KEYS نیست`);
-  }
-}
+// تشخیص سایت از روی لینک (دامنه‌ی کامل، مسیرهای غیرمحصول، نوع فایل) در data/siteRules.ts است.
 
 /** آیا این سایت (نام دلخواه، مثلاً از ورودی کاربر) در این دسته پشتیبانی می‌شود؟ */
 export function categoryHasSite(cat: Category, site: string): boolean {

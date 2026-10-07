@@ -73,7 +73,7 @@ components/          کامپوننت‌ها (HomeClient، OrderDrawer، OrderPa
 data/categories.ts   منبع واحد حقیقت دسته‌ها، سایت‌ها و قیمت‌ها
 lib/                 منطق مشترک
   pricing.ts, orderState.ts, orderPay.ts, wallet.ts, payment.ts      پول و سفارش
-  productUrl.ts      اعتبارسنجی لینک و تشخیص سایت
+  productUrl.ts      اعتبارسنجی لینک، تشخیص سایت/نوع فایل، کلید یکتای فایل (قواعد هر سایت: data/siteRules.ts)
   errorLog.ts, serverErrorHook.ts, sourceMap.ts, maintenance.ts      پایش خطا و حالت تعمیر
   ide/               ابزار توسعه (فایل‌ها، deploy، همگام‌سازی گیت‌هاب)
 prisma/              اسکیما و migrationها
@@ -89,6 +89,7 @@ telegram-relay/      Cloudflare Worker برای عبور درخواست‌های
 
 ```bash
 npx tsx scripts/test-product-url.ts
+npx tsx scripts/test-product-url-big.ts   # همه‌ی سایت‌ها، لینک کثیف، سفارش تکراری، تشخیص نوع
 npx tsx scripts/test-error-log.ts
 npx tsx scripts/test-maintenance.ts
 ```
