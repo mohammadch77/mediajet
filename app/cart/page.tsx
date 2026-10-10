@@ -188,7 +188,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="relative min-h-screen px-[5vw] py-10 sm:py-16 max-w-[800px] mx-auto">
+    <div id="main" role="main" className="relative min-h-screen px-[5vw] py-10 sm:py-16 max-w-[800px] mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-4 mb-10">
         <div>
           <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Cart</div>
@@ -232,7 +232,7 @@ export default function CartPage() {
           <p className="text-dim mb-6">سبد خریدت خالی است.</p>
           <Link
             href="/#cats"
-            className="inline-block font-body font-bold rounded-[14px] transition text-[.95rem] px-6 py-3 bg-gradient-to-br from-primary to-primary2 text-white hover:-translate-y-px"
+            className="inline-block font-body font-bold rounded-[14px] transition text-[.95rem] px-6 py-3 bg-gradient-to-br from-primary to-primary-deep text-white hover:-translate-y-px"
           >
             شروع کن و آیتم اضافه کن
           </Link>
@@ -323,7 +323,7 @@ export default function CartPage() {
               </p>
               <div className="flex flex-col min-[420px]:flex-row gap-3">
                 <div className="relative flex-1 min-w-0">
-                  <input
+                  <input aria-label="مبلغ شارژ"
                     type="text"
                     inputMode="numeric"
                     autoComplete="off"
@@ -339,7 +339,7 @@ export default function CartPage() {
                   type="button"
                   onClick={startCharge}
                   disabled={charging}
-                  className="font-body cursor-pointer border-none font-bold text-[.95rem] text-white bg-gradient-to-br from-primary to-primary2 px-6 py-3 rounded-full whitespace-nowrap transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="font-body cursor-pointer border-none font-bold text-[.95rem] text-white bg-gradient-to-br from-primary to-primary-deep px-6 py-3 rounded-full whitespace-nowrap transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {charging ? "در حال انتقال..." : "شارژ کیف پول"}
                 </button>
@@ -363,7 +363,7 @@ export default function CartPage() {
             type="button"
             onClick={handleCheckout}
             disabled={checkingOut || !quote || (paymentMethod === "wallet" && hasEnoughWalletBalance === false)}
-            className="w-full font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] p-4 bg-gradient-to-br from-accent to-accent2 text-white shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+            className="w-full font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] p-4 bg-gradient-to-br from-accent to-accent2 text-on-solid shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
           >
             {checkingOut ? "در حال پرداخت..." : "ادامه به پرداخت"}
           </button>

@@ -124,7 +124,7 @@ export default function IdeDeployDialog({ onClose, onLocked }: { onClose: () => 
               type="button"
               onClick={start}
               disabled={starting || (migrate && !confirmMigrate)}
-              className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-br from-primary to-primary2 transition hover:-translate-y-px disabled:opacity-60"
+              className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-br from-primary to-primary-deep transition hover:-translate-y-px disabled:opacity-60"
             >
               {starting ? "..." : "شروع Deploy"}
             </button>

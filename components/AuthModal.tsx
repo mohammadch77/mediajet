@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth, type AuthUser } from "@/lib/AuthContext";
 import { toPersianDigits } from "@/lib/money";
+import LegalConsent from "@/components/LegalConsent";
 import CredentialsForm, { authInputClass, authButtonClass, postJson, PASSWORD_HINT } from "@/components/CredentialsForm";
 import BrandLogo from "@/components/BrandLogo";
 
@@ -23,6 +24,8 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
   // هدف جریان موبایل: ورود (حساب باید وجود داشته باشد) یا ثبت‌نام (شماره نباید ثبت شده باشد).
   const [purpose, setPurpose] = useState<Purpose>("login");
   const [mobile, setMobile] = useState("");
+  // رضایت با قوانین فقط برای ثبت‌نام لازم است و هرگز از پیش تیک‌خورده نیست.
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [code, setCode] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,6 +44,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
       setStep("password");
       setPurpose("login");
       setMobile("");
+      setAcceptTerms(false);
       setCode("");
       setEmail("");
       setPassword("");
@@ -63,6 +67,14 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
   useEffect(() => {
     if (step === "code" || step === "forgotSent") codeInputRef.current?.focus();
   }, [step]);
+
+  // بستن با Esc (دسترس‌پذیری کیبورد)
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -122,8 +134,12 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
 
   const requestOtp = () => {
     if (!requireMobile()) return;
+    if (purpose === "signup" && !acceptTerms) {
+      setError("برای ثبت‌نام باید قوانین و حریم خصوصی را بپذیری.");
+      return;
+    }
     return run(async () => {
-      await postJson("/api/auth/request-otp", { mobile, purpose });
+      await postJson("/api/auth/request-otp", { mobile, purpose, ...(purpose === "signup" && { acceptTerms }) });
       goTo("code");
       setCountdown(RESEND_SECONDS);
     });
@@ -135,7 +151,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
       return;
     }
     return run(async () => {
-      const data = await postJson<{ user: AuthUser }>("/api/auth/verify-otp", { mobile, code, purpose });
+      const data = await postJson<{ user: AuthUser }>("/api/auth/verify-otp", { mobile, code, purpose, ...(purpose === "signup" && { acceptTerms }) });
       finishLogin(data.user);
     });
   };
@@ -249,7 +265,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                 className={
                   "font-body cursor-pointer border-none text-[.82rem] font-bold py-2 rounded-full transition " +
                   (step === id && (id === "password" || purpose === tabPurpose)
-                    ? "bg-gradient-to-br from-primary to-primary2 text-white"
+                    ? "bg-gradient-to-br from-primary to-primary-deep text-white"
                     : "bg-transparent text-dim hover:text-text")
                 }
               >
@@ -328,6 +344,10 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                 maxLength={11}
                 className={authInputClass + " text-center tracking-widest"}
               />
+            )}
+
+            {step === "mobile" && purpose === "signup" && (
+              <LegalConsent checked={acceptTerms} onChange={setAcceptTerms} keys={["terms", "refund", "privacy"]} />
             )}
 
             {step === "code" && (

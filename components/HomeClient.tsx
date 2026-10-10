@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { CATEGORIES, ALL_SITES, type Category } from "@/data/categories";
 import SiteLogo from "@/components/SiteLogo";
@@ -17,6 +17,7 @@ import { useCart } from "@/lib/CartContext";
 import Link from "next/link";
 import BrandLogo from "@/components/BrandLogo";
 import ThemeToggle from "@/components/ThemeToggle";
+import SiteFooter from "@/components/SiteFooter";
 import type { AffiliateProgramInfo } from "@/lib/affiliateSummary";
 
 // صحنه‌ی سه‌بعدی فقط سمت کلاینت لود شود
@@ -34,14 +35,6 @@ const SITE_CATEGORY_COUNTS: { site: string; count: number }[] = ALL_SITES.map((s
   count: CATEGORIES.filter((c) => c.sites.includes(site)).length,
 })).sort((a, b) => b.count - a.count);
 
-// نظرهای مشتری‌ها فعلاً نمونه/جای‌نگهدار هستند چون هنوز مشتری واقعی نداریم.
-// بعداً باید با نظرات واقعی جایگزین شوند.
-const TESTIMONIALS = [
-  { name: "امیرحسین رضایی", role: "طراح گرافیک فریلنس", stars: 5, text: "خیلی سریع‌تر و ارزان‌تر از خرید اشتراک ماهانه بود. دقیقاً همون فایلی که لازم داشتم رو گرفتم." },
-  { name: "سارا محمدی", role: "مدیر محتوای آژانس تبلیغاتی", stars: 5, text: "برای پروژه‌های مشتری‌هامون از چند تا سایت مختلف فایل لازم داریم، اینجا همه رو یک‌جا پوشش می‌ده." },
-  { name: "علی کریمی", role: "تدوینگر ویدیو", stars: 4, text: "کیفیت فایل‌های ویدیویی عالی بود و پشتیبانی هم سریع جواب داد." },
-];
-
 function useReveal() {
   useEffect(() => {
     const io = new IntersectionObserver(
@@ -51,97 +44,6 @@ function useReveal() {
     document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
-}
-
-/**
- * متن را به نودهای React تبدیل می‌کند و هر آدرس http(s) (با یا بدون پرانتز) را
- * به لینک کلیک‌پذیر (نمایش فقط دامنه) تبدیل می‌کند. HTML خام تزریق نمی‌شود، پس امن است.
- */
-function renderWithLinks(text: string): ReactNode[] {
-  const nodes: ReactNode[] = [];
-  const re = /\(?(https?:\/\/[^\s()]+)\)?/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    if (m.index > last) nodes.push(text.slice(last, m.index));
-    const url = m[1];
-    const label = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    nodes.push(
-      <a key={m.index} href={url} target="_blank" rel="noopener noreferrer" className="underline hover:text-text transition">
-        {label}
-      </a>
-    );
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) nodes.push(text.slice(last));
-  return nodes;
-}
-
-/**
- * نماد اعتماد الکترونیکی (اینماد). فقط شناسه‌ی عددی و کد حروف/عدد پذیرفته می‌شود و تگ اینجا ساخته می‌شود؛
- * مقدار نامعتبر یا خالی = نمایش داده نمی‌شود (جلوگیری از تزریق در آدرس).
- */
-function EnamadSeal({ content }: { content: Record<string, string> }) {
-  const id = (content["footer.enamad_id"] ?? "").trim();
-  const code = (content["footer.enamad_code"] ?? "").trim();
-  if (!/^\d{1,12}$/.test(id) || !/^[A-Za-z0-9]{8,64}$/.test(code)) return null;
-  const query = `id=${id}&Code=${code}`;
-  return (
-    <div className="flex justify-center mt-4">
-      <a href={`https://trustseal.enamad.ir/?${query}`} target="_blank" rel="noopener" referrerPolicy="origin">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          referrerPolicy="origin"
-          src={`https://trustseal.enamad.ir/logo.aspx?${query}`}
-          alt="نماد اعتماد الکترونیکی"
-          className="cursor-pointer max-h-[90px] w-auto"
-        />
-      </a>
-    </div>
-  );
-}
-
-/** بخش «تماس با ما» در فوتر؛ فقط فیلدهایی که ادمین پر کرده نمایش داده می‌شوند. */
-function ContactBlock({ content }: { content: Record<string, string> }) {
-  const phone = content["contact.phone"]?.trim();
-  const email = content["contact.email"]?.trim();
-  const address = content["contact.address"]?.trim();
-  const telegram = content["contact.telegram"]?.trim();
-  const hours = content["contact.hours"]?.trim();
-  const description = content["contact.description"]?.trim();
-  if (!phone && !email && !address && !telegram && !hours && !description) return null;
-
-  const telegramHref = telegram
-    ? /^https?:\/\//.test(telegram)
-      ? telegram
-      : `https://t.me/${telegram.replace(/^@/, "")}`
-    : null;
-
-  return (
-    <div className="max-w-[60ch] mx-auto mt-6 text-[.82rem] leading-[1.9]">
-      <div className="font-bold text-text mb-1.5">تماس با ما</div>
-      {description && <p className="m-0 mb-2">{description}</p>}
-      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
-        {phone && (
-          <a href={`tel:${phone.replace(/\s+/g, "")}`} dir="ltr" className="text-dim hover:text-text transition">
-            {phone}
-          </a>
-        )}
-        {email && (
-          <a href={`mailto:${email}`} dir="ltr" className="text-dim hover:text-text transition">
-            {email}
-          </a>
-        )}
-        {telegramHref && (
-          <a href={telegramHref} target="_blank" rel="noopener noreferrer" className="text-dim hover:text-text transition">
-            تلگرام پشتیبانی
-          </a>
-        )}
-      </div>
-      {address && <div className="mt-1">{address}</div>}
-      {hours && <div className="mt-1">ساعات کاری: {hours}</div>}
-    </div>
-  );
 }
 
 export default function HomeClient({
@@ -198,7 +100,7 @@ export default function HomeClient({
       />
 
       {/* floating nav */}
-      <nav className="fixed top-[14px] sm:top-[18px] left-1/2 -translate-x-1/2 z-[200] w-full max-w-[94vw] sm:w-auto">
+      <nav aria-label="منوی اصلی" className="fixed top-[14px] sm:top-[18px] left-1/2 -translate-x-1/2 z-[200] w-full max-w-[94vw] sm:w-auto">
         <div className="flex items-center gap-2 bg-[rgb(var(--c-surface)/.7)] backdrop-blur-[20px] border border-[rgb(var(--c-primary2)/.14)] rounded-full py-2 px-3 sm:p-[8px_8px_8px_20px] shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)]">
           <div className="flex items-center gap-2 sm:gap-2.5 font-display font-extrabold text-[1rem] sm:text-[1.15rem] whitespace-nowrap shrink-0">
             <BrandLogo className="w-[28px] h-[28px] sm:w-[30px] sm:h-[30px] shadow-[0_0_60px_-10px_#6B5BFF]" />
@@ -228,7 +130,7 @@ export default function HomeClient({
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
             </svg>
             {cartCount > 0 && (
-              <span className="absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-white text-[.65rem] font-bold grid place-items-center">
+              <span className="absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-on-solid text-[.65rem] font-bold grid place-items-center">
                 {toPersianDigits(cartCount)}
               </span>
             )}
@@ -257,7 +159,7 @@ export default function HomeClient({
             ) : (
               <button
                 onClick={openAuthModal}
-                className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-[18px] py-2.5 rounded-full whitespace-nowrap shrink-0 transition hover:-translate-y-px hover:shadow-[0_0_60px_-10px_#6B5BFF]"
+                className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary-deep px-[18px] py-2.5 rounded-full whitespace-nowrap shrink-0 transition hover:-translate-y-px hover:shadow-[0_0_60px_-10px_#6B5BFF]"
               >
                 ورود / ثبت‌نام
               </button>
@@ -315,7 +217,7 @@ export default function HomeClient({
             ) : (
               <button
                 onClick={() => { setMenuOpen(false); openAuthModal(); }}
-                className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-3 rounded-xl transition"
+                className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary-deep px-4 py-3 rounded-xl transition"
               >
                 ورود / ثبت‌نام
               </button>
@@ -325,6 +227,7 @@ export default function HomeClient({
       </nav>
 
       {/* HERO */}
+      <main id="main">
       <header className="relative min-h-screen grid place-items-center text-center px-[5vw] pt-[120px] pb-20">
         <HeroScene />
         <div className="relative z-[3] max-w-[900px] w-full">
@@ -343,7 +246,7 @@ export default function HomeClient({
             {content["hero.subtitle"]}
           </p>
           <div className="flex gap-3.5 flex-wrap justify-center mb-5">
-            <a href="#cats" className="font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] px-8 py-4 bg-gradient-to-br from-accent to-accent2 text-white shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px]">
+            <a href="#cats" className="font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] px-8 py-4 bg-gradient-to-br from-accent to-accent2 text-on-solid shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px]">
               {content["hero.button_primary"]}
             </a>
             <a href="#how" className="font-body cursor-pointer font-bold rounded-[14px] transition text-[1.05rem] px-8 py-4 bg-[rgb(var(--c-ov)/.06)] text-text border border-[rgb(var(--c-primary2)/.14)] backdrop-blur-[10px] hover:bg-[rgb(var(--c-ov)/.1)] hover:-translate-y-[3px]">
@@ -354,7 +257,7 @@ export default function HomeClient({
           {/* فیلد اصلی لینک: کاربر فقط لینک را می‌دهد، سایت/دسته خودکار تشخیص داده می‌شود */}
           <div className="max-w-[560px] mx-auto text-right">
             <div className="flex gap-2.5 max-[520px]:flex-col">
-              <input
+              <input aria-label="لینک محصول را اینجا بگذار"
                 dir="ltr"
                 value={heroLink}
                 onChange={(e) => { setHeroLink(e.target.value); setHeroError(null); }}
@@ -365,7 +268,7 @@ export default function HomeClient({
               />
               <button
                 onClick={handleHeroLink}
-                className="font-body cursor-pointer border-none font-bold rounded-xl transition text-[.95rem] px-6 py-[14px] bg-gradient-to-br from-primary to-primary2 text-white shadow-[0_12px_30px_-10px_#6B5BFF] hover:-translate-y-0.5 shrink-0"
+                className="font-body cursor-pointer border-none font-bold rounded-xl transition text-[.95rem] px-6 py-[14px] bg-gradient-to-br from-primary to-primary-deep text-white shadow-[0_12px_30px_-10px_#6B5BFF] hover:-translate-y-0.5 shrink-0"
               >
                 بررسی لینک
               </button>
@@ -435,7 +338,16 @@ export default function HomeClient({
           {CATEGORIES.map((c) => (
             <div
               key={c.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`${c.title}؛ باز کردن فرم سفارش`}
               onClick={() => openCat(c)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openCat(c);
+                }
+              }}
               className="reveal group relative bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-[14px] sm:rounded-[18px] p-3 sm:p-[24px_22px] cursor-pointer transition hover:-translate-y-1.5 hover:border-[rgb(var(--c-cyan)/.4)] hover:shadow-[0_20px_40px_-20px_rgb(var(--c-cyan)/.3)]"
             >
               <span className="hidden sm:block absolute top-[22px] left-[22px] text-dim text-[1.1rem] transition group-hover:text-cyan group-hover:-translate-x-1">←</span>
@@ -460,43 +372,21 @@ export default function HomeClient({
           {SITE_CATEGORY_COUNTS.map(({ site, count }) => (
             <div
               key={site}
+              role="button"
+              tabIndex={0}
+              aria-label={`${site}؛ مشاهده‌ی دسته‌های قابل سفارش`}
               onClick={() => openSite(site)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openSite(site);
+                }
+              }}
               className="reveal group relative bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-[18px] p-[22px_18px] cursor-pointer transition hover:-translate-y-1.5 hover:border-[rgb(var(--c-cyan)/.4)] hover:shadow-[0_20px_40px_-20px_rgb(var(--c-cyan)/.3)]"
             >
               <SiteLogo site={site} className="w-10 h-10 rounded-[10px] text-[.75rem] mb-3" />
               <h4 className="latin font-display text-[1rem] mb-1 truncate">{site}</h4>
               <div className="text-dim text-[.8rem]">{toPersianDigits(count)} دسته‌ی قابل سفارش</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* TESTIMONIALS */}
-      <section className="reveal px-[5vw] py-[clamp(70px,10vw,120px)] max-w-[1200px] mx-auto">
-        <div className="reveal text-center mb-[clamp(40px,6vw,64px)]">
-          <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Testimonials</div>
-          <h2 className="font-display text-[clamp(1.7rem,4.5vw,2.8rem)] font-extrabold mt-3">نظر مشتری‌ها</h2>
-        </div>
-        <div className="grid grid-cols-1 gap-5 min-[700px]:grid-cols-3">
-          {TESTIMONIALS.map((t) => (
-            <div
-              key={t.name}
-              className="reveal bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-[20px] p-[28px_24px] transition hover:-translate-y-1.5 hover:border-[rgb(var(--c-primary2)/.5)]"
-            >
-              <div className="latin text-accent2 text-[1.1rem] mb-3 tracking-[.1em]">
-                {"★".repeat(t.stars)}
-                <span className="text-[rgb(var(--c-ov)/.15)]">{"★".repeat(5 - t.stars)}</span>
-              </div>
-              <p className="text-dim text-[.95rem] leading-[1.9] mb-5">{t.text}</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent grid place-items-center font-display font-bold text-white shrink-0">
-                  {t.name.slice(0, 1)}
-                </div>
-                <div>
-                  <div className="font-bold text-[.9rem]">{t.name}</div>
-                  <div className="text-dim text-[.78rem]">{t.role}</div>
-                </div>
-              </div>
             </div>
           ))}
         </div>
@@ -567,7 +457,7 @@ export default function HomeClient({
               <p className="text-dim text-[.98rem] leading-[1.95] mb-6">{content["affiliate.subtitle"]}</p>
               <Link
                 href="/affiliate"
-                className="inline-block font-body font-bold rounded-[14px] transition text-[.98rem] px-6 py-3 bg-gradient-to-br from-accent to-accent2 text-white shadow-[0_15px_40px_-15px_rgb(var(--c-accent)/.8)] hover:-translate-y-0.5"
+                className="inline-block font-body font-bold rounded-[14px] transition text-[.98rem] px-6 py-3 bg-gradient-to-br from-accent to-accent2 text-on-solid shadow-[0_15px_40px_-15px_rgb(var(--c-accent)/.8)] hover:-translate-y-0.5"
               >
                 {content["affiliate.button"]}
               </Link>
@@ -593,39 +483,10 @@ export default function HomeClient({
         </div>
       </section>
 
+      </main>
+
       {/* FOOTER */}
-      <footer className="border-t border-[rgb(var(--c-primary2)/.14)] px-[5vw] py-10 text-center text-dim">
-        <div className="inline-flex items-center gap-2.5 font-display font-extrabold text-text mb-2.5">
-          <BrandLogo className="w-[26px] h-[26px]" />گت‌استوک
-        </div>
-        <p className="m-0">{content["footer.tagline"]}</p>
-        {(content["footer.social_instagram"] || content["footer.social_telegram"]) && (
-          <div className="flex items-center justify-center gap-4 mt-3 text-[.82rem]">
-            {content["footer.social_instagram"] && (
-              <a href={content["footer.social_instagram"]} target="_blank" rel="noopener noreferrer" className="text-dim hover:text-text transition">
-                اینستاگرام
-              </a>
-            )}
-            {content["footer.social_telegram"] && (
-              <a href={content["footer.social_telegram"]} target="_blank" rel="noopener noreferrer" className="text-dim hover:text-text transition">
-                تلگرام
-              </a>
-            )}
-          </div>
-        )}
-        <div className="flex items-center justify-center gap-4 mt-3 text-[.82rem]">
-          <a href="/p/about" className="text-dim hover:text-text transition">درباره ما</a>
-          <a href="/p/terms" className="text-dim hover:text-text transition">قوانین و مقررات</a>
-          <a href="/p/faq" className="text-dim hover:text-text transition">سؤالات متداول</a>
-          <a href="/blog" className="text-dim hover:text-text transition">وبلاگ</a>
-          <a href="/affiliate" className="text-dim hover:text-text transition">همکاری در فروش</a>
-        </div>
-        <ContactBlock content={content} />
-        <EnamadSeal content={content} />
-        <p className="max-w-[60ch] mx-auto mt-4 text-[.78rem] text-muted leading-[1.85]">
-          {renderWithLinks(content["footer.copyright"] || "")}
-        </p>
-      </footer>
+      <SiteFooter content={content} />
 
       <OrderDrawer open={open} category={drawerCat} linkEntry={linkEntry} onClose={close} />
       <AuthModal open={authModalOpen} onClose={closeAuthModal} />

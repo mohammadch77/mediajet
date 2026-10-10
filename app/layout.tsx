@@ -1,4 +1,16 @@
 import type { Metadata } from "next";
+// فونت‌های خودمیزبان (OFL-1.1): بدون درخواست به سرویس خارجی. فقط وزن‌های استفاده‌شده.
+import "@fontsource/vazirmatn/400.css";
+import "@fontsource/vazirmatn/500.css";
+import "@fontsource/vazirmatn/600.css";
+import "@fontsource/vazirmatn/700.css";
+import "@fontsource/vazirmatn/800.css";
+import "@fontsource/vazirmatn/900.css";
+import "@fontsource/estedad/500.css";
+import "@fontsource/estedad/700.css";
+import "@fontsource/estedad/800.css";
+import "@fontsource/space-grotesk/500.css";
+import "@fontsource/space-grotesk/700.css";
 import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import { CartProvider } from "@/lib/CartContext";
@@ -19,7 +31,7 @@ export const metadata: Metadata = {
     url: process.env.APP_BASE_URL || "https://getstock.ir",
     title: "گت‌استوک — دانلود فایل از سایت‌های استوک بین‌المللی",
     description:
-      "خریدار یک فایل از Adobe Stock، Freepik، Vectoreezy و... فقط با یک لینک و پرداخت ریالی",
+      "خریدار یک فایل از Adobe Stock، Freepik، Vecteezy و... فقط با یک لینک و پرداخت ریالی",
     siteName: "گت‌استوک",
     images: [
       {
@@ -49,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
+        <a href="#main" className="skip-link">پرش به محتوای اصلی</a>
         <ErrorReporter />
         <AuthProvider>
           <CartProvider>{children}</CartProvider>

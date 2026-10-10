@@ -236,7 +236,7 @@ export default function AdminIdePage() {
             </div>
           ) : (
             <>
-              <input
+              <input aria-label="رمز عبور"
                 type="password"
                 autoComplete="current-password"
                 value={password}
@@ -248,7 +248,7 @@ export default function AdminIdePage() {
               <button
                 type="submit"
                 disabled={unlocking || !password}
-                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-br from-primary to-primary2 transition hover:-translate-y-px disabled:opacity-60"
+                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-br from-primary to-primary-deep transition hover:-translate-y-px disabled:opacity-60"
               >
                 {unlocking ? "..." : "باز کردن ابزار توسعه"}
               </button>
@@ -290,14 +290,14 @@ export default function AdminIdePage() {
 
       {sideTab === "files" && (
         <form onSubmit={createFile} className="flex gap-1.5 mb-3">
-          <input
+          <input aria-label="مسیر فایل جدید"
             dir="ltr"
             value={newPath}
             onChange={(e) => setNewPath(e.target.value)}
             placeholder="مسیر فایل جدید…"
             className="min-w-0 flex-1 latin bg-[rgb(var(--c-ov)/.04)] border border-[rgb(var(--c-primary2)/.2)] rounded-full px-3 py-1.5 text-[.76rem] outline-none focus:border-cyan"
           />
-          <button type="submit" className="px-3 rounded-full text-[.78rem] font-bold text-white bg-gradient-to-br from-primary to-primary2">
+          <button type="submit" className="px-3 rounded-full text-[.78rem] font-bold text-white bg-gradient-to-br from-primary to-primary-deep">
             +
           </button>
         </form>
@@ -334,7 +334,7 @@ export default function AdminIdePage() {
           type="button"
           onClick={save}
           disabled={!active || !dirty(active) || saving}
-          className={toolbarBtn + " text-white border-transparent bg-gradient-to-br from-primary to-primary2"}
+          className={toolbarBtn + " text-white border-transparent bg-gradient-to-br from-primary to-primary-deep"}
         >
           {saving ? "در حال ذخیره..." : "ذخیره"}
         </button>

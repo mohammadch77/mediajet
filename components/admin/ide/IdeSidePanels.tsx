@@ -30,7 +30,7 @@ export function IdeRoutesPanel({ onOpenFile, onLocked }: { onOpenFile: (path: st
 
   return (
     <div>
-      <input
+      <input aria-label="جستجو در مسیرها"
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
         placeholder="جستجو در مسیرها…"

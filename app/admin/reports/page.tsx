@@ -129,7 +129,7 @@ export default function AdminReportsPage() {
                 className={
                   "px-3.5 py-2 rounded-xl text-[.82rem] font-semibold transition " +
                   (range === k
-                    ? "bg-gradient-to-br from-primary to-primary2 text-white"
+                    ? "bg-gradient-to-br from-primary to-primary-deep text-white"
                     : "bg-[rgb(var(--c-ov)/.04)] text-dim hover:text-text")
                 }
               >
@@ -141,7 +141,7 @@ export default function AdminReportsPage() {
             className={
               "px-3.5 py-2 rounded-xl text-[.82rem] font-semibold transition " +
               (range === "custom"
-                ? "bg-gradient-to-br from-primary to-primary2 text-white"
+                ? "bg-gradient-to-br from-primary to-primary-deep text-white"
                 : "bg-[rgb(var(--c-ov)/.04)] text-dim hover:text-text")
             }
           >

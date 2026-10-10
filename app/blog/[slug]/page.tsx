@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import SiteFooter from "@/components/SiteFooter";
+import { getAllContent } from "@/lib/content";
 import { getPublishedBlogPostBySlug } from "@/lib/blogPosts";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { toJalaliDate } from "@/lib/jalali";
@@ -48,7 +50,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   return (
     <div dir="rtl" className="min-h-screen bg-bg text-text font-body">
-      <div className="max-w-[760px] mx-auto px-[5vw] py-14">
+      <div id="main" role="main" className="max-w-[760px] mx-auto px-[5vw] py-14">
         <Link href="/blog" className="latin text-[.75rem] tracking-[.14em] uppercase text-cyan font-bold">
           ← وبلاگ
         </Link>
@@ -66,6 +68,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         )}
         <div className="prose-page mt-8" dangerouslySetInnerHTML={{ __html: safeHtml }} />
       </div>
+      <SiteFooter content={await getAllContent()} />
     </div>
   );
 }

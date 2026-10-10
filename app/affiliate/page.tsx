@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { toJalaliDate, toJalaliDateTime } from "@/lib/jalali";
 import { toPersianDigits } from "@/lib/money";
 import type { AffiliateDashboard, AffiliateProgramInfo } from "@/lib/affiliateSummary";
+import LegalConsent from "@/components/LegalConsent";
 
 type ApiResponse = { program: AffiliateProgramInfo; loggedIn: boolean; dashboard: AffiliateDashboard | null };
 
@@ -19,7 +20,7 @@ const card = "bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-p
 const input =
   "w-full font-body text-[.95rem] text-text bg-bg border border-[rgb(var(--c-primary2)/.14)] rounded-xl p-[12px_14px] focus:border-primary outline-none";
 const primaryBtn =
-  "font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[.95rem] px-5 py-3 bg-gradient-to-br from-primary to-primary2 text-white hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed";
+  "font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[.95rem] px-5 py-3 bg-gradient-to-br from-primary to-primary-deep text-white hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed";
 
 function newIdempotencyKey(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -32,6 +33,7 @@ export default function AffiliatePage() {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const [joinConsent, setJoinConsent] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -52,7 +54,11 @@ export default function AffiliatePage() {
     setJoining(true);
     setError(null);
     try {
-      const res = await fetch("/api/affiliate/join", { method: "POST" });
+      const res = await fetch("/api/affiliate/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ acceptTerms: joinConsent }),
+      });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "ثبت‌نام در همکاری ناموفق بود.");
       await load();
@@ -66,7 +72,7 @@ export default function AffiliatePage() {
   const percent = data ? toPersianDigits(data.program.commissionPercent) : "…";
 
   return (
-    <div className="relative min-h-screen px-4 sm:px-[5vw] py-12 sm:py-16 max-w-[900px] mx-auto">
+    <div id="main" role="main" className="relative min-h-screen px-4 sm:px-[5vw] py-12 sm:py-16 max-w-[900px] mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
         <div>
           <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Affiliate</div>
@@ -152,7 +158,10 @@ export default function AffiliatePage() {
             ) : (
               <>
                 <p className="text-dim mb-4">با یک کلیک عضو شو و لینک اختصاصی‌ات را بگیر.</p>
-                <button onClick={join} disabled={joining} className={primaryBtn}>
+                <div className="mb-4 max-w-[460px] mx-auto">
+                  <LegalConsent checked={joinConsent} onChange={setJoinConsent} keys={["terms", "privacy"]} name="acceptAffiliateTerms" />
+                </div>
+                <button onClick={join} disabled={joining || !joinConsent} className={primaryBtn}>
                   {joining ? "در حال ثبت‌نام..." : "عضویت رایگان در همکاری"}
                 </button>
               </>
@@ -306,6 +315,7 @@ function PayoutForm({
 }) {
   const [cardNumber, setCardNumber] = useState("");
   const [cardHolder, setCardHolder] = useState("");
+  const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   // کلید یکتا برای هر «تلاش»؛ دوبار کلیک یا تکرار شبکه درخواست دوم نمی‌سازد.
@@ -320,7 +330,7 @@ function PayoutForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // کل موجودی درخواست می‌شود؛ سرور آن را دوباره با دفتر کمیسیون می‌سنجد.
-        body: JSON.stringify({ amountRial: balanceRial, cardNumber, cardHolder, idempotencyKey: idemKey }),
+        body: JSON.stringify({ amountRial: balanceRial, cardNumber, cardHolder, acceptPayoutTerms: consent, idempotencyKey: idemKey }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "ثبت درخواست تسویه ناموفق بود.");
@@ -359,8 +369,18 @@ function PayoutForm({
           <input value={cardHolder} onChange={(e) => setCardHolder(e.target.value)} className={input} disabled={!canRequest} />
         </label>
       </div>
+      <div className="mb-4">
+        <LegalConsent
+          checked={consent}
+          onChange={setConsent}
+          keys={["terms", "privacy"]}
+          name="acceptPayoutTerms"
+          lead="اجازه می‌دهم شماره کارت و نام صاحب کارتم فقط برای واریز این تسویه ثبت شود. "
+          disabled={!canRequest}
+        />
+      </div>
       {msg && <div className={`text-[.85rem] mb-3 ${msg.ok ? "text-success" : "text-accent2"}`}>{msg.text}</div>}
-      <button type="submit" disabled={!canRequest || submitting} className={`${primaryBtn} w-full sm:w-auto`}>
+      <button type="submit" disabled={!canRequest || submitting || !consent} className={`${primaryBtn} w-full sm:w-auto`}>
         {submitting ? "در حال ثبت..." : "درخواست واریز"}
       </button>
     </form>

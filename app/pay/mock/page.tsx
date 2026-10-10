@@ -41,7 +41,7 @@ function MockPaymentContent() {
         <div className="flex flex-col gap-3">
           <button
             onClick={() => resolve("OK")}
-            className="font-body cursor-pointer border-none font-bold text-white bg-gradient-to-br from-primary to-primary2 py-3 rounded-full transition hover:-translate-y-px"
+            className="font-body cursor-pointer border-none font-bold text-white bg-gradient-to-br from-primary to-primary-deep py-3 rounded-full transition hover:-translate-y-px"
           >
             پرداخت موفق
           </button>

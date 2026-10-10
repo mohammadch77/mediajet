@@ -109,14 +109,14 @@ export default function AdminShell({
                 className={
                   "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[.9rem] font-semibold transition " +
                   (active
-                    ? "bg-gradient-to-br from-primary to-primary2 text-white"
+                    ? "bg-gradient-to-br from-primary to-primary-deep text-white"
                     : "text-dim hover:text-text hover:bg-[rgb(var(--c-ov)/.04)]")
                 }
               >
                 {item.icon}
                 <span className="flex-1">{item.label}</span>
                 {item.href === "/admin/errors" && openErrors > 0 && (
-                  <span className="text-[.68rem] font-bold bg-accent text-white px-2 py-0.5 rounded-full">{openErrors > 99 ? "99+" : openErrors}</span>
+                  <span className="text-[.68rem] font-bold bg-accent text-on-solid px-2 py-0.5 rounded-full">{openErrors > 99 ? "99+" : openErrors}</span>
                 )}
               </Link>
             );
@@ -167,7 +167,7 @@ export default function AdminShell({
         </header>
 
         {maintenance && (
-          <Link href="/admin/settings" className="block bg-accent text-white text-center text-[.82rem] font-bold px-4 py-2">
+          <Link href="/admin/settings" className="block bg-accent text-on-solid text-center text-[.82rem] font-bold px-4 py-2">
             سایت در حالت «در حال به‌روزرسانی» است و کاربران صفحه‌ی تعمیر را می‌بینند. برای بازگرداندن به حالت عادی اینجا بزن.
           </Link>
         )}

@@ -188,7 +188,7 @@ export default function WalletAdjustPanel({
             <div className="text-dim text-[.74rem] mb-4">حداکثر ۱۰۰ میلیون تومان در هر تعدیل.</div>
 
             <label className="block text-[.8rem] text-dim mb-1.5">دلیل (الزامی، در تاریخچه ثبت می‌شود)</label>
-            <textarea
+            <textarea aria-label="مثلاً: بازگشت وجه سفارش MJ-1001 / هدیه‌ی جبران"
               value={reason}
               onChange={(e) => {
                 setReason(e.target.value);
@@ -216,7 +216,7 @@ export default function WalletAdjustPanel({
               type="button"
               onClick={requestSubmit}
               disabled={busy}
-              className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-br from-primary to-primary2 transition hover:-translate-y-px disabled:opacity-60 mb-6"
+              className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-br from-primary to-primary-deep transition hover:-translate-y-px disabled:opacity-60 mb-6"
             >
               ثبت {dirLabel}
             </button>

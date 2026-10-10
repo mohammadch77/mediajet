@@ -83,6 +83,10 @@ public/maintenance.html   صفحه‌ی ثابت «در حال به‌روزرس
 telegram-relay/      Cloudflare Worker برای عبور درخواست‌های تلگرام
 ```
 
+## حقوقی و حریم خصوصی
+
+صفحه‌های `/terms`، `/privacy`، `/cookies`، `/refund` (قالب `components/LegalPage.tsx`، فوتر مشترک `components/SiteFooter.tsx`، ثابت‌ها در `lib/legal.ts`). مشخصات حقوقی کسب‌وکار از پنل ادمین ← محتوا. گزارش کامل و فهرست مواردِ نیازمند وکیل: `docs/LEGAL_REVIEW.md`.
+
 ## تست‌ها
 
 اسکریپت‌ها با `tsx` اجرا می‌شوند، مثلاً:

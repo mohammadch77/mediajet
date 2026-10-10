@@ -19,6 +19,9 @@ model User {
   passwordHash      String?
   passwordUpdatedAt DateTime?
   name      String?
+  // پذیرش قوانین هنگام ثبت‌نام (کاربران قدیمی‌تر null هستند: قبل از این قابلیت ثبت‌نام کرده‌اند).
+  termsAcceptedAt DateTime?
+  termsVersion    String?
   role      Role     @default(user)
   createdAt DateTime @default(now())
   // غیرفعال‌سازی توسط ادمین: کاربر غیرفعال نمی‌تواند وارد شود و نشست‌هایش باطل می‌شود، ولی سابقه‌ی مالی/سفارش‌هایش دست‌نخورده می‌ماند.

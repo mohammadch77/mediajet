@@ -56,7 +56,7 @@ export default function AffiliateFlags({ affiliateId, onChanged }: { affiliateId
             className={
               "px-3.5 py-1.5 rounded-full text-[.82rem] font-bold border transition " +
               (status === s
-                ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
+                ? "bg-gradient-to-br from-primary to-primary-deep text-white border-transparent"
                 : "bg-[rgb(var(--c-ov)/.04)] border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text")
             }
           >
@@ -147,7 +147,7 @@ function FlagCard({ flag: f, showAffiliate, onResolved }: { flag: Flag; showAffi
         </div>
       ) : (
         <div className="mt-3 flex flex-col sm:flex-row gap-2">
-          <input
+          <input aria-label="نتیجه‌ی بررسی (مثلاً: خانواده‌ی همکار، مشکلی نیست)"
             value={resolution}
             onChange={(e) => setResolution(e.target.value)}
             placeholder="نتیجه‌ی بررسی (مثلاً: خانواده‌ی همکار، مشکلی نیست)"

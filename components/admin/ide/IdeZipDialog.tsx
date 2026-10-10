@@ -161,7 +161,7 @@ export default function IdeZipDialog({
               type="button"
               onClick={apply}
               disabled={busy || !!nothingToApply}
-              className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-br from-primary to-primary2 transition hover:-translate-y-px disabled:opacity-60"
+              className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-br from-primary to-primary-deep transition hover:-translate-y-px disabled:opacity-60"
             >
               {nothingToApply ? "تغییری برای اعمال نیست" : busy ? "در حال اعمال..." : `تأیید و اعمال ${plan.added + plan.modified} فایل`}
             </button>

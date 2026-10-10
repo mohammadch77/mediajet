@@ -97,7 +97,7 @@ export default function AdminPagesList() {
           برای لینک‌های فوتر از نامک‌های about، terms و faq استفاده کن (آدرس: /p/about و ...).
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
-          <input
+          <input aria-label="نامک (slug) — فقط حروف انگلیسی کوچک، عدد و خط تیره"
             type="text"
             placeholder="نامک (slug) — فقط حروف انگلیسی کوچک، عدد و خط تیره"
             value={newSlug}
@@ -105,7 +105,7 @@ export default function AdminPagesList() {
             dir="ltr"
             className="flex-1 bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
           />
-          <input
+          <input aria-label="عنوان صفحه"
             type="text"
             placeholder="عنوان صفحه"
             value={newTitle}
@@ -115,7 +115,7 @@ export default function AdminPagesList() {
           <button
             onClick={create}
             disabled={creating || !newSlug.trim() || !newTitle.trim()}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary2 text-white font-bold text-[.85rem] disabled:opacity-50 transition"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-deep text-white font-bold text-[.85rem] disabled:opacity-50 transition"
           >
             {creating ? "در حال ساخت…" : "ساخت صفحه"}
           </button>

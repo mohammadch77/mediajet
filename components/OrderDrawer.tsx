@@ -330,7 +330,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
                 <Link
                   href="/cart"
                   onClick={onClose}
-                  className="font-body cursor-pointer font-bold rounded-[14px] transition text-[.95rem] px-5 py-3 bg-gradient-to-br from-primary to-primary2 text-white hover:-translate-y-px"
+                  className="font-body cursor-pointer font-bold rounded-[14px] transition text-[.95rem] px-5 py-3 bg-gradient-to-br from-primary to-primary-deep text-white hover:-translate-y-px"
                 >
                   رفتن به سبد خرید ←
                 </Link>
@@ -411,7 +411,7 @@ export default function OrderDrawer({ open, category, linkEntry, onClose }: Prop
             <button
               onClick={handleAddToCart}
               disabled={submitStatus === "submitting"}
-              className="w-full font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] p-4 bg-gradient-to-br from-accent to-accent2 text-white shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
+              className="w-full font-body cursor-pointer border-none font-bold rounded-[14px] transition text-[1.05rem] p-4 bg-gradient-to-br from-accent to-accent2 text-on-solid shadow-[0_12px_30px_-10px_#FF6B35] hover:-translate-y-[3px] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
             >
               {submitStatus === "submitting" ? "در حال افزودن..." : "افزودن به سبد"}
             </button>

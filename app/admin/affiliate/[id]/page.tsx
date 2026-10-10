@@ -299,7 +299,7 @@ function SuspendBox({ id, suspended, onDone }: { id: string; suspended: boolean;
           : "همکار معلق: لینکش زیرمجموعه‌ی جدید ثبت نمی‌کند، کمیسیون جدید نمی‌گیرد و نمی‌تواند تسویه بدهد. زیرمجموعه‌ها و موجودی‌اش حفظ می‌شوند."}
       </p>
       <div className="flex flex-col sm:flex-row gap-2">
-        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="دلیل (الزامی؛ به همکار نمایش داده می‌شود)" className={inputCls} />
+        <input aria-label="دلیل (الزامی؛ به همکار نمایش داده می‌شود)" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="دلیل (الزامی؛ به همکار نمایش داده می‌شود)" className={inputCls} />
         <button
           onClick={submit}
           disabled={busy}
@@ -357,11 +357,11 @@ function AdjustBox({ id, onDone }: { id: string; onDone: () => Promise<void> }) 
           <option value="credit">افزایش</option>
           <option value="debit">کاهش</option>
         </select>
-        <input value={toman} onChange={(e) => setToman(e.target.value)} inputMode="numeric" placeholder="مبلغ به تومان" className={inputCls} />
+        <input aria-label="مبلغ به تومان" value={toman} onChange={(e) => setToman(e.target.value)} inputMode="numeric" placeholder="مبلغ به تومان" className={inputCls} />
       </div>
       <div className="flex flex-col sm:flex-row gap-2">
-        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="دلیل (الزامی)" className={inputCls} />
-        <button onClick={submit} disabled={busy} className="font-bold rounded-xl px-4 py-2.5 text-[.85rem] shrink-0 bg-gradient-to-br from-primary to-primary2 text-white disabled:opacity-60">
+        <input aria-label="دلیل (الزامی)" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="دلیل (الزامی)" className={inputCls} />
+        <button onClick={submit} disabled={busy} className="font-bold rounded-xl px-4 py-2.5 text-[.85rem] shrink-0 bg-gradient-to-br from-primary to-primary-deep text-white disabled:opacity-60">
           ثبت اصلاح
         </button>
       </div>

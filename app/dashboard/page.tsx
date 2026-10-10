@@ -336,7 +336,7 @@ export default function DashboardPage() {
   const displayName = user.name?.trim() || toPersianDigits(user.mobile);
 
   return (
-    <div className="relative min-h-screen px-[5vw] py-16 max-w-[1100px] mx-auto">
+    <div id="main" role="main" className="relative min-h-screen px-[5vw] py-16 max-w-[1100px] mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
         <div>
           <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Dashboard</div>
@@ -403,7 +403,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => setTab("profile")}
-            className="font-body cursor-pointer border-none font-bold text-[.85rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-2 rounded-full whitespace-nowrap"
+            className="font-body cursor-pointer border-none font-bold text-[.85rem] text-white bg-gradient-to-br from-primary to-primary-deep px-4 py-2 rounded-full whitespace-nowrap"
           >
             تنظیم ایمیل و رمز
           </button>
@@ -420,7 +420,7 @@ export default function DashboardPage() {
             className={
               "font-body cursor-pointer shrink-0 relative text-[.9rem] font-bold px-5 py-2.5 rounded-full transition border whitespace-nowrap " +
               (tab === t.id
-                ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
+                ? "bg-gradient-to-br from-primary to-primary-deep text-white border-transparent"
                 : "bg-[rgb(var(--c-ov)/.04)] border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text hover:border-cyan")
             }
           >
@@ -465,7 +465,7 @@ export default function DashboardPage() {
 
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="relative w-full sm:w-[220px]">
-                    <input
+                    <input aria-label="یا مبلغ دلخواه"
                       type="text"
                       inputMode="numeric"
                       autoComplete="off"
@@ -572,7 +572,7 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => setPayOrderId(o.id)}
-                          className="px-4 py-1.5 rounded-full text-[.8rem] font-bold bg-gradient-to-br from-primary to-primary2 text-white border-none cursor-pointer transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+                          className="px-4 py-1.5 rounded-full text-[.8rem] font-bold bg-gradient-to-br from-primary to-primary-deep text-white border-none cursor-pointer transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           پرداخت
                         </button>
@@ -631,7 +631,7 @@ export default function DashboardPage() {
                             type="button"
                             onClick={() => handleDownload(item)}
                             disabled={downloadingItemId === item.id}
-                            className="font-body cursor-pointer border-none font-bold text-[.85rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-2.5 rounded-full whitespace-nowrap transition hover:-translate-y-px disabled:opacity-70 disabled:cursor-wait shrink-0"
+                            className="font-body cursor-pointer border-none font-bold text-[.85rem] text-white bg-gradient-to-br from-primary to-primary-deep px-4 py-2.5 rounded-full whitespace-nowrap transition hover:-translate-y-px disabled:opacity-70 disabled:cursor-wait shrink-0"
                           >
                             {downloadingItemId === item.id ? "در حال آماده‌سازی فایل شما..." : "دانلود"}
                           </button>
@@ -674,7 +674,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
-              <input
+              <input aria-label="پیام خودت را بنویس"
                 type="text"
                 placeholder="پیام خودت را بنویس..."
                 value={messageText}
@@ -687,7 +687,7 @@ export default function DashboardPage() {
               <button
                 onClick={handleSendMessage}
                 disabled={sendingMessage}
-                className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-5 py-2.5 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+                className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary-deep px-5 py-2.5 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {sendingMessage ? "در حال ارسال..." : "ارسال"}
               </button>
@@ -728,7 +728,7 @@ export default function DashboardPage() {
                 <button
                   onClick={handleSaveName}
                   disabled={savingName || nameInput.trim() === (user.name ?? "")}
-                  className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary2 px-5 py-2.5 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="font-body cursor-pointer border-none font-bold text-[.9rem] text-white bg-gradient-to-br from-primary to-primary-deep px-5 py-2.5 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {savingName ? "در حال ذخیره..." : "ذخیره"}
                 </button>

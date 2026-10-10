@@ -50,7 +50,7 @@ export default function AdminWalletsPage() {
   const manageButton = (id: string) => (
     <button
       onClick={() => setOpenUserId(id)}
-      className="px-4 py-1.5 rounded-full text-[.8rem] font-bold text-white bg-gradient-to-br from-primary to-primary2 transition hover:-translate-y-px"
+      className="px-4 py-1.5 rounded-full text-[.8rem] font-bold text-white bg-gradient-to-br from-primary to-primary-deep transition hover:-translate-y-px"
     >
       مدیریت
     </button>
@@ -67,7 +67,7 @@ export default function AdminWalletsPage() {
       </div>
 
       <div className="mb-5">
-        <input
+        <input aria-label="جستجو بر اساس موبایل یا نام"
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}

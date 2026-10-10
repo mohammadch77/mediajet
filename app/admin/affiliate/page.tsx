@@ -135,8 +135,8 @@ function AffiliatesTab() {
         }}
         className="flex gap-2 mb-5"
       >
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="جست‌وجو: موبایل، نام یا کد" className={inputCls} />
-        <button className="font-bold rounded-xl px-4 text-[.88rem] bg-gradient-to-br from-primary to-primary2 text-white shrink-0">جست‌وجو</button>
+        <input aria-label="جست‌وجو: موبایل، نام یا کد" value={q} onChange={(e) => setQ(e.target.value)} placeholder="جست‌وجو: موبایل، نام یا کد" className={inputCls} />
+        <button className="font-bold rounded-xl px-4 text-[.88rem] bg-gradient-to-br from-primary to-primary-deep text-white shrink-0">جست‌وجو</button>
       </form>
 
       {error && <div className="text-accent2 mb-4">{error}</div>}
@@ -215,7 +215,7 @@ function PayoutsTab() {
             className={
               "px-3.5 py-1.5 rounded-full text-[.82rem] font-bold border transition " +
               (status === s
-                ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
+                ? "bg-gradient-to-br from-primary to-primary-deep text-white border-transparent"
                 : "bg-[rgb(var(--c-ov)/.04)] border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text")
             }
           >
@@ -322,8 +322,8 @@ function PayoutCard({ payout: p, onReviewed }: { payout: PayoutRow; onReviewed: 
       {p.status === "requested" && (
         <div className="border-t border-[rgb(var(--c-primary2)/.1)] pt-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2.5">
-            <input value={bankRef} onChange={(e) => setBankRef(e.target.value)} placeholder="شماره پیگیری واریز" className={inputCls} />
-            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="توضیح (برای رد الزامی است)" className={inputCls} />
+            <input aria-label="شماره پیگیری واریز" value={bankRef} onChange={(e) => setBankRef(e.target.value)} placeholder="شماره پیگیری واریز" className={inputCls} />
+            <input aria-label="توضیح (برای رد الزامی است)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="توضیح (برای رد الزامی است)" className={inputCls} />
           </div>
           {err && <div className="text-accent2 text-[.82rem] mb-2">{err}</div>}
           <div className="flex gap-2 flex-wrap">

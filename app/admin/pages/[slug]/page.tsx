@@ -195,7 +195,7 @@ export default function AdminPageEditor() {
               <button
                 onClick={() => save(true)}
                 disabled={busy}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary2 text-white text-[.85rem] font-bold disabled:opacity-50 transition"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-white text-[.85rem] font-bold disabled:opacity-50 transition"
               >
                 {busy ? "در حال ذخیره…" : "ذخیره و انتشار"}
               </button>

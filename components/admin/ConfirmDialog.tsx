@@ -38,7 +38,7 @@ export default function ConfirmDialog({
           <button
             onClick={onConfirm}
             disabled={busy}
-            className="px-4 py-2 rounded-full text-[.85rem] font-bold text-white bg-gradient-to-br from-primary to-primary2 transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-full text-[.85rem] font-bold text-white bg-gradient-to-br from-primary to-primary-deep transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {busy ? "..." : confirmLabel}
           </button>

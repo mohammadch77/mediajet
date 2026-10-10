@@ -175,7 +175,7 @@ export default function AdminBlogEditor() {
             />
 
             <label className="block text-[.8rem] font-bold mb-1.5">خلاصه</label>
-            <textarea
+            <textarea aria-label="خلاصه‌ای کوتاه که در لیست وبلاگ نمایش داده می‌شود"
               value={excerpt}
               onChange={(e) => setExcerpt(e.target.value)}
               rows={2}
@@ -190,7 +190,7 @@ export default function AdminBlogEditor() {
           <div className="flex flex-col gap-4">
             <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5">
               <h2 className="font-display font-bold text-[.95rem] mb-3">عکس کاور</h2>
-              <input
+              <input aria-label="آدرس URL عکس کاور"
                 type="text"
                 value={coverImage}
                 onChange={(e) => setCoverImage(e.target.value)}
@@ -222,7 +222,7 @@ export default function AdminBlogEditor() {
               <button
                 onClick={() => save(true)}
                 disabled={busy}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary2 text-white text-[.85rem] font-bold disabled:opacity-50 transition"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-white text-[.85rem] font-bold disabled:opacity-50 transition"
               >
                 {busy ? "در حال ذخیره…" : "ذخیره و انتشار"}
               </button>

@@ -76,7 +76,7 @@ export default function PaymentResultPage() {
 
   const linkBase =
     "text-center font-body font-bold rounded-[14px] transition text-[.95rem] px-5 py-3 hover:-translate-y-px";
-  const primaryLink = linkBase + " bg-gradient-to-br from-primary to-primary2 text-white";
+  const primaryLink = linkBase + " bg-gradient-to-br from-primary to-primary-deep text-white";
   const secondaryLink = linkBase + " border border-[rgb(var(--c-primary2)/.3)] text-text";
 
   return (

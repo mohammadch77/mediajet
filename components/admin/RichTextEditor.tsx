@@ -31,7 +31,7 @@ function ToolbarButton({
       className={
         "px-2.5 py-1.5 rounded-lg text-[.8rem] font-bold transition " +
         (active
-          ? "bg-gradient-to-br from-primary to-primary2 text-white"
+          ? "bg-gradient-to-br from-primary to-primary-deep text-white"
           : "bg-[rgb(var(--c-sink)/.25)] text-dim hover:text-text")
       }
     >

@@ -39,7 +39,7 @@ function RoleBadge({ role }: { role: Role }) {
   const styles: Record<Role, string> = {
     user: "bg-[rgb(var(--c-ov)/.06)] text-dim",
     operator: "bg-[rgb(var(--c-cyan)/.14)] text-cyan",
-    admin: "bg-gradient-to-br from-primary to-primary2 text-white",
+    admin: "bg-gradient-to-br from-primary to-primary-deep text-white",
   };
   return (
     <span className={`px-2.5 py-1 rounded-full text-[.72rem] font-bold ${styles[role]}`}>{ROLE_LABELS[role]}</span>
@@ -110,7 +110,7 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="mb-5">
-        <input
+        <input aria-label="جستجو بر اساس موبایل یا نام"
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}

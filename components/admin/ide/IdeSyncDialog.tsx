@@ -133,7 +133,7 @@ export default function IdeSyncDialog({ onClose, onLocked, onChanged }: { onClos
                   className="w-full mb-2 bg-black/30 border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3 py-2 text-[.84rem]"
                   aria-label="پیام کامیت"
                 />
-                <button disabled={busy} onClick={() => run("push")} className={btn + " text-white bg-gradient-to-br from-primary to-primary2"}>
+                <button disabled={busy} onClick={() => run("push")} className={btn + " text-white bg-gradient-to-br from-primary to-primary-deep"}>
                   ارسال به گیت‌هاب
                 </button>
               </section>

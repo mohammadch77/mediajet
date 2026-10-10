@@ -1,6 +1,4 @@
-@import url("https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css");
-@import url("https://fonts.googleapis.com/css2?family=Estedad:wght@500;700;800&family=Space+Grotesk:wght@500;700&display=swap");
-
+/* فونت‌ها از npm (@fontsource، لایسنس OFL) و از خود سرور سرو می‌شوند؛ در layout.tsx import شده‌اند. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,19 +11,22 @@
   --c-bg: 8 10 21; --c-bg2: 13 16 32; --c-surface: 20 24 51; --c-surface2: 27 33 69;
   --c-primary: 107 91 255; --c-primary2: 138 124 255; --c-cyan: 56 225 255;
   --c-accent: 255 107 53; --c-accent2: 255 154 92;
-  --c-text: 238 240 251; --c-dim: 152 160 200; --c-muted: 91 99 144;
+  --c-text: 238 240 251; --c-dim: 152 160 200; --c-muted: 132 138 172;
   --c-success: 61 220 132; --c-danger: 255 107 107; --c-warning: 255 200 60;
   --c-ov: 255 255 255; --c-sink: 0 0 0;
+  /* متن روی سطوح پررنگ (دکمه‌ی نارنجی/سبز/قرمز) و انتهای گرادیان دکمه‌ی بنفش؛ همه ≥ ۴٫۵:۱ */
+  --c-on-solid: 8 10 21; --c-primary-deep: 88 72 235;
   --prose-body: #C7CBE8; --prose-quote: #9AA0C7; --prose-link: #6EE7F0; --prose-strong: #fff;
 }
 :root[data-theme="light"] {
   color-scheme: light;
   --c-bg: 244 245 251; --c-bg2: 236 238 248; --c-surface: 255 255 255; --c-surface2: 241 242 250;
-  --c-primary: 98 80 245; --c-primary2: 112 96 240; --c-cyan: 0 132 170;
-  --c-accent: 230 86 30; --c-accent2: 214 98 40;
-  --c-text: 22 25 48; --c-dim: 84 91 128; --c-muted: 128 134 168;
-  --c-success: 22 150 82; --c-danger: 214 54 54; --c-warning: 176 120 0;
+  --c-primary: 98 80 245; --c-primary2: 102 86 216; --c-cyan: 0 115 149;
+  --c-accent: 184 69 24; --c-accent2: 174 78 30;
+  --c-text: 22 25 48; --c-dim: 84 91 128; --c-muted: 100 104 129;
+  --c-success: 22 121 68; --c-danger: 198 50 50; --c-warning: 142 98 0;
   --c-ov: 22 25 48; --c-sink: 255 255 255;
+  --c-on-solid: 255 255 255; --c-primary-deep: 98 80 245;
   --prose-body: #3A3F60; --prose-quote: #5A6088; --prose-link: #0B7FA3; --prose-strong: #161930;
 }
 
@@ -111,4 +112,26 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .mj-float, .mj-glow { animation: none; }
   .mj-spin { animation-duration: 2.4s; }
+}
+
+/* دسترس‌پذیری: حلقه‌ی فوکوس واضح برای کاربران کیبورد (فقط وقتی با کیبورد فوکوس می‌شود) */
+:focus-visible {
+  outline: 2px solid rgb(var(--c-cyan));
+  outline-offset: 2px;
+}
+/* فیلدهایی که outline-none دارند، فوکوس را با border نشان می‌دهند؛ برای کیبورد حلقه‌ی کامل هم داشته باشند */
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid rgb(var(--c-cyan)); outline-offset: 1px; }
+
+/* لینک «رفتن به محتوا» برای کاربران کیبورد و صفحه‌خوان */
+.skip-link {
+  position: absolute; inset-inline-start: 8px; top: -60px; z-index: 1000;
+  padding: 10px 16px; border-radius: 10px; font-weight: 700;
+  background: rgb(var(--c-primary-deep)); color: #fff; transition: top .15s;
+}
+.skip-link:focus { top: 8px; }
+
+/* احترام به تنظیم «کاهش حرکت» سیستم */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

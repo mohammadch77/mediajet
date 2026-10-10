@@ -50,6 +50,6 @@ export default function StatusScreen({
 
 /** دکمه‌ی اصلی (گرادیان برند) و ثانویه برای صفحه‌های وضعیت. */
 export const statusPrimaryBtn =
-  "inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-white text-[.95rem] bg-gradient-to-br from-primary to-primary2 shadow-[0_14px_40px_-14px_rgb(var(--c-primary))] transition hover:-translate-y-px cursor-pointer border-none";
+  "inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-white text-[.95rem] bg-gradient-to-br from-primary to-primary-deep shadow-[0_14px_40px_-14px_rgb(var(--c-primary))] transition hover:-translate-y-px cursor-pointer border-none";
 export const statusSecondaryBtn =
   "inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-bold text-[.88rem] text-dim hover:text-text bg-[rgb(var(--c-ov)/.05)] border border-[rgb(var(--c-primary2)/.2)] transition hover:border-primary2 cursor-pointer";

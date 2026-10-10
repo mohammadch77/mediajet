@@ -3,6 +3,7 @@
 // قیمت و موجودی از سرور می‌آید و پرداخت هم سمت سرور دوباره محاسبه می‌شود.
 
 import { useEffect, useState } from "react";
+import { LEGAL_LINKS } from "@/lib/legal";
 
 type Quote = {
   walletTotalRial: string;
@@ -31,6 +32,13 @@ export default function OrderPayDialog({
   const [method, setMethod] = useState<"wallet" | "gateway">("gateway");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // بستن با Esc (مگر وقتی پرداخت در جریان است)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !busy && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [busy, onClose]);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,11 +101,14 @@ export default function OrderPayDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 sm:px-4" onClick={busy ? undefined : onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pay-dialog-title"
         className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.2)] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[460px] max-h-[90vh] overflow-y-auto p-5 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display font-bold text-lg">روش پرداخت</h3>
+          <h3 id="pay-dialog-title" className="font-display font-bold text-lg">روش پرداخت</h3>
           <button onClick={onClose} disabled={busy} className="text-dim hover:text-text px-2" aria-label="بستن">✕</button>
         </div>
 
@@ -131,10 +142,14 @@ export default function OrderPayDialog({
               type="button"
               onClick={pay}
               disabled={busy || (method === "wallet" && !enough)}
-              className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-br from-primary to-primary2 transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-br from-primary to-primary-deep transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {busy ? "..." : method === "wallet" ? "پرداخت از کیف پول" : "رفتن به درگاه پرداخت"}
             </button>
+            <p className="text-dim text-[.76rem] leading-[1.8] mt-3 text-center">
+              با پرداخت، <a href={LEGAL_LINKS.terms.href} target="_blank" rel="noopener noreferrer" className="text-cyan underline">{LEGAL_LINKS.terms.label}</a> و{" "}
+              <a href={LEGAL_LINKS.refund.href} target="_blank" rel="noopener noreferrer" className="text-cyan underline">{LEGAL_LINKS.refund.label}</a> را می‌پذیری.
+            </p>
             {!enough && (
               <button type="button" onClick={onGoWallet} className="w-full mt-2 py-2.5 rounded-xl text-[.84rem] font-bold text-dim border border-[rgb(var(--c-primary2)/.25)]">
                 شارژ کیف پول

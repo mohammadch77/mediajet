@@ -107,8 +107,8 @@ async function main(): Promise<void> {
 
   console.log("\n۱) عضویت در برنامه");
   const affiliate = await sessionFor(randomMobile());
-  const j1 = await api("/api/affiliate/join", affiliate.cookie, {});
-  const j2 = await api("/api/affiliate/join", affiliate.cookie, {});
+  const j1 = await api("/api/affiliate/join", affiliate.cookie, { acceptTerms: true });
+  const j2 = await api("/api/affiliate/join", affiliate.cookie, { acceptTerms: true });
   const code: string = j1.json?.code;
   check("کد یکتا ساخته شد", /^[A-Z0-9]{7}$/.test(code ?? ""), code);
   check("عضویت دوباره همان کد را برمی‌گرداند", j2.json?.code === code);
@@ -197,7 +197,7 @@ async function main(): Promise<void> {
   check("موجودی = جمع کمیسیون‌ها", balance === expectedBalance, `${balance}`);
   const card = luhnCard("603799123456789");
   const idem = crypto.randomUUID();
-  const payoutBody = { amountRial: balance.toString(), cardNumber: card, cardHolder: "همکار تست", idempotencyKey: idem };
+  const payoutBody = { amountRial: balance.toString(), cardNumber: card, cardHolder: "همکار تست", acceptPayoutTerms: true, idempotencyKey: idem };
 
   const belowMin = await api("/api/affiliate/payouts", affiliate.cookie, payoutBody);
   check("موجودی کمتر از حداقل (۲۰۰ هزار تومان) رد می‌شود", belowMin.status === 422, belowMin.json?.error);
@@ -356,7 +356,7 @@ async function main(): Promise<void> {
 
   console.log("\n۱۴) تغییر معرف توسط ادمین");
   const aff2 = await sessionFor(randomMobile());
-  const code2: string = (await api("/api/affiliate/join", aff2.cookie, {})).json.code;
+  const code2: string = (await api("/api/affiliate/join", aff2.cookie, { acceptTerms: true })).json.code;
   const refPath = (id: string) => `/api/admin/users/${id}/referrer`;
   check("کاربر عادی نمی‌تواند معرف را عوض کند (۴۰۳)", (await api(refPath(buyer.id), buyerCookie, { code: code2, reason: "تست" })).status === 403);
   check("معرف نمی‌تواند خودِ کاربر باشد", (await api(refPath(affiliate.userId), admin.cookie, { code, reason: "تست" })).status === 422);
@@ -380,7 +380,7 @@ async function main(): Promise<void> {
   console.log("\n۱۶) دوره‌ی انتظار کمیسیون (۷ روز)");
   await setPaymentSetting("affiliate.hold_days", 7, admin.userId);
   const holdAff = await sessionFor(randomMobile());
-  const holdCode: string = (await api("/api/affiliate/join", holdAff.cookie, {})).json.code;
+  const holdCode: string = (await api("/api/affiliate/join", holdAff.cookie, { acceptTerms: true })).json.code;
   const holdBuyerMobile = randomMobile();
   const holdBuyerCookie = await otpLogin(holdBuyerMobile, `mj_ref=${holdCode}`, "10.20.0.1");
   const holdBuyer = (await prisma.user.findUnique({ where: { mobile: holdBuyerMobile } }))!;
@@ -439,7 +439,7 @@ async function main(): Promise<void> {
   console.log("\n۱۷) تشخیص خودکار تقلب");
   const fraudAffMobile = randomMobile();
   const fraudAffCookie = await otpLogin(fraudAffMobile, "", "10.66.0.7");
-  const fraudCode: string = (await api("/api/affiliate/join", fraudAffCookie, {})).json.code;
+  const fraudCode: string = (await api("/api/affiliate/join", fraudAffCookie, { acceptTerms: true })).json.code;
   const fraudAff = (await prisma.user.findUnique({ where: { mobile: fraudAffMobile } }))!;
   check("IP ورود همکار ثبت شد", fraudAff.lastLoginIp === "10.66.0.7" && fraudAff.signupIp === "10.66.0.7");
   const selfMobile = randomMobile();
@@ -459,7 +459,7 @@ async function main(): Promise<void> {
   const sharedCard = luhnCard("621986123456789");
   const cardPayout = async (cookie: string, userId: string) => {
     await api(`/api/admin/affiliate/affiliates/${userId}`, admin.cookie, { action: "adjust", direction: "credit", amountRial: "100000", reason: "تست", idempotencyKey: crypto.randomUUID() });
-    return api("/api/affiliate/payouts", cookie, { amountRial: "100000", cardNumber: sharedCard, cardHolder: "یک نفر", idempotencyKey: crypto.randomUUID() });
+    return api("/api/affiliate/payouts", cookie, { amountRial: "100000", cardNumber: sharedCard, cardHolder: "یک نفر", acceptPayoutTerms: true, idempotencyKey: crypto.randomUUID() });
   };
   await cardPayout(holdAff.cookie, holdAff.userId);
   const sp = await cardPayout(fraudAffCookie, fraudAff.id);

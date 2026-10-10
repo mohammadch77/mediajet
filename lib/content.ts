@@ -25,9 +25,13 @@ export const CONTENT_DEFS = [
   { key: "contact.hours", group: "contact", label: "ساعات کاری", defaultValue: "" },
   { key: "contact.description", group: "contact", label: "متن توضیحی تماس با ما", defaultValue: "" },
 
+  // مشخصات حقوقی کسب‌وکار (فقط آنچه واقعاً دارید وارد کنید؛ خالی = نمایش داده نمی‌شود)
+  { key: "legal.business_name", group: "legal", label: "نام حقوقی / نام ثبت‌شده‌ی کسب‌وکار", defaultValue: "" },
+  { key: "legal.business_id", group: "legal", label: "شناسه‌ی ثبت یا کد اقتصادی/ملی (در صورت وجود)", defaultValue: "" },
+
   // فوتر
   { key: "footer.tagline", group: "footer", label: "توضیح کوتاه برند", defaultValue: "سرویس دانلود تک‌فایل از پلتفرم‌های استوک" },
-  { key: "footer.copyright", group: "footer", label: "متن کپی‌رایت / پانوشت", defaultValue: "این یک ماکاپ اولیه است. توجه: مدل دانلود از اکانت اشتراکی و فروش تک‌فایل ممکن است با شرایط لایسنس پلتفرم‌های مبدأ مغایرت داشته باشد و نیازمند بررسی حقوقی است." },
+  { key: "footer.copyright", group: "footer", label: "پانوشت اختیاری (خالی = فقط © نام کسب‌وکار)", defaultValue: "" },
   { key: "footer.social_instagram", group: "footer", label: "لینک اینستاگرام", defaultValue: "" },
   { key: "footer.social_telegram", group: "footer", label: "لینک تلگرام", defaultValue: "" },
   // نماد اعتماد الکترونیکی (اینماد): فقط شناسه و کد؛ تگ نهایی در کد ساخته می‌شود (HTML خام از ادمین پذیرفته نمی‌شود).

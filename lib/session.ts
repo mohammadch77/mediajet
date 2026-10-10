@@ -19,7 +19,11 @@ function hashToken(token: string): string {
 }
 
 /** برای موبایل داده‌شده، در صورت نبود کاربر می‌سازد (به‌همراه کیف پول با موجودی صفر). */
-export async function findOrCreateUserByMobile(mobile: string, ip?: string): Promise<User> {
+export async function findOrCreateUserByMobile(
+  mobile: string,
+  ip?: string,
+  terms?: { acceptedAt: Date; version: string },
+): Promise<User> {
   const existing = await prisma.user.findUnique({ where: { mobile } });
   if (existing) {
     // کاربر موجودی که کیف پول ندارد (مثلاً ادمین ساخته‌شده با اسکریپت) در اولین ورود کیف پول می‌گیرد.
@@ -40,6 +44,7 @@ export async function findOrCreateUserByMobile(mobile: string, ip?: string): Pro
     data: {
       mobile,
       signupIp: ip ?? null,
+      ...(terms && { termsAcceptedAt: terms.acceptedAt, termsVersion: terms.version }),
       ...(referredById && { referredById }),
       wallet: { create: { balanceRial: 0n } },
     },

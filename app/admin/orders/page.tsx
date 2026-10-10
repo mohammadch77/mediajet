@@ -81,7 +81,7 @@ export default function AdminOrdersPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <input
+        <input aria-label="جستجو بر اساس شماره سفارش، موبایل، نام، سایت یا دسته"
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}

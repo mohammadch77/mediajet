@@ -121,7 +121,7 @@ export default function AdminErrorsPage() {
       {error && <div className="bg-[rgb(var(--c-accent)/.1)] border border-[rgb(var(--c-accent)/.3)] text-accent2 rounded-2xl p-4 mb-5">{error}</div>}
 
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="جستجو در پیام، فایل یا آدرس…" className={inputCls + " flex-1 min-w-[220px] max-w-[360px]"} />
+        <input aria-label="جستجو در پیام، فایل یا آدرس" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="جستجو در پیام، فایل یا آدرس…" className={inputCls + " flex-1 min-w-[220px] max-w-[360px]"} />
         <select value={status} onChange={(e) => { setStatus(e.target.value as typeof status); setPage(1); }} className={inputCls + " cursor-pointer"}>
           <option value="open" className="bg-bg2">باز{data ? ` (${toPersianDigits(data.openCount)})` : ""}</option>
           <option value="resolved" className="bg-bg2">حل‌شده</option>
@@ -176,7 +176,7 @@ export default function AdminErrorsPage() {
             {detail.componentStack && <Field label="استک کامپوننت‌ها"><Pre text={detail.componentStack} /></Field>}
             <div className="flex flex-wrap gap-2 mt-5">
               {detail.status === "open" ? (
-                <button disabled={busy} onClick={() => setResolved(detail.id, "resolved")} className="px-5 py-2.5 rounded-full text-[.85rem] font-bold text-white bg-gradient-to-br from-primary to-primary2 disabled:opacity-50">علامت‌گذاری به‌عنوان حل‌شده</button>
+                <button disabled={busy} onClick={() => setResolved(detail.id, "resolved")} className="px-5 py-2.5 rounded-full text-[.85rem] font-bold text-white bg-gradient-to-br from-primary to-primary-deep disabled:opacity-50">علامت‌گذاری به‌عنوان حل‌شده</button>
               ) : (
                 <button disabled={busy} onClick={() => setResolved(detail.id, "open")} className="px-5 py-2.5 rounded-full text-[.85rem] font-bold bg-[rgb(var(--c-ov)/.06)] border border-[rgb(var(--c-primary2)/.2)] disabled:opacity-50">بازکردن دوباره</button>
               )}

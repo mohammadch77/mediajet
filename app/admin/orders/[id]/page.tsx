@@ -62,7 +62,7 @@ function RefundBox({ orderId, priceLabel, onDone }: { orderId: string; priceLabe
         همان کمیسیون هم برگشت می‌خورد.
       </p>
       <div className="flex flex-col sm:flex-row gap-2.5">
-        <input
+        <input aria-label="دلیل بازگشت وجه (به کاربر نمایش داده نمی‌شود)"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="دلیل بازگشت وجه (به کاربر نمایش داده نمی‌شود)"

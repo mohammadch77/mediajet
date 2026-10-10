@@ -263,7 +263,7 @@ export default function OperatorPage() {
           className={
             "px-3.5 py-1.5 rounded-full text-[.82rem] font-bold border transition " +
             (statusFilter === ""
-              ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
+              ? "bg-gradient-to-br from-primary to-primary-deep text-white border-transparent"
               : "bg-[rgb(var(--c-ov)/.04)] border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text")
           }
         >
@@ -276,7 +276,7 @@ export default function OperatorPage() {
             className={
               "px-3.5 py-1.5 rounded-full text-[.82rem] font-bold border transition " +
               (statusFilter === s
-                ? "bg-gradient-to-br from-primary to-primary2 text-white border-transparent"
+                ? "bg-gradient-to-br from-primary to-primary-deep text-white border-transparent"
                 : "bg-[rgb(var(--c-ov)/.04)] border-[rgb(var(--c-primary2)/.2)] text-dim hover:text-text")
             }
           >
@@ -326,7 +326,7 @@ export default function OperatorPage() {
                         key={s}
                         disabled={isOrderBusy}
                         onClick={() => changeStatus(o.id, s)}
-                        className="font-body cursor-pointer border-none font-bold text-[.82rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-2 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="font-body cursor-pointer border-none font-bold text-[.82rem] text-white bg-gradient-to-br from-primary to-primary-deep px-4 py-2 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {isOrderBusy ? "..." : `→ ${STATUS_LABELS[s]}`}
                       </button>
@@ -373,7 +373,7 @@ export default function OperatorPage() {
                         {canDeliverItem && (
                           <div className="flex flex-col gap-2 mt-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <input
+                              <input aria-label="لینک فایل تحویلی"
                                 type="url"
                                 dir="ltr"
                                 placeholder="لینک فایل تحویلی"
@@ -400,7 +400,7 @@ export default function OperatorPage() {
                               <button
                                 disabled={isItemBusy}
                                 onClick={() => deliverByUpload(o.id, item.id)}
-                                className="font-body cursor-pointer border-none font-bold text-[.78rem] text-white bg-gradient-to-br from-primary to-primary2 px-4 py-2 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto"
+                                className="font-body cursor-pointer border-none font-bold text-[.78rem] text-white bg-gradient-to-br from-primary to-primary-deep px-4 py-2 rounded-full transition hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto"
                               >
                                 {isItemBusy ? "..." : "آپلود فایل (حداکثر ۲۰ مگابایت)"}
                               </button>
@@ -445,7 +445,7 @@ export default function OperatorPage() {
                                       : "✅ قیمت بیشتر نمی‌شود: فقط دسته اصلاح می‌شود."}
                                   </div>
                                 )}
-                                <input
+                                <input aria-label="یادداشت (اختیاری)"
                                   type="text"
                                   maxLength={300}
                                   placeholder="یادداشت (اختیاری)"
@@ -457,7 +457,7 @@ export default function OperatorPage() {
                                   <button
                                     disabled={isItemBusy || !mismatchCategory}
                                     onClick={() => submitMismatch(o.id, item)}
-                                    className="font-body cursor-pointer border-none font-bold text-[.8rem] text-white bg-gradient-to-br from-primary to-primary2 px-5 py-2 rounded-full disabled:opacity-50"
+                                    className="font-body cursor-pointer border-none font-bold text-[.8rem] text-white bg-gradient-to-br from-primary to-primary-deep px-5 py-2 rounded-full disabled:opacity-50"
                                   >
                                     {isItemBusy ? "..." : "ثبت دسته‌ی درست"}
                                   </button>

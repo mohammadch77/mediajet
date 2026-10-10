@@ -67,7 +67,7 @@ function MaintenanceSection() {
                 key={String(v)}
                 disabled={busy || state.enabled === v}
                 onClick={() => toggle(v)}
-                className={"px-5 py-2 rounded-full text-[.85rem] font-bold transition " + (state.enabled === v ? (v ? "bg-accent text-white" : "bg-success text-white") : "text-dim hover:text-text")}
+                className={"px-5 py-2 rounded-full text-[.85rem] font-bold transition " + (state.enabled === v ? (v ? "bg-accent text-on-solid" : "bg-success text-on-solid") : "text-dim hover:text-text")}
               >
                 {v ? "در حال به‌روزرسانی" : "عادی"}
               </button>
@@ -166,7 +166,7 @@ function SettingCard({ row, onSaved }: { row: SettingRow; onSaved: () => void })
         <button
           onClick={save}
           disabled={busy}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary2 text-white text-[.85rem] font-bold disabled:opacity-50 transition"
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-white text-[.85rem] font-bold disabled:opacity-50 transition"
         >
           {busy ? "در حال ذخیره…" : "ذخیره"}
         </button>
@@ -325,7 +325,7 @@ function PaymentSettingsSection() {
           <button
             onClick={save}
             disabled={busy}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary2 text-white text-[.85rem] font-bold disabled:opacity-50 transition"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-white text-[.85rem] font-bold disabled:opacity-50 transition"
           >
             {busy ? "در حال ذخیره…" : "ذخیره‌ی تنظیمات پرداخت"}
           </button>

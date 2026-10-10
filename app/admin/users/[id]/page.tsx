@@ -115,13 +115,13 @@ function ReferrerBox({
       {editing && (
         <div className="mt-3 grid gap-2.5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="کد همکاری معرف جدید" dir="ltr" className={`${input} latin text-left`} />
-            <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="دلیل تغییر (الزامی)" className={input} />
+            <input aria-label="کد همکاری معرف جدید" value={code} onChange={(e) => setCode(e.target.value)} placeholder="کد همکاری معرف جدید" dir="ltr" className={`${input} latin text-left`} />
+            <input aria-label="دلیل تغییر (الزامی)" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="دلیل تغییر (الزامی)" className={input} />
           </div>
           <p className="text-dim text-[.78rem]">فقط روی کمیسیون خریدهای بعدی اثر دارد؛ کمیسیون‌های قبلی تغییر نمی‌کنند.</p>
           {err && <div className="text-accent2 text-[.82rem]">{err}</div>}
           <div className="flex gap-2 flex-wrap">
-            <button onClick={() => save(false)} disabled={busy} className="font-bold rounded-xl px-4 py-2 text-[.85rem] bg-gradient-to-br from-primary to-primary2 text-white disabled:opacity-60">
+            <button onClick={() => save(false)} disabled={busy} className="font-bold rounded-xl px-4 py-2 text-[.85rem] bg-gradient-to-br from-primary to-primary-deep text-white disabled:opacity-60">
               ثبت معرف جدید
             </button>
             {referrer && (

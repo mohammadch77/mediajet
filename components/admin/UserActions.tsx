@@ -85,7 +85,7 @@ export default function UserActions({ user, onChanged, onDeleted, compact }: Pro
             <h3 className="font-display font-bold text-lg mb-2">{titles[dialog]}</h3>
             <p className="text-dim text-[.88rem] mb-4 leading-relaxed">{messages[dialog]}</p>
             {dialog === "disable" && (
-              <input
+              <input aria-label="دلیل (اختیاری)"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="دلیل (اختیاری)"
@@ -106,8 +106,8 @@ export default function UserActions({ user, onChanged, onDeleted, compact }: Pro
                 onClick={submit}
                 disabled={busy}
                 className={
-                  "px-4 py-2 rounded-full text-[.85rem] font-bold text-white disabled:opacity-60 " +
-                  (dialog === "delete" ? "bg-accent" : "bg-gradient-to-br from-primary to-primary2")
+                  "px-4 py-2 rounded-full text-[.85rem] font-bold disabled:opacity-60 " +
+                  (dialog === "delete" ? "bg-accent text-on-solid" : "bg-gradient-to-br from-primary to-primary-deep text-white")
                 }
               >
                 {busy ? "..." : dialog === "delete" ? "حذف دائمی" : dialog === "disable" ? "غیرفعال کن" : "فعال کن"}

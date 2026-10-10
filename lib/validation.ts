@@ -178,20 +178,31 @@ const mobileField = z
 // پیش‌فرض login است تا کلاینتِ قدیمیِ باز مانده هرگز ناخواسته حساب نسازد.
 const otpPurposeField = z.enum(["login", "signup"]).default("login");
 
-export const requestOtpInput = z.object({
-  mobile: mobileField,
-  purpose: otpPurposeField,
-});
+// ثبت‌نام بدون پذیرش صریح قوانین ممکن نیست (چک‌باکس هرگز از پیش تیک‌خورده نیست).
+const TERMS_REQUIRED_MESSAGE = "برای ثبت‌نام باید قوانین و حریم خصوصی را بپذیری.";
+const signupTermsRefine = (v: { purpose: string; acceptTerms?: boolean }) =>
+  v.purpose !== "signup" || v.acceptTerms === true;
+
+export const requestOtpInput = z
+  .object({
+    mobile: mobileField,
+    purpose: otpPurposeField,
+    acceptTerms: z.boolean().optional(),
+  })
+  .refine(signupTermsRefine, { message: TERMS_REQUIRED_MESSAGE, path: ["acceptTerms"] });
 
 export type RequestOtpInput = z.infer<typeof requestOtpInput>;
 
-export const verifyOtpInput = z.object({
-  mobile: mobileField,
-  purpose: otpPurposeField,
-  code: z
-    .string({ error: "کد تأیید الزامی است." })
-    .regex(/^\d{6}$/, "کد تأیید باید ۶ رقم باشد."),
-});
+export const verifyOtpInput = z
+  .object({
+    mobile: mobileField,
+    purpose: otpPurposeField,
+    acceptTerms: z.boolean().optional(),
+    code: z
+      .string({ error: "کد تأیید الزامی است." })
+      .regex(/^\d{6}$/, "کد تأیید باید ۶ رقم باشد."),
+  })
+  .refine(signupTermsRefine, { message: TERMS_REQUIRED_MESSAGE, path: ["acceptTerms"] });
 
 export type VerifyOtpInput = z.infer<typeof verifyOtpInput>;
 
@@ -551,7 +562,12 @@ export const affiliatePayoutRequestInput = z.object({
     .trim()
     .min(3, "نام صاحب کارت را کامل وارد کن.")
     .max(60, "نام صاحب کارت بیش از حد طولانی است."),
+  acceptPayoutTerms: z.literal(true, { error: "برای ثبت درخواست باید اجازه‌ی ثبت اطلاعات کارت را تأیید کنی." }),
   idempotencyKey: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/, "کلید یکتای درخواست نامعتبر است."),
+});
+
+export const affiliateJoinInput = z.object({
+  acceptTerms: z.literal(true, { error: "برای عضویت باید قوانین و حریم خصوصی را بپذیری." }),
 });
 
 export type AffiliatePayoutRequestInput = z.infer<typeof affiliatePayoutRequestInput>;

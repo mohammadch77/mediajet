@@ -5,6 +5,7 @@ import { findOrCreateUserByMobile, createSession } from "@/lib/session";
 import { authUserPayload } from "@/lib/authUser";
 import { checkRateLimit, rateLimitMessage } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/clientIp";
+import { LEGAL_VERSION } from "@/lib/legal";
 import { assertMobileEligible, AccountError } from "@/lib/accountGuard";
 
 const IP_LIMIT = 20;
@@ -40,7 +41,11 @@ export async function POST(req: NextRequest) {
     throw error;
   }
 
-  const user = await findOrCreateUserByMobile(input.mobile, getClientIp(req));
+  const user = await findOrCreateUserByMobile(
+    input.mobile,
+    getClientIp(req),
+    input.purpose === "signup" ? { acceptedAt: new Date(), version: LEGAL_VERSION } : undefined,
+  );
   await createSession(user.id, getClientIp(req));
 
   const payload = await authUserPayload(user);

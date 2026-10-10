@@ -15,12 +15,13 @@ type ContentRow = {
 const GROUP_LABELS: Record<string, string> = {
   hero: "هیرو لندینگ",
   contact: "تماس با ما",
+  legal: "مشخصات حقوقی کسب‌وکار",
   footer: "فوتر",
   header: "هدر (منو)",
   affiliate: "معرفی همکاری در فروش",
 };
 
-const GROUP_ORDER = ["hero", "contact", "footer", "header", "affiliate"];
+const GROUP_ORDER = ["hero", "contact", "legal", "footer", "header", "affiliate"];
 
 const LONG_FIELD_KEYS = new Set([
   "hero.subtitle",
@@ -120,7 +121,7 @@ function GroupSection({
         <button
           onClick={save}
           disabled={busy}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary2 text-white text-[.85rem] font-bold disabled:opacity-50 transition"
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-white text-[.85rem] font-bold disabled:opacity-50 transition"
         >
           {busy ? "در حال ذخیره…" : "ذخیره‌ی این بخش"}
         </button>

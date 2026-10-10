@@ -92,7 +92,7 @@ export default function AdminBlogList() {
       <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5 mb-5">
         <h2 className="font-display font-bold text-[.95rem] mb-3">نوشته‌ی جدید</h2>
         <div className="flex flex-col sm:flex-row gap-3">
-          <input
+          <input aria-label="نامک (slug) — فقط حروف انگلیسی کوچک، عدد و خط تیره"
             type="text"
             placeholder="نامک (slug) — فقط حروف انگلیسی کوچک، عدد و خط تیره"
             value={newSlug}
@@ -100,7 +100,7 @@ export default function AdminBlogList() {
             dir="ltr"
             className="flex-1 bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition"
           />
-          <input
+          <input aria-label="عنوان نوشته"
             type="text"
             placeholder="عنوان نوشته"
             value={newTitle}
@@ -110,7 +110,7 @@ export default function AdminBlogList() {
           <button
             onClick={create}
             disabled={creating || !newSlug.trim() || !newTitle.trim()}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary2 text-white text-[.85rem] font-bold disabled:opacity-50 transition whitespace-nowrap"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-white text-[.85rem] font-bold disabled:opacity-50 transition whitespace-nowrap"
           >
             {creating ? "در حال ساخت…" : "ساخت نوشته"}
           </button>
