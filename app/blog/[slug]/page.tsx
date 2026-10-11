@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import SiteFooter from "@/components/SiteFooter";
 import { getAllContent } from "@/lib/content";
+import SiteNav from "@/components/SiteNav";
+import { headerNavItems } from "@/lib/legal";
 import { getPublishedBlogPostBySlug } from "@/lib/blogPosts";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { toJalaliDate } from "@/lib/jalali";
@@ -40,6 +42,7 @@ export async function generateMetadata({
 }
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const content = await getAllContent();
   const post = await getPublishedBlogPostBySlug(params.slug);
   if (!post) {
     notFound();
@@ -50,7 +53,8 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   return (
     <div dir="rtl" className="min-h-screen bg-bg text-text font-body">
-      <div id="main" role="main" className="max-w-[760px] mx-auto px-[5vw] py-14">
+      <SiteNav navItems={headerNavItems(content)} withAuthModal />
+      <div id="main" role="main" className="max-w-[760px] mx-auto px-[5vw] pt-28 pb-14">
         <Link href="/blog" className="latin text-[.75rem] tracking-[.14em] uppercase text-cyan font-bold">
           ← وبلاگ
         </Link>
@@ -68,7 +72,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         )}
         <div className="prose-page mt-8" dangerouslySetInnerHTML={{ __html: safeHtml }} />
       </div>
-      <SiteFooter content={await getAllContent()} />
+      <SiteFooter content={content} />
     </div>
   );
 }

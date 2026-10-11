@@ -23,3 +23,14 @@ export function visibleFooterNote(raw: string | undefined): string {
 export function currentJalaliYear(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("fa-IR-u-ca-persian", { year: "numeric" }).format(now);
 }
+
+/**
+ * آیتم‌های منوی بالا (از محتوای ادمین). روی صفحه‌های غیر خانه، لینک‌های #بخش باید به خانه برگردند
+ * (مثلاً «#how» ← «/#how»)؛ آدرس‌های کامل و مسیرها دست‌نخورده می‌مانند.
+ */
+export function headerNavItems(content: Record<string, string>): string[][] {
+  return [1, 2, 3, 4]
+    .map((n) => [content[`header.nav${n}_href`] ?? "", content[`header.nav${n}_label`] ?? ""])
+    .filter(([href, label]) => href && label)
+    .map(([href, label]) => [href.startsWith("#") ? `/${href}` : href, label]);
+}

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import SiteFooter from "@/components/SiteFooter";
 import { getAllContent } from "@/lib/content";
+import SiteNav from "@/components/SiteNav";
+import { headerNavItems } from "@/lib/legal";
 import { getPublishedPageBySlug } from "@/lib/pages";
 import { sanitizeHtml } from "@/lib/sanitize";
 
@@ -24,6 +26,7 @@ export async function generateMetadata({
 }
 
 export default async function PublicPage({ params }: { params: { slug: string } }) {
+  const content = await getAllContent();
   const page = await getPublishedPageBySlug(params.slug);
   if (!page) {
     notFound();
@@ -34,14 +37,15 @@ export default async function PublicPage({ params }: { params: { slug: string } 
 
   return (
     <div dir="rtl" className="min-h-screen bg-bg text-text font-body">
-      <div id="main" role="main" className="max-w-[760px] mx-auto px-[5vw] py-14">
+      <SiteNav navItems={headerNavItems(content)} withAuthModal />
+      <div id="main" role="main" className="max-w-[760px] mx-auto px-[5vw] pt-28 pb-14">
         <Link href="/" className="latin text-[.75rem] tracking-[.14em] uppercase text-cyan font-bold">
           ← گت‌استوک
         </Link>
         <h1 className="font-display text-[clamp(1.6rem,4vw,2.4rem)] font-extrabold mt-4 mb-8">{page.title}</h1>
         <div className="prose-page" dangerouslySetInnerHTML={{ __html: safeHtml }} />
       </div>
-      <SiteFooter content={await getAllContent()} />
+      <SiteFooter content={content} />
     </div>
   );
 }
