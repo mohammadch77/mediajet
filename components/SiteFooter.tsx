@@ -175,8 +175,8 @@ export default function SiteFooter({ content, cta = true }: { content: Record<st
           <FooterColumn title="گت‌استوک">
             <nav aria-label="پیوندهای سایت">
               <ul className="list-none p-0 m-0 text-[.88rem]">
-                <li><Link href="/p/about" className={linkCls}>درباره ما</Link></li>
-                <li><Link href="/p/faq" className={linkCls}>سؤالات متداول</Link></li>
+                <li><Link href="/about" className={linkCls}>درباره ما</Link></li>
+                <li><Link href="/faq" className={linkCls}>سؤالات متداول</Link></li>
                 <li><Link href="/blog" className={linkCls}>وبلاگ</Link></li>
                 <li><Link href="/affiliate" className={linkCls}>همکاری در فروش</Link></li>
               </ul>

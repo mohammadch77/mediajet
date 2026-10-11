@@ -5,7 +5,7 @@ import SiteFooter from "@/components/SiteFooter";
 import LegalToc from "@/components/LegalToc";
 import SiteNav from "@/components/SiteNav";
 import { headerNavItems } from "@/lib/legal";
-import { LEGAL_VERSION, LEGAL_LINKS } from "@/lib/legal";
+import { LEGAL_VERSION, LEGAL_LINKS, INFO_LINKS } from "@/lib/legal";
 import { toJalaliDate } from "@/lib/jalali";
 
 type Tone = "good" | "warn" | "neutral";
@@ -29,6 +29,11 @@ export const LEGAL_ICONS = {
   phone: "M7 2h10v20H7zM11 18h2",
   ban: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM4.9 4.9l14.2 14.2",
   type: "M4 7V4h16v3M9 20h6M12 4v16",
+  info: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01",
+  help: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01",
+  globe: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20",
+  grid: "M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z",
+  zap: "M13 2 3 14h9l-1 8 10-12h-9l1-8z",
 } as const;
 export type LegalIcon = keyof typeof LEGAL_ICONS;
 
@@ -61,19 +66,23 @@ export default async function LegalPage({
   title,
   intro,
   current,
+  showUpdated = true,
   icon,
   highlights,
   children,
 }: {
   title: string;
   intro?: string;
-  current: keyof typeof LEGAL_LINKS;
+  current: keyof typeof LEGAL_LINKS | keyof typeof INFO_LINKS;
+  /** نمایش «آخرین به‌روزرسانی» (برای صفحه‌های حقوقی). */
+  showUpdated?: boolean;
   icon: LegalIcon;
   highlights?: LegalHighlight[];
   children: ReactNode;
 }) {
   const content = await getAllContent();
   const navItems = headerNavItems(content);
+  const isLegal = current in LEGAL_LINKS;
   return (
     <div dir="rtl" className="min-h-screen bg-bg text-text font-body flex flex-col">
       <SiteNav navItems={navItems} withAuthModal />
@@ -103,10 +112,12 @@ export default async function LegalPage({
               </nav>
               <h1 className="font-display font-extrabold text-[clamp(2rem,5.5vw,3.2rem)] leading-[1.25] mt-5 mb-4">{title}</h1>
               {intro && <p className="text-dim leading-[2] max-w-[58ch] text-[1rem]">{intro}</p>}
-              <p className="inline-flex items-center gap-2 mt-5 text-[.8rem] text-dim rounded-full border border-[rgb(var(--c-primary2)/.22)] bg-[rgb(var(--c-ov)/.04)] px-3.5 py-1.5">
-                <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-success" />
-                آخرین به‌روزرسانی: <time dateTime={LEGAL_VERSION}>{toJalaliDate(new Date(LEGAL_VERSION))}</time>
-              </p>
+              {showUpdated && (
+                <p className="inline-flex items-center gap-2 mt-5 text-[.8rem] text-dim rounded-full border border-[rgb(var(--c-primary2)/.22)] bg-[rgb(var(--c-ov)/.04)] px-3.5 py-1.5">
+                  <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-success" />
+                  آخرین به‌روزرسانی: <time dateTime={LEGAL_VERSION}>{toJalaliDate(new Date(LEGAL_VERSION))}</time>
+                </p>
+              )}
             </div>
 
             {/* نشان بزرگ صفحه: کاشی شیشه‌ای با حلقه‌های هم‌مرکز */}
@@ -142,13 +153,13 @@ export default async function LegalPage({
       </header>
 
       <main id="main" className="flex-1 max-w-[1040px] w-full mx-auto px-[5vw] py-10 sm:py-14">
-        <nav aria-label="صفحه‌های حقوقی" className="flex flex-wrap gap-2 mb-10 text-[.82rem] print:hidden">
-          {(Object.keys(LEGAL_LINKS) as (keyof typeof LEGAL_LINKS)[]).map((k) => {
+        <nav aria-label={isLegal ? "صفحه‌های حقوقی" : "صفحه‌های معرفی"} className="flex flex-wrap gap-2 mb-10 text-[.82rem] print:hidden">
+          {(isLegal ? Object.entries(LEGAL_LINKS) : Object.entries(INFO_LINKS)).map(([k, link]) => {
             const on = k === current;
             return (
               <Link
                 key={k}
-                href={LEGAL_LINKS[k].href}
+                href={link.href}
                 aria-current={on ? "page" : undefined}
                 className={
                   "px-3.5 py-1.5 rounded-full border transition-colors " +
@@ -157,7 +168,7 @@ export default async function LegalPage({
                     : "border-[rgb(var(--c-primary2)/.25)] text-dim hover:text-text hover:border-[rgb(var(--c-primary2)/.5)]")
                 }
               >
-                {LEGAL_LINKS[k].label}
+                {link.label}
               </Link>
             );
           })}
@@ -264,6 +275,38 @@ export function LegalCards({ items }: { items: { title: string; text: ReactNode;
             <div className="font-display font-bold text-text text-[.98rem] leading-[1.6]">{it.title}</div>
             <p className="m-0 mt-1 text-dim text-[.88rem] leading-[1.9]">{it.text}</p>
           </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** گام‌های واقعاً ترتیبی (شماره‌ها معنا دارند). */
+export function LegalSteps({ steps }: { steps: { title: string; text: string }[] }) {
+  return (
+    <ol className="list-none p-0 grid gap-3 !mt-4">
+      {steps.map((st, i) => (
+        <li key={st.title} className="flex gap-4 rounded-2xl border border-[rgb(var(--c-primary2)/.2)] bg-gradient-to-br from-surface to-bg2 p-4">
+          <span aria-hidden className="shrink-0 w-10 h-10 rounded-full grid place-items-center font-display font-extrabold text-white bg-gradient-to-br from-primary to-primary-deep">
+            {String(i + 1).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)])}
+          </span>
+          <div>
+            <div className="font-display font-bold text-text text-[1rem]">{st.title}</div>
+            <p className="m-0 mt-1 text-dim text-[.9rem] leading-[1.9]">{st.text}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** برچسب‌های کوتاه (مثلاً نام سایت‌ها)؛ بدون برش، با شکستن خط. */
+export function LegalPills({ items, latin = false }: { items: string[]; latin?: boolean }) {
+  return (
+    <ul className="list-none p-0 flex flex-wrap gap-2 !mt-4">
+      {items.map((t) => (
+        <li key={t} className={"px-3 py-1.5 rounded-full text-[.84rem] text-text border border-[rgb(var(--c-primary2)/.25)] bg-[rgb(var(--c-ov)/.04)] " + (latin ? "latin" : "")}>
+          {t}
         </li>
       ))}
     </ul>

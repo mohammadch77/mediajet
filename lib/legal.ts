@@ -10,6 +10,12 @@ export const LEGAL_LINKS = {
   refund: { href: "/refund", label: "شرایط بازگشت وجه" },
 } as const;
 
+/** صفحه‌های معرفی (نه حقوقی)؛ در نوار صفحه‌ها کنار هم نمایش داده می‌شوند. */
+export const INFO_LINKS = {
+  about: { href: "/about", label: "درباره ما" },
+  faq: { href: "/faq", label: "سؤالات متداول" },
+} as const;
+
 /** متن قدیمی «ماکاپ اولیه» که پیش‌تر پیش‌فرض پانوشت بود؛ اگر هنوز در دیتابیس مانده باشد نمایش داده نمی‌شود. */
 export const LEGACY_FOOTER_PLACEHOLDER_PREFIX = "این یک ماکاپ اولیه است";
 

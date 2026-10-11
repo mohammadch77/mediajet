@@ -81,7 +81,7 @@ export default function AdminPagesList() {
         <div className="latin text-[.8rem] tracking-[.14em] uppercase text-cyan font-bold">Pages</div>
         <h1 className="font-display text-[clamp(1.5rem,3.5vw,2.1rem)] font-extrabold mt-2">مدیریت صفحات متن‌آزاد</h1>
         <p className="text-dim text-[.85rem] mt-1">
-          صفحاتی مثل درباره ما، قوانین و مقررات و سؤالات متداول را ویرایش و منتشر کن.
+          صفحه‌های متن‌آزاد اضافه (آدرس /p/نامک) را اینجا بساز، ویرایش و منتشر کن.
         </p>
       </div>
 
@@ -94,7 +94,7 @@ export default function AdminPagesList() {
       <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5 mb-5">
         <h2 className="font-display font-bold text-[.95rem] mb-1">صفحه‌ی جدید</h2>
         <p className="text-dim text-[.78rem] mb-3">
-          برای لینک‌های فوتر از نامک‌های about، terms و faq استفاده کن (آدرس: /p/about و ...).
+          درباره ما، سؤالات متداول، قوانین، حریم خصوصی، کوکی و بازگشت وجه صفحه‌های ثابتِ سایت‌اند (/about، /faq، /terms و ...) و از اینجا ویرایش نمی‌شوند. اینجا فقط برای صفحه‌های اضافه است (آدرس: /p/نامک).
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
           <input aria-label="نامک (slug) — فقط حروف انگلیسی کوچک، عدد و خط تیره"
