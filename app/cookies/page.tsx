@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import LegalPage, { LegalSection, LegalList } from "@/components/LegalPage";
+import LegalPage, { LegalSection, LegalList, LegalCallout, LegalTable } from "@/components/LegalPage";
 
 export const dynamic = "force-dynamic";
 
@@ -19,40 +19,28 @@ const ROWS: { name: string; kind: string; purpose: string; life: string }[] = [
 export default function CookiesPage() {
   return (
     <LegalPage
+      current="cookies"
+      highlights={[
+        { title: "بدون ردیابی", text: "هیچ آنالیتیکس، پیکسل تبلیغاتی یا چت شخص ثالث فعال نیست.", tone: "good" },
+        { title: "فقط لازم‌ها", text: "کوکی‌ها برای ورود، پرداخت، کد معرف و تم‌اند.", tone: "good" },
+        { title: "فونت از خود سایت", text: "برای فونت‌ها به گوگل یا سرویس خارجی درخواست نمی‌رود.", tone: "good" },
+      ]}
       title="سیاست کوکی"
       intro="گت‌استوک فقط کوکی‌ها و ذخیره‌سازی‌هایی را استفاده می‌کند که برای کار کردن سایت لازم است. هیچ ابزار تحلیل رفتار، تبلیغات یا پیکسل شخص ثالث در سایت فعال نیست."
     >
       <LegalSection title="۱. فهرست کامل">
-        <div className="overflow-x-auto -mx-1 px-1">
-          <table className="w-full min-w-[560px] text-[.85rem] border-collapse">
-            <caption className="sr-only">فهرست کوکی‌ها و ذخیره‌سازی مرورگر</caption>
-            <thead>
-              <tr className="text-text text-start">
-                <th scope="col" className="text-start p-2 border-b border-[rgb(var(--c-primary2)/.2)]">نام</th>
-                <th scope="col" className="text-start p-2 border-b border-[rgb(var(--c-primary2)/.2)]">نوع</th>
-                <th scope="col" className="text-start p-2 border-b border-[rgb(var(--c-primary2)/.2)]">کاربرد</th>
-                <th scope="col" className="text-start p-2 border-b border-[rgb(var(--c-primary2)/.2)]">ماندگاری</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ROWS.map((r) => (
-                <tr key={r.name} className="align-top">
-                  <td dir="ltr" className="latin p-2 border-b border-[rgb(var(--c-primary2)/.1)] text-text whitespace-nowrap">{r.name}</td>
-                  <td className="p-2 border-b border-[rgb(var(--c-primary2)/.1)]">{r.kind}</td>
-                  <td className="p-2 border-b border-[rgb(var(--c-primary2)/.1)]">{r.purpose}</td>
-                  <td className="p-2 border-b border-[rgb(var(--c-primary2)/.1)]">{r.life}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <LegalTable
+          caption="فهرست کوکی‌ها و ذخیره‌سازی مرورگر"
+          head={["نام", "نوع", "کاربرد", "ماندگاری"]}
+          rows={ROWS.map((r) => [<span key="n" dir="ltr" className="latin">{r.name}</span>, r.kind, r.purpose, r.life])}
+        />
         <p>برای مدیران سایت، یک کوکی ضروری دیگر برای قفل بخش مدیریتی استفاده می‌شود که به بازدیدکنندگان عادی داده نمی‌شود.</p>
       </LegalSection>
 
       <LegalSection title="۲. چرا بنر رضایت کوکی ندارید؟">
-        <p>
+        <LegalCallout tone="good">
           کوکی‌های بالا یا برای ورود و پرداخت لازم‌اند، یا فقط عملکردی هستند (تم، کد معرف) و برای تبلیغ یا ردیابی شما در سایت‌های دیگر استفاده نمی‌شوند. چون کوکی تحلیلی یا تبلیغاتی نداریم، چیزی برای «روشن شدن بعد از رضایت» وجود ندارد. اگر در آینده چنین ابزاری اضافه شود، پیش از فعال‌شدنش بنر رضایت و به‌روزرسانی همین صفحه اضافه می‌شود.
-        </p>
+        </LegalCallout>
       </LegalSection>
 
       <LegalSection title="۳. چطور کوکی‌ها را مدیریت کنم؟">

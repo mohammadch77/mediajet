@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import LegalPage, { LegalSection, LegalList } from "@/components/LegalPage";
+import LegalPage, { LegalSection, LegalList, LegalCallout, LegalTable } from "@/components/LegalPage";
 
 export const dynamic = "force-dynamic";
 
@@ -8,9 +8,23 @@ export const metadata: Metadata = {
   description: "چه اطلاعاتی از شما جمع می‌کنیم، برای چه کاری و با چه سرویس‌هایی در میان می‌گذاریم.",
 };
 
+const SERVICES: string[][] = [
+  ["زرین‌پال (درگاه پرداخت)", "مبلغ و شناسه‌ی پرداخت؛ شماره کارت را شما مستقیم در درگاه وارد می‌کنید", "پرداخت و شارژ کیف پول"],
+  ["ایران‌پیامک (پیامک)", "شماره موبایل و متن کد تأیید", "ارسال کد ورود و ثبت‌نام"],
+  ["تلگرام", "اعلان‌های داخلی برای اپراتورها شامل شماره موبایل/نام کاربر، جزئیات سفارش و متن پیام پشتیبانی؛ همچنین نگهداری فایل‌های تحویلی برای بازیابی بعدی", "عملیات سفارش و پشتیبانی"],
+  ["آروان‌کلود (CDN)", "ترافیک سایت از آن عبور می‌کند (شامل نشانی آی‌پی بازدیدکننده)", "سرعت و محافظت سایت"],
+  ["اینماد", "اطلاعات فنی مرورگر هنگام نمایش نماد اعتماد", "نمایش نماد اعتماد الکترونیکی"],
+];
+
 export default function PrivacyPage() {
   return (
     <LegalPage
+      current="privacy"
+      highlights={[
+        { title: "بدون ردیابی", text: "ابزار تحلیل رفتار یا تبلیغات شخص ثالث در سایت فعال نیست.", tone: "good" },
+        { title: "رمز فقط هش", text: "رمز عبور و کد تأیید به‌صورت هش ذخیره می‌شوند.", tone: "good" },
+        { title: "کارت بانکی", text: "شماره کارت پرداخت را فقط در صفحه‌ی درگاه وارد می‌کنی.", tone: "neutral" },
+      ]}
       title="حریم خصوصی"
       intro="این صفحه فهرست اطلاعاتی است که گت‌استوک واقعاً جمع می‌کند، دلیل جمع‌آوری آن‌ها و سرویس‌هایی که بخشی از این اطلاعات به آن‌ها می‌رسد."
     >
@@ -58,34 +72,12 @@ export default function PrivacyPage() {
       </LegalSection>
 
       <LegalSection title="۳. با چه سرویس‌هایی در میان گذاشته می‌شود">
-        <div className="overflow-x-auto -mx-1 px-1">
-          <table className="w-full min-w-[520px] text-[.85rem] border-collapse">
-            <caption className="sr-only">سرویس‌های دریافت‌کننده‌ی اطلاعات</caption>
-            <thead>
-              <tr>
-                <th scope="col" className="text-start p-2 text-text border-b border-[rgb(var(--c-primary2)/.2)]">سرویس</th>
-                <th scope="col" className="text-start p-2 text-text border-b border-[rgb(var(--c-primary2)/.2)]">چه چیزی دریافت می‌کند</th>
-                <th scope="col" className="text-start p-2 text-text border-b border-[rgb(var(--c-primary2)/.2)]">برای چه</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ["زرین‌پال (درگاه پرداخت)", "مبلغ و شناسه‌ی پرداخت؛ شماره کارت را شما مستقیم در درگاه وارد می‌کنید", "پرداخت و شارژ کیف پول"],
-                ["ایران‌پیامک (پیامک)", "شماره موبایل و متن کد تأیید", "ارسال کد ورود و ثبت‌نام"],
-                ["تلگرام", "اعلان‌های داخلی برای اپراتورها شامل شماره موبایل/نام کاربر، جزئیات سفارش و متن پیام پشتیبانی؛ همچنین نگهداری فایل‌های تحویلی برای بازیابی بعدی", "عملیات سفارش و پشتیبانی"],
-                ["آروان‌کلود (CDN)", "ترافیک سایت از آن عبور می‌کند (شامل نشانی آی‌پی بازدیدکننده)", "سرعت و محافظت سایت"],
-                ["اینماد", "اطلاعات فنی مرورگر هنگام نمایش نماد اعتماد", "نمایش نماد اعتماد الکترونیکی"],
-              ].map(([a, b, c]) => (
-                <tr key={a} className="align-top">
-                  <td className="p-2 border-b border-[rgb(var(--c-primary2)/.1)] text-text">{a}</td>
-                  <td className="p-2 border-b border-[rgb(var(--c-primary2)/.1)]">{b}</td>
-                  <td className="p-2 border-b border-[rgb(var(--c-primary2)/.1)]">{c}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p>سرویس تلگرام خارج از ایران است؛ بنابراین بخشی از اطلاعات عملیاتیِ بالا ممکن است خارج از کشور پردازش شود.</p>
+        <LegalTable
+          caption="سرویس‌های دریافت‌کننده‌ی اطلاعات"
+          head={["سرویس", "چه چیزی دریافت می‌کند", "برای چه"]}
+          rows={SERVICES}
+        />
+        <LegalCallout tone="warn">سرویس تلگرام خارج از ایران است؛ بنابراین بخشی از اطلاعات عملیاتیِ بالا ممکن است خارج از کشور پردازش شود.</LegalCallout>
         <p>بیرون از این فهرست، اطلاعات شما را در اختیار شخص دیگری قرار نمی‌دهیم، مگر طبق الزام مراجع قانونی صالح.</p>
       </LegalSection>
 
