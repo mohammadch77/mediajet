@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import LegalPage, { LegalSection, LegalCards, LegalSteps, LegalPills, LegalList } from "@/components/LegalPage";
+import LegalPage, { LegalSection, LegalCards, LegalSteps, LegalList } from "@/components/LegalPage";
 import JsonLd from "@/components/JsonLd";
+import PriceTable, { priceRangeLabel } from "@/components/PriceTable";
 import { ALL_SITES, CATEGORIES } from "@/data/categories";
 import { getAllContent } from "@/lib/content";
 import { SITE_URL } from "@/lib/siteUrl";
-import { rialToTomanLabel, toPersianDigits } from "@/lib/money";
+import { toPersianDigits } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +24,14 @@ export const metadata: Metadata = {
 const sitesCount = toPersianDigits(ALL_SITES.length);
 const catsCount = toPersianDigits(CATEGORIES.length);
 
-/** قیمت شروع هر دسته از روی منبع واحد قیمت‌ها (data/categories.ts) محاسبه می‌شود، پس هیچ‌وقت با سایت ناهماهنگ نمی‌شود. */
-const CATEGORY_CARDS = CATEGORIES.map((c) => ({
-  title: c.title,
-  text: `از ${rialToTomanLabel(Math.min(...Object.values(c.sitePricesRial).filter((v): v is number => typeof v === "number")))} · ${toPersianDigits(c.sites.length)} سایت`,
-}));
+/** بازه‌ی قیمت هر دسته از روی منبع واحد قیمت‌ها (data/categories.ts) محاسبه می‌شود، پس هیچ‌وقت با سایت ناهماهنگ نمی‌شود. */
+const CATEGORY_CARDS = CATEGORIES.map((c) => {
+  const prices = Object.values(c.sitePricesRial).filter((v): v is number => typeof v === "number");
+  return {
+    title: c.title,
+    text: `${priceRangeLabel(Math.min(...prices), Math.max(...prices))} · ${toPersianDigits(c.sites.length)} سایت`,
+  };
+});
 
 export default async function AboutPage() {
   const content = await getAllContent();
@@ -96,16 +100,16 @@ export default async function AboutPage() {
       </LegalSection>
 
       <LegalSection title="۳. چه چیزی می‌توانی سفارش بدهی؟">
-        <p>دسته‌ها و قیمت شروع هر کدام (قیمت نهایی بسته به سایت مبدأ فرق می‌کند و پیش از پرداخت نمایش داده می‌شود):</p>
+        <p>دسته‌ها و بازه‌ی قیمت هر کدام؛ قیمت دقیق به سایت مبدأ بستگی دارد و پیش از پرداخت نمایش داده می‌شود.</p>
         <LegalCards items={CATEGORY_CARDS} />
         <p>
           <Link href="/#cats" className="text-cyan underline">رفتن به فرم سفارش</Link>
         </p>
       </LegalSection>
 
-      <LegalSection title="۴. سایت‌های پشتیبانی‌شده">
-        <p>این {sitesCount} سایت الان پشتیبانی می‌شوند:</p>
-        <LegalPills items={ALL_SITES} latin />
+      <LegalSection title="۴. قیمت‌گذاری سایت‌های پشتیبانی‌شده">
+        <p>این {sitesCount} سایت الان پشتیبانی می‌شوند. قیمت‌ها پایه‌اند (به تومان)؛ بسته به روش پرداخت ممکن است کارمزد هم اضافه شود و مبلغ نهایی قبل از تأیید پرداخت نمایش داده می‌شود.</p>
+        <PriceTable />
       </LegalSection>
 
       <LegalSection title="۵. پرداخت، تحویل و بازگشت وجه">
