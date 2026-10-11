@@ -30,3 +30,32 @@ export const SITE_LOGOS: Partial<Record<SiteName, string>> = {
 export function siteLogo(site: string): string | undefined {
   return SITE_LOGOS[site as SiteName];
 }
+
+/**
+ * رنگ شاخص هر سایت برای کارت قیمت (فقط تزئینی؛ از رنگ لوگوی همان سایت). سایتی که این‌جا نیست، رنگ خنثی می‌گیرد.
+ */
+export const SITE_ACCENTS: Partial<Record<SiteName, string>> = {
+  [SITES.adobeStock]: "#6d8cff",
+  [SITES.envatoElements]: "#81e04b",
+  [SITES.pikbest]: "#f2b035",
+  [SITES.lovepik]: "#1aa3f0",
+  [SITES.designi]: "#4d8dff",
+  [SITES.vecteezy]: "#ff7a00",
+  [SITES.ui8]: "#2f8cf0",
+  [SITES.yellowImages]: "#ffc800",
+  [SITES.shutterstock]: "#ff3b1d",
+  [SITES.dreamstime]: "#7bc043",
+  [SITES.rf123]: "#f5c518",
+  [SITES.vectorstock]: "#7c6cff",
+  [SITES.pngtree]: "#8dbb3f",
+  [SITES.motionArray]: "#8b8be0",
+  [SITES.storyblocks]: "#fdd835",
+  [SITES.creativeFabrica]: "#a07bf0",
+  [SITES.iconscout]: "#00c0f0",
+  [SITES.flaticon]: "#4cd29a",
+  [SITES.artlist]: "#e5c94b",
+};
+
+export function siteAccent(site: string): string {
+  return SITE_ACCENTS[site as SiteName] ?? "#9aa3c7";
+}

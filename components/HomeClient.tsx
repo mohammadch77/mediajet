@@ -64,6 +64,7 @@ export default function HomeClient({
     [content["header.nav2_href"], content["header.nav2_label"]],
     [content["header.nav3_href"], content["header.nav3_label"]],
     [content["header.nav4_href"], content["header.nav4_label"]],
+    [content["header.nav5_href"], content["header.nav5_label"]],
   ];
 
   const openCat = (c: Category) => { setDrawerCat(c); setLinkEntry(null); setOpen(true); };

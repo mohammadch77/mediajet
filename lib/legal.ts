@@ -13,6 +13,7 @@ export const LEGAL_LINKS = {
 /** صفحه‌های معرفی (نه حقوقی)؛ در نوار صفحه‌ها کنار هم نمایش داده می‌شوند. */
 export const INFO_LINKS = {
   about: { href: "/about", label: "درباره ما" },
+  pricing: { href: "/pricing", label: "قیمت‌ها" },
   faq: { href: "/faq", label: "سؤالات متداول" },
 } as const;
 
@@ -35,7 +36,7 @@ export function currentJalaliYear(now: Date = new Date()): string {
  * (مثلاً «#how» ← «/#how»)؛ آدرس‌های کامل و مسیرها دست‌نخورده می‌مانند.
  */
 export function headerNavItems(content: Record<string, string>): string[][] {
-  return [1, 2, 3, 4]
+  return [1, 2, 3, 4, 5]
     .map((n) => [content[`header.nav${n}_href`] ?? "", content[`header.nav${n}_label`] ?? ""])
     .filter(([href, label]) => href && label)
     .map(([href, label]) => [href.startsWith("#") ? `/${href}` : href, label]);

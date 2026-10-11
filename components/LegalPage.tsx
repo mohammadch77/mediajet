@@ -69,6 +69,7 @@ export default async function LegalPage({
   showUpdated = true,
   icon,
   highlights,
+  wide = false,
   children,
 }: {
   title: string;
@@ -78,6 +79,8 @@ export default async function LegalPage({
   showUpdated?: boolean;
   icon: LegalIcon;
   highlights?: LegalHighlight[];
+  /** بدنه‌ی تمام‌عرض بدون فهرست کناری (برای جدول‌ها و کارت‌های پهن مثل قیمت‌ها). */
+  wide?: boolean;
   children: ReactNode;
 }) {
   const content = await getAllContent();
@@ -174,12 +177,16 @@ export default async function LegalPage({
           })}
         </nav>
 
-        <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-14">
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <LegalToc />
-          </aside>
-          <div className="legal-body min-w-0 max-w-[68ch] lg:max-w-none xl:max-w-[68ch]">{children}</div>
-        </div>
+        {wide ? (
+          <div className="legal-body min-w-0">{children}</div>
+        ) : (
+          <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-14">
+            <aside className="lg:sticky lg:top-24 lg:self-start">
+              <LegalToc />
+            </aside>
+            <div className="legal-body min-w-0 max-w-[68ch] lg:max-w-none xl:max-w-[68ch]">{children}</div>
+          </div>
+        )}
       </main>
       <SiteFooter content={content} />
     </div>

@@ -110,6 +110,9 @@ export default async function AboutPage() {
       <LegalSection title="۴. قیمت‌گذاری سایت‌های پشتیبانی‌شده">
         <p>این {sitesCount} سایت الان پشتیبانی می‌شوند. قیمت‌ها پایه‌اند (به تومان)؛ بسته به روش پرداخت ممکن است کارمزد هم اضافه شود و مبلغ نهایی قبل از تأیید پرداخت نمایش داده می‌شود.</p>
         <PriceTable />
+        <p>
+          <Link href="/pricing" className="text-cyan underline">صفحه‌ی کامل قیمت‌ها</Link>
+        </p>
       </LegalSection>
 
       <LegalSection title="۵. پرداخت، تحویل و بازگشت وجه">

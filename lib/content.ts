@@ -47,6 +47,8 @@ export const CONTENT_DEFS = [
   { key: "header.nav3_href", group: "header", label: "منو ۳ - لینک", defaultValue: "#wallet" },
   { key: "header.nav4_label", group: "header", label: "منو ۴ - متن", defaultValue: "همکاری در فروش" },
   { key: "header.nav4_href", group: "header", label: "منو ۴ - لینک", defaultValue: "/affiliate" },
+  { key: "header.nav5_label", group: "header", label: "منو ۵ - متن", defaultValue: "قیمت‌ها" },
+  { key: "header.nav5_href", group: "header", label: "منو ۵ - لینک", defaultValue: "/pricing" },
 
   // معرفی همکاری در فروش در صفحه‌ی اصلی (درصد و حداقل تسویه از تنظیمات مالی خوانده می‌شوند)
   { key: "affiliate.title", group: "affiliate", label: "عنوان بخش", defaultValue: "با معرفی گت‌استوک درآمد داشته باش" },
