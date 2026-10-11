@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import LegalPage, { LegalSection, LegalList } from "@/components/LegalPage";
+import LegalPage, { LegalSection, LegalCards } from "@/components/LegalPage";
 
 export const dynamic = "force-dynamic";
 
@@ -35,10 +35,10 @@ export default function RefundPage() {
       </LegalSection>
 
       <LegalSection title="۴. دسته‌ی اشتباه فایل">
-        <LegalList
+        <LegalCards
           items={[
-            "اگر دسته‌ی واقعی فایل ارزان‌تر یا هم‌قیمت دسته‌ی پرداخت‌شده باشد، فقط دسته اصلاح می‌شود و سفارش ادامه پیدا می‌کند.",
-            "اگر دسته‌ی واقعی گران‌تر باشد، همان آیتم رد می‌شود، سهم آن آیتم (قیمت پایه به‌علاوه‌ی سهم متناسب کارمزد) به کیف پول برمی‌گردد و می‌توانید آن را با دسته‌ی درست دوباره ثبت کنید. بقیه‌ی آیتم‌های سفارش دست‌نخورده می‌ماند.",
+            { icon: "check", title: "هم‌قیمت یا ارزان‌تر", text: "اگر دسته‌ی واقعی فایل ارزان‌تر یا هم‌قیمت دسته‌ی پرداخت‌شده باشد، فقط دسته اصلاح می‌شود و سفارش ادامه پیدا می‌کند." },
+            { icon: "wallet", title: "گران‌تر", text: "همان آیتم رد می‌شود، سهم آن آیتم (قیمت پایه به‌علاوه‌ی سهم متناسب کارمزد) به کیف پول برمی‌گردد و می‌توانی آن را با دسته‌ی درست دوباره ثبت کنی. بقیه‌ی آیتم‌های سفارش دست‌نخورده می‌ماند." },
           ]}
         />
       </LegalSection>
