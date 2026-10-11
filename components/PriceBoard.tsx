@@ -114,7 +114,7 @@ export default function PriceBoard({ cats, sites }: { cats: BoardCat[]; sites: B
 
   return (
     <div className="!mt-4">
-      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-3 sm:gap-4 rounded-[24px] border border-[rgb(var(--c-primary2)/.2)] bg-gradient-to-br from-surface to-bg2 p-4 sm:p-5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-3 sm:gap-4 rounded-[24px] border border-[rgb(var(--c-primary2)/.2)] bg-gradient-to-br from-surface to-bg2 p-4 sm:p-5">
         <Select label="دسته‌ی فایل" value={sel} onChange={setSel}>
           <option value="all">همه‌ی دسته‌ها ({toPersianDigits(cats.length)})</option>
           {cats.map((c) => (
@@ -132,7 +132,7 @@ export default function PriceBoard({ cats, sites }: { cats: BoardCat[]; sites: B
         {toPersianDigits(rows.length)} سایت{sel === "all" ? "" : ` برای «${titleOf.get(sel)}»`}
       </p>
 
-      <ul role="list" className="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
+      <ul role="list" className="m-0 p-0 list-none grid grid-cols-[repeat(auto-fill,minmax(min(100%,17.5rem),1fr))] gap-4 items-stretch">
         {rows.map((r) => (
           <SiteCard key={r.site} r={r} sel={sel} titleOf={titleOf} />
         ))}
