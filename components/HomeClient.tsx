@@ -357,7 +357,7 @@ export default function HomeClient({
       </main>
 
       {/* FOOTER */}
-      <SiteFooter content={content} />
+      <SiteFooter content={content} cta={false} />
 
       <OrderDrawer open={open} category={drawerCat} linkEntry={linkEntry} onClose={close} />
       <AuthModal open={authModalOpen} onClose={closeAuthModal} />
