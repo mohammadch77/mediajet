@@ -156,6 +156,7 @@ npx tsc --noEmit && npm run build && pm2 restart getstock
 - برای ثبت کلیدواژه‌ی مقاله‌های قبلاً seed‌شده: `npx tsx scripts/seed-blog.ts --force` (متن مقاله‌های seed را بازنویسی می‌کند).
 
 ### فیلتر و بازدید مقاله‌ها
+- هر صفحه ۱۰ مقاله (`BLOG_PAGE_SIZE` در lib/blogPosts.ts) با صفحه‌بندی شماره‌دار؛ شماره‌ی خارج از محدوده به آخرین صفحه می‌رود.
 - `/blog` و `/blog/category/:slug`: جست‌وجو (`?q=`)، مرتب‌سازی (`?sort=new|popular|old`) و صفحه‌بندی؛ صفحه‌های فیلترشده `noindex` هستند و canonical همان آدرس پایه است.
 - بازدید: ستون `BlogPost.views` با `POST /api/blog/:slug/view` (بدون کوکی؛ ربات‌ها شمرده نمی‌شوند؛ هر IP برای هر مقاله حداکثر یک بازدید در ۳۰ دقیقه، در حافظه‌ی سرور).
 - پس از استقرار مایگریشن `blog_views` لازم است (`npx prisma migrate deploy && npx prisma generate`).

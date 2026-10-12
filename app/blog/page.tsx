@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import BlogHero from "@/components/blog/BlogHero";
@@ -26,8 +27,10 @@ type SP = { page?: string; sort?: string; q?: string };
 
 // صفحه‌های فیلترشده (جست‌وجو/مرتب‌سازی) ایندکس نمی‌شوند تا محتوای تکراری ساخته نشود؛ canonical همان /blog است.
 export async function generateMetadata({ searchParams }: { searchParams: SP }): Promise<Metadata> {
-  const { sort, q } = parseBlogQuery(searchParams);
-  return q || sort !== "new" ? { ...metadata, robots: { index: false, follow: true } } : metadata;
+  const { sort, q, page } = parseBlogQuery(searchParams);
+  // صفحه‌های بعدی لیست canonical خودشان را دارند (?page=n)؛ صفحه‌های فیلترشده noindex هستند.
+  const withPage: Metadata = page > 1 ? { ...metadata, alternates: { canonical: `${SITE_URL}/blog?page=${page}` } } : metadata;
+  return q || sort !== "new" ? { ...withPage, robots: { index: false, follow: true } } : withPage;
 }
 
 export default async function BlogListPage({ searchParams }: { searchParams: SP }) {
@@ -35,6 +38,8 @@ export default async function BlogListPage({ searchParams }: { searchParams: SP 
   const { sort, q, page } = parseBlogQuery(searchParams);
   const [{ posts, total }, counts] = await Promise.all([listPublishedBlogPosts(page, BLOG_PAGE_SIZE, { sort, q }), countPublishedByCategory()]);
   const totalPages = Math.max(1, Math.ceil(total / BLOG_PAGE_SIZE));
+  // شماره‌ی صفحه‌ی خارج از محدوده (مثلاً ?page=99) به آخرین صفحه می‌رود.
+  if (page > totalPages) redirect(totalPages > 1 ? `/blog?${new URLSearchParams({ ...(q ? { q } : {}), ...(sort !== "new" ? { sort } : {}), page: String(totalPages) })}` : "/blog");
 
   return (
     <div dir="rtl" className="min-h-screen bg-bg text-text font-body flex flex-col">

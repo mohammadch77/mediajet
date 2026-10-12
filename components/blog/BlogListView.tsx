@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BlogCard from "@/components/blog/BlogCard";
 import BlogCta from "@/components/blog/BlogCta";
+import BlogPagination from "@/components/blog/BlogPagination";
 import { BLOG_CATEGORIES, blogCategory } from "@/lib/blogCategories";
 import { BLOG_SORTS, type BlogSort } from "@/lib/blogPosts";
 import { toPersianDigits } from "@/lib/money";
@@ -46,7 +47,6 @@ export default function BlogListView({
   const allCount = Object.values(counts).reduce((a, b) => a + b, 0);
   const activeCat = blogCategory(active);
   const filtered = !!q || sort !== "new" || !!active;
-  const pill = "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[.84rem] font-bold border transition text-dim border-[rgb(var(--c-primary2)/.28)] hover:text-text hover:border-[rgb(var(--c-primary2)/.55)]";
 
   const cats = [
     { key: "all", href: listHref("/blog", { sort, q }), icon: "✨", title: "همه", count: allCount, on: !active },
@@ -169,13 +169,7 @@ export default function BlogListView({
         </ul>
       )}
 
-      {totalPages > 1 && (
-        <nav aria-label="صفحه‌بندی" className="flex items-center justify-center gap-3 mt-12">
-          {page > 1 && <Link href={listHref(basePath, { sort, q, page: page - 1 })} rel="prev" className={pill}>→ قبلی</Link>}
-          <span className="text-dim text-[.85rem]">صفحه‌ی {toPersianDigits(page)} از {toPersianDigits(totalPages)}</span>
-          {page < totalPages && <Link href={listHref(basePath, { sort, q, page: page + 1 })} rel="next" className={pill}>بعدی ←</Link>}
-        </nav>
-      )}
+      <BlogPagination page={page} totalPages={totalPages} hrefFor={(n) => listHref(basePath, { sort, q, page: n })} />
 
       <div className="mt-14"><BlogCta /></div>
     </div>

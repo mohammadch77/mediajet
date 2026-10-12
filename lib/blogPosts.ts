@@ -4,7 +4,7 @@ import { prisma } from "./db";
 import { sanitizeHtml } from "./sanitize";
 import type { BlogPost } from "@prisma/client";
 
-export const BLOG_PAGE_SIZE = 9;
+export const BLOG_PAGE_SIZE = 10;
 
 export async function listBlogPosts(): Promise<BlogPost[]> {
   return prisma.blogPost.findMany({ orderBy: { createdAt: "desc" } });
