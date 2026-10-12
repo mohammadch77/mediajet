@@ -24,6 +24,7 @@ async function main() {
       contentHtml: sanitizeHtml(a.contentHtml),
       coverImage: a.coverImage,
       category: a.category,
+      focusKeyword: a.focusKeyword,
       tags: a.tags,
       metaTitle: a.metaTitle,
       metaDescription: a.metaDescription,

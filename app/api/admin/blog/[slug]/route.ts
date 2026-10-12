@@ -62,6 +62,7 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
       published: input.published,
       metaTitle: input.metaTitle,
       metaDescription: input.metaDescription,
+      focusKeyword: input.focusKeyword,
     },
     existing
   );

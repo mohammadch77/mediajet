@@ -464,6 +464,12 @@ export const updatePageInput = z.object({
     .max(500, "توضیحات سئو نباید بیشتر از ۵۰۰ نویسه باشد.")
     .optional()
     .or(z.literal("")),
+  focusKeyword: z
+    .string()
+    .trim()
+    .max(80, "کلیدواژه‌ی کانونی نباید بیشتر از ۸۰ نویسه باشد.")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type UpdatePageInput = z.infer<typeof updatePageInput>;
@@ -520,6 +526,12 @@ export const updateBlogPostInput = z.object({
     .max(500, "توضیحات سئو نباید بیشتر از ۵۰۰ نویسه باشد.")
     .optional()
     .or(z.literal("")),
+  focusKeyword: z
+    .string()
+    .trim()
+    .max(80, "کلیدواژه‌ی کانونی نباید بیشتر از ۸۰ نویسه باشد.")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type UpdateBlogPostInput = z.infer<typeof updateBlogPostInput>;
@@ -532,6 +544,8 @@ export const createBlogPostInput = z.object({
     .max(80, "نامک نباید بیشتر از ۸۰ نویسه باشد.")
     .regex(slugPattern, "نامک فقط می‌تواند شامل حروف انگلیسی کوچک، عدد و خط تیره باشد."),
   title: updateBlogPostInput.shape.title,
+  // true = متن اولیه از الگوی استاندارد مقاله (lib/blogTemplate.ts) پر شود
+  useTemplate: z.boolean().optional(),
 });
 
 export type CreateBlogPostInput = z.infer<typeof createBlogPostInput>;

@@ -26,10 +26,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const description = post.metaDescription || post.excerpt || undefined;
   const url = `${SITE_URL}/blog/${post.slug}`;
   const image = post.coverImage ? absoluteUrl(post.coverImage) : undefined;
+  const keywords = seoKeywords(post);
   return {
     title,
     description,
-    keywords: post.tags?.length ? post.tags : undefined,
+    keywords: keywords.length ? keywords : undefined,
     alternates: { canonical: url },
     openGraph: {
       title,
@@ -40,11 +41,16 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       publishedTime: post.publishedAt?.toISOString(),
       modifiedTime: post.updatedAt.toISOString(),
       authors: ["تیم گت‌استوک"],
-      tags: post.tags ?? undefined,
+      tags: keywords.length ? keywords : undefined,
       images: image ? [{ url: image, width: 1200, height: 630, alt: post.title }] : undefined,
     },
     twitter: { card: image ? "summary_large_image" : "summary", title, description, images: image ? [image] : undefined },
   };
+}
+
+/** کلیدواژه‌ها فقط برای موتورهای جست‌وجو (meta keywords / Open Graph / JSON-LD)؛ در صفحه به کاربر نمایش داده نمی‌شوند. اولی کلیدواژه‌ی کانونی است. */
+function seoKeywords(post: { focusKeyword?: string | null; tags?: string[] | null }): string[] {
+  return Array.from(new Set([post.focusKeyword?.trim(), ...(post.tags ?? [])].filter((v): v is string => !!v)));
 }
 
 /** به هر h2 یک id و data-toc می‌دهد (پس از sanitize، چون sanitize این اتریبیوت‌ها را حذف می‌کند) و فهرست سرفصل‌ها را برمی‌گرداند. */
@@ -116,7 +122,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                 author: { "@type": "Organization", name: orgName, url: SITE_URL },
                 publisher: { "@type": "Organization", name: orgName, logo: { "@type": "ImageObject", url: `${SITE_URL}/brand/logo.png` } },
                 ...(cat ? { articleSection: cat.title } : {}),
-                ...(post.tags?.length ? { keywords: post.tags.join("، ") } : {}),
+                ...(seoKeywords(post).length ? { keywords: seoKeywords(post).join("، ") } : {}),
                 wordCount: words,
               },
               {
@@ -148,18 +154,9 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           <div className="mt-10 lg:grid lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-12">
             <aside className="lg:sticky lg:top-24 lg:self-start space-y-5 mb-8 lg:mb-0">
               <LegalToc />
-              <div className="hidden lg:block"><BlogCta compact /></div>
             </aside>
             <article className="min-w-0">
               <div className="legal-body prose-page prose-article max-w-[72ch]" dangerouslySetInnerHTML={{ __html: html }} />
-
-              {(post.tags?.length ?? 0) > 0 && (
-                <ul aria-label="برچسب‌ها" className="m-0 mt-10 p-0 list-none flex flex-wrap gap-2">
-                  {post.tags.map((t: string) => (
-                    <li key={t} className="rounded-full border border-[rgb(var(--c-ov)/.16)] bg-[rgb(var(--c-ov)/.04)] px-3 py-1 text-[.78rem] text-dim"># {t}</li>
-                  ))}
-                </ul>
-              )}
 
               <BlogCta />
             </article>

@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { blogCategory } from "@/lib/blogCategories";
 import { toJalaliDateTime } from "@/lib/jalali";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 
@@ -10,9 +12,13 @@ type BlogPostRow = {
   title: string;
   published: boolean;
   updatedAt: string;
+  category: string | null;
+  focusKeyword: string | null;
 };
 
 export default function AdminBlogList() {
+  const router = useRouter();
+  const [useTemplate, setUseTemplate] = useState(true);
   const [posts, setPosts] = useState<BlogPostRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [newSlug, setNewSlug] = useState("");
@@ -44,13 +50,13 @@ export default function AdminBlogList() {
       const res = await fetch("/api/admin/blog", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: newSlug.trim(), title: newTitle.trim() }),
+        body: JSON.stringify({ slug: newSlug.trim(), title: newTitle.trim(), useTemplate }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "خطا در ساخت نوشته.");
-      setNewSlug("");
-      setNewTitle("");
-      await load();
+      // مستقیم به ویرایشگر برو تا مقاله‌ی جدید طبق الگو (کلیدواژه، متا، دسته، محتوا) تکمیل شود.
+      router.push(`/admin/blog/${json.post.slug}`);
+      return;
     } catch (e) {
       setError(e instanceof Error ? e.message : "خطا در ساخت نوشته.");
     } finally {
@@ -115,6 +121,20 @@ export default function AdminBlogList() {
             {creating ? "در حال ساخت…" : "ساخت نوشته"}
           </button>
         </div>
+        <label className="flex items-center gap-2 mt-3 text-[.8rem] text-dim cursor-pointer">
+          <input type="checkbox" checked={useTemplate} onChange={(e) => setUseTemplate(e.target.checked)} />
+          شروع با الگوی استاندارد مقاله (مقدمه، سرتیترها، جدول، لینک داخلی/خارجی و جمع‌بندی)
+        </label>
+        <details className="mt-3 text-[.8rem] text-dim">
+          <summary className="cursor-pointer font-bold text-text">الگوی مقاله‌ی سئو‌شده (برای هر مقاله‌ی جدید)</summary>
+          <ol className="mt-2 mb-0 pr-5 leading-[2] list-decimal">
+            <li>یک کلیدواژه‌ی کانونی ۲ تا ۴ کلمه‌ای انتخاب کن؛ باید در عنوان، متا تایتل، توضیحات متا، خلاصه، پاراگراف اول و یکی از h2ها بیاید.</li>
+            <li>نامک انگلیسی و کوتاه (حروف کوچک و خط تیره)؛ عنوان سئو حداکثر ۶۵ و توضیحات متا ۱۰۰ تا ۱۶۰ نویسه.</li>
+            <li>دست‌کم ۱۰۰۰ کلمه، ۴ تا ۷ سرتیتر h2، یک جدول یا فهرست، ۳ لینک داخلی (قیمت‌ها، سفارش، سؤالات متداول، مقاله‌های دیگر) و یک لینک خارجی معتبر.</li>
+            <li>دسته‌ی موضوعی، ۳ تا ۶ برچسب (برای کاربر نمایش داده نمی‌شود)، عکس شاخص ۱۲۰۰×۶۳۰.</li>
+            <li>پایان مقاله: جمع‌بندی و دعوت به سفارش. پیش از انتشار «چک‌لیست سئو» در ویرایشگر باید سبز باشد.</li>
+          </ol>
+        </details>
       </div>
 
       {!posts && !error && <div className="text-dim text-[.85rem]">در حال بارگذاری…</div>}
@@ -122,11 +142,13 @@ export default function AdminBlogList() {
       {posts && (
         <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-[.85rem] min-w-[640px]">
+            <table className="w-full text-[.85rem] min-w-[860px]">
               <thead>
                 <tr className="text-dim text-[.75rem] border-b border-[rgb(var(--c-primary2)/.14)]">
                   <th className="text-right px-4 py-3 font-semibold">عنوان</th>
                   <th className="text-right px-4 py-3 font-semibold">نامک</th>
+                  <th className="text-right px-4 py-3 font-semibold">دسته</th>
+                  <th className="text-right px-4 py-3 font-semibold">کلیدواژه</th>
                   <th className="text-right px-4 py-3 font-semibold">وضعیت</th>
                   <th className="text-right px-4 py-3 font-semibold">آخرین به‌روزرسانی</th>
                   <th className="text-right px-4 py-3 font-semibold"></th>
@@ -135,7 +157,7 @@ export default function AdminBlogList() {
               <tbody>
                 {posts.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-dim">
+                    <td colSpan={7} className="px-4 py-6 text-center text-dim">
                       هنوز نوشته‌ای ساخته نشده.
                     </td>
                   </tr>
@@ -144,6 +166,8 @@ export default function AdminBlogList() {
                   <tr key={p.id} className="border-b border-[rgb(var(--c-primary2)/.08)] last:border-0">
                     <td className="px-4 py-3 font-bold">{p.title}</td>
                     <td className="px-4 py-3 text-dim latin" dir="ltr">/{p.slug}</td>
+                    <td className="px-4 py-3 text-dim whitespace-nowrap">{blogCategory(p.category)?.short ?? "—"}</td>
+                    <td className="px-4 py-3 text-dim">{p.focusKeyword || "—"}</td>
                     <td className="px-4 py-3">
                       <span
                         className={

@@ -147,3 +147,10 @@ npx tsc --noEmit && npm run build && pm2 restart getstock
 - `app/sitemap.ts` (پویا: صفحه‌ها، دسته‌ها و مقاله‌ها) و `public/robots.txt` آدرس `https://getstock.ir/sitemap.xml` را معرفی می‌کنند.
 - پس از استقرار: در Google Search Console دامنه را تأیید کن، sitemap را ثبت کن و برای آدرس مقاله‌ها «Request indexing» بزن.
 - پیش از انتشار، لینک‌های خارجی داخل مقاله‌ها را یک‌بار دستی باز کن.
+
+### کلیدواژه‌ی کانونی و الگوی مقاله
+- هر مقاله/صفحه فیلد `focusKeyword` دارد؛ در ادمین پنل «چک‌لیست سئو» (lib/seoCheck.ts) پیش‌نمایش گوگل و ۱۶ بررسی زنده نشان می‌دهد.
+- مقاله‌ی جدید: `/admin/blog` ← «ساخت نوشته» (با تیک الگوی استاندارد، lib/blogTemplate.ts).
+- بررسی مقاله‌های seed بدون دیتابیس: `npx tsx scripts/check-blog-seo.ts`.
+- برچسب‌ها فقط در meta/JSON-LD هستند و به کاربر نمایش داده نمی‌شوند.
+- برای ثبت کلیدواژه‌ی مقاله‌های قبلاً seed‌شده: `npx tsx scripts/seed-blog.ts --force` (متن مقاله‌های seed را بازنویسی می‌کند).

@@ -6,6 +6,9 @@ import dynamic from "next/dynamic";
 import { toJalaliDateTime } from "@/lib/jalali";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { BLOG_CATEGORIES } from "@/lib/blogCategories";
+import { BLOG_ARTICLE_TEMPLATE } from "@/lib/blogTemplate";
+import SeoPanel from "@/components/admin/SeoPanel";
+import { SITE_URL } from "@/lib/siteUrl";
 
 const RichTextEditor = dynamic(() => import("@/components/admin/RichTextEditor"), {
   ssr: false,
@@ -24,6 +27,7 @@ type BlogPostData = {
   metaDescription: string | null;
   category: string | null;
   tags: string[];
+  focusKeyword: string | null;
   updatedAt: string;
 };
 
@@ -40,6 +44,8 @@ export default function AdminBlogEditor() {
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [focusKeyword, setFocusKeyword] = useState("");
+  const [editorKey, setEditorKey] = useState(0);
   const [tagsText, setTagsText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -69,6 +75,7 @@ export default function AdminBlogEditor() {
         setMetaTitle(p.metaTitle ?? "");
         setMetaDescription(p.metaDescription ?? "");
         setCategory(p.category ?? "");
+        setFocusKeyword(p.focusKeyword ?? "");
         setTagsText((p.tags ?? []).join("، "));
       } catch (e) {
         setError(e instanceof Error ? e.message : "خطا در دریافت نوشته.");
@@ -92,7 +99,8 @@ export default function AdminBlogEditor() {
           published: publish,
           metaTitle,
           metaDescription,
-          category: category || null,
+          category: category || "",
+          focusKeyword,
           tags: tagsText
             .split(/[,،\n]/)
             .map((t) => t.trim())
@@ -195,8 +203,21 @@ export default function AdminBlogEditor() {
               className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.85rem] outline-none focus:border-primary transition mb-4 resize-y"
             />
 
-            <label className="block text-[.8rem] font-bold mb-1.5">محتوا</label>
-            <RichTextEditor key={slug} value={contentHtml} onChange={setContentHtml} />
+            <div className="flex items-center justify-between gap-3 mb-1.5">
+              <label className="block text-[.8rem] font-bold">محتوا</label>
+              <button
+                type="button"
+                onClick={() => {
+                  if (contentHtml.replace(/<[^>]+>/g, "").trim() && !window.confirm("متن فعلی با الگوی استاندارد مقاله جایگزین شود؟")) return;
+                  setContentHtml(BLOG_ARTICLE_TEMPLATE);
+                  setEditorKey((k) => k + 1);
+                }}
+                className="text-[.76rem] font-bold text-cyan hover:underline"
+              >
+                درج الگوی استاندارد مقاله
+              </button>
+            </div>
+            <RichTextEditor key={`${slug}-${editorKey}`} value={contentHtml} onChange={setContentHtml} />
           </div>
 
           <div className="flex flex-col gap-4">
@@ -238,6 +259,14 @@ export default function AdminBlogEditor() {
 
             <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5">
               <h2 className="font-display font-bold text-[.95rem] mb-3">سئو</h2>
+              <label className="block text-[.78rem] font-bold mb-1.5">کلیدواژه‌ی کانونی</label>
+              <input
+                type="text"
+                value={focusKeyword}
+                onChange={(e) => setFocusKeyword(e.target.value)}
+                placeholder="مثلاً: دانلود تک‌فایل"
+                className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.82rem] outline-none focus:border-primary transition mb-3"
+              />
               <label className="block text-[.78rem] font-bold mb-1.5">عنوان متا (metaTitle)</label>
               <input
                 type="text"
@@ -253,6 +282,11 @@ export default function AdminBlogEditor() {
                 className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.82rem] outline-none focus:border-primary transition resize-y"
               />
             </div>
+
+            <SeoPanel
+              url={`${SITE_URL}/blog/${slug}`}
+              input={{ focusKeyword, title, metaTitle, metaDescription, excerpt, contentHtml, coverImage, category }}
+            />
 
             <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5 flex flex-col gap-2.5">
               <button

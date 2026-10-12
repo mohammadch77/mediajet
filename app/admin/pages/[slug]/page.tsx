@@ -5,6 +5,8 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { toJalaliDateTime } from "@/lib/jalali";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import SeoPanel from "@/components/admin/SeoPanel";
+import { SITE_URL } from "@/lib/siteUrl";
 
 const RichTextEditor = dynamic(() => import("@/components/admin/RichTextEditor"), {
   ssr: false,
@@ -18,6 +20,7 @@ type PageData = {
   published: boolean;
   metaTitle: string | null;
   metaDescription: string | null;
+  focusKeyword: string | null;
   updatedAt: string;
   updatedBy: string;
 };
@@ -32,6 +35,7 @@ export default function AdminPageEditor() {
   const [contentHtml, setContentHtml] = useState("");
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
+  const [focusKeyword, setFocusKeyword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -57,6 +61,7 @@ export default function AdminPageEditor() {
         setContentHtml(p.contentHtml);
         setMetaTitle(p.metaTitle ?? "");
         setMetaDescription(p.metaDescription ?? "");
+        setFocusKeyword(p.focusKeyword ?? "");
       } catch (e) {
         setError(e instanceof Error ? e.message : "خطا در دریافت صفحه.");
       }
@@ -77,6 +82,7 @@ export default function AdminPageEditor() {
           published: publish,
           metaTitle,
           metaDescription,
+          focusKeyword,
         }),
       });
       const json = await res.json();
@@ -175,6 +181,14 @@ export default function AdminPageEditor() {
           <div className="flex flex-col gap-4">
             <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5">
               <h2 className="font-display font-bold text-[.95rem] mb-3">سئو</h2>
+              <label className="block text-[.78rem] font-bold mb-1.5">کلیدواژه‌ی کانونی</label>
+              <input
+                type="text"
+                value={focusKeyword}
+                onChange={(e) => setFocusKeyword(e.target.value)}
+                placeholder="مثلاً: درباره گت‌استوک"
+                className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.82rem] outline-none focus:border-primary transition mb-3"
+              />
               <label className="block text-[.78rem] font-bold mb-1.5">عنوان متا (metaTitle)</label>
               <input
                 type="text"
@@ -190,6 +204,11 @@ export default function AdminPageEditor() {
                 className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.82rem] outline-none focus:border-primary transition resize-y"
               />
             </div>
+
+            <SeoPanel
+              url={`${SITE_URL}/p/${slug}`}
+              input={{ kind: "page", focusKeyword, title, metaTitle, metaDescription, contentHtml }}
+            />
 
             <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5 flex flex-col gap-2.5">
               <button

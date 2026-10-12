@@ -67,6 +67,7 @@ export async function updatePage(
     published: boolean;
     metaTitle?: string;
     metaDescription?: string;
+    focusKeyword?: string;
   },
   updatedBy: string
 ): Promise<Page> {
@@ -78,6 +79,7 @@ export async function updatePage(
       published: data.published,
       metaTitle: data.metaTitle || null,
       metaDescription: data.metaDescription || null,
+      focusKeyword: data.focusKeyword || null,
       updatedBy,
     },
   });

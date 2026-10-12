@@ -3,6 +3,7 @@ import { requireAdmin, SessionError } from "@/lib/session";
 import { validateInput, ValidationError, createBlogPostInput } from "@/lib/validation";
 import { listBlogPosts, createBlogPost } from "@/lib/blogPosts";
 import { prisma } from "@/lib/db";
+import { BLOG_ARTICLE_TEMPLATE } from "@/lib/blogTemplate";
 
 // GET /api/admin/blog
 // لیست همه‌ی نوشته‌های وبلاگ. فقط admin.
@@ -49,6 +50,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "نوشته‌ای با این نامک از قبل وجود دارد." }, { status: 400 });
   }
 
-  const post = await createBlogPost(input.slug, input.title, admin.id);
+  const post = await createBlogPost(input.slug, input.title, admin.id, input.useTemplate ? BLOG_ARTICLE_TEMPLATE : "");
   return NextResponse.json({ post });
 }

@@ -22,6 +22,7 @@ export async function generateMetadata({
   return {
     title: page.metaTitle || page.title,
     description: page.metaDescription || undefined,
+    keywords: page.focusKeyword ? [page.focusKeyword] : undefined,
   };
 }
 

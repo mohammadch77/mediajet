@@ -44,13 +44,14 @@ export async function listPublishedBlogPosts(
 export async function createBlogPost(
   slug: string,
   title: string,
-  authorId: string
+  authorId: string,
+  contentHtml = ""
 ): Promise<BlogPost> {
   return prisma.blogPost.create({
     data: {
       slug,
       title,
-      contentHtml: "",
+      contentHtml: contentHtml ? sanitizeHtml(contentHtml) : "",
       published: false,
       authorId,
     },
@@ -73,6 +74,7 @@ export async function updateBlogPost(
     published: boolean;
     metaTitle?: string;
     metaDescription?: string;
+    focusKeyword?: string;
   },
   existing: BlogPost
 ): Promise<BlogPost> {
@@ -94,6 +96,7 @@ export async function updateBlogPost(
       publishedAt,
       metaTitle: data.metaTitle || null,
       metaDescription: data.metaDescription || null,
+      focusKeyword: data.focusKeyword || null,
     },
   });
 }

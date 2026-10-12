@@ -5,6 +5,8 @@ export type BlogSeed = {
   slug: string;
   title: string;
   excerpt: string;
+  /** کلیدواژه‌ی کانونی؛ باید در عنوان، متا، خلاصه، پاراگراف اول و یک h2 بیاید (lib/seoCheck.ts). */
+  focusKeyword: string;
   category: BlogCategorySlug;
   tags: string[];
   metaTitle: string;
