@@ -3,24 +3,45 @@ import Link from "next/link";
 import BrandLogo from "@/components/BrandLogo";
 import { LEGAL_LINKS, currentJalaliYear, visibleFooterNote } from "@/lib/legal";
 
+const FUNCTION_WORDS = new Set(["و", "یا", "با", "در", "از", "به", "تا", "که", "را", "بر", "برای", "هم"]);
+const LINK_CLS = "font-bold text-text underline-offset-4 transition hover:text-cyan hover:underline";
+
 /**
- * متن را به نودهای React تبدیل می‌کند و هر آدرس http(s) (با یا بدون پرانتز) را
- * به لینک کلیک‌پذیر (نمایش فقط دامنه) تبدیل می‌کند. HTML خام تزریق نمی‌شود، پس امن است.
+ * متن پانوشت را به نودهای React تبدیل می‌کند؛ HTML خام تزریق نمی‌شود، پس امن است. فقط آدرس http(s) پذیرفته می‌شود.
+ * آدرس هرگز نمایش داده نمی‌شود و «خودِ کلمه» لینک است:
+ *  - «[پیشروناد](https://…)» ← فقط «پیشروناد» لینک است.
+ *  - «پیشروناد https://…» یا «پیشروناد (https://…)» ← کلمه‌ی پیش از آدرس لینک می‌شود.
+ *  - آدرسِ تنها (بدون کلمه‌ی قبل از آن) ← فقط نام دامنه، به‌صورت لینک.
  */
 function renderWithLinks(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
-  const re = /\(?(https?:\/\/[^\s()]+)\)?/g;
+  const re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|([^\s()[\]]+)[ \t]*\(?(https?:\/\/[^\s()]+)\)?|\(?(https?:\/\/[^\s()]+)\)?/g;
   let last = 0;
   let m: RegExpExecArray | null;
+  const link = (key: number, url: string, label: string) => (
+    <a key={key} href={url} target="_blank" rel="noopener noreferrer" className={LINK_CLS}>
+      {label}
+    </a>
+  );
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) nodes.push(text.slice(last, m.index));
-    const url = m[1];
-    const label = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    nodes.push(
-      <a key={m.index} href={url} target="_blank" rel="noopener noreferrer" className="underline hover:text-text transition">
-        {label}
-      </a>
-    );
+    if (m[1] !== undefined) {
+      nodes.push(link(m.index, m[2], m[1]));
+    } else if (m[3] !== undefined) {
+      // علامت‌های انتهای کلمه («:» «،» …) بیرون از لینک می‌مانند.
+      const stripped = m[3].replace(/[:：،,؛;\-–—]+$/, "");
+      // حرف ربط و اضافه («و»، «با»، «در»…) هرگز متن لینک نمی‌شود.
+      const word = FUNCTION_WORDS.has(stripped) ? "" : stripped;
+      const tail = m[3].slice(word.length);
+      if (word) {
+        nodes.push(link(m.index, m[4], word));
+        if (tail) nodes.push(tail);
+      } else {
+        nodes.push(m[3] + " ", link(m.index, m[4], m[4].replace(/^https?:\/\//, "").replace(/\/$/, "")));
+      }
+    } else {
+      nodes.push(link(m.index, m[5], m[5].replace(/^https?:\/\//, "").replace(/\/$/, "")));
+    }
     last = m.index + m[0].length;
   }
   if (last < text.length) nodes.push(text.slice(last));

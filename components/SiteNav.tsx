@@ -36,10 +36,10 @@ export default function SiteNav({
     <>
       <nav aria-label="منوی اصلی" className="fixed top-[14px] sm:top-[18px] left-1/2 -translate-x-1/2 z-[200] w-full max-w-[94vw] sm:w-auto">
         <div className="flex items-center gap-2 bg-[rgb(var(--c-surface)/.7)] backdrop-blur-[20px] border border-[rgb(var(--c-primary2)/.14)] rounded-full py-2 px-3 sm:p-[8px_8px_8px_20px] shadow-[0_30px_80px_-30px_rgba(0,0,0,.75)]">
-          <div className="flex items-center gap-2 sm:gap-2.5 font-display font-extrabold text-[1rem] sm:text-[1.15rem] whitespace-nowrap shrink-0">
+          <Link href="/" aria-label="گت‌استوک — صفحه‌ی اصلی" className="flex items-center gap-2 sm:gap-2.5 font-display font-extrabold text-[1rem] sm:text-[1.15rem] whitespace-nowrap shrink-0 text-text no-underline rounded-full transition hover:opacity-85">
             <BrandLogo className="w-[28px] h-[28px] sm:w-[30px] sm:h-[30px] shadow-[0_0_60px_-10px_#6B5BFF]" />
             گت‌استوک
-          </div>
+          </Link>
           <div className="flex gap-1 mx-1.5 max-[1100px]:hidden">
             {navItems.map(([href, label]) => (
               <a key={href} href={href} className="text-dim text-[.9rem] font-medium px-3.5 py-2 rounded-full transition hover:text-text hover:bg-[rgb(var(--c-ov)/.05)] whitespace-nowrap">

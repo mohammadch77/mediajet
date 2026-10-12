@@ -182,7 +182,10 @@ export default function HomeClient({
         <div className="grid grid-cols-3 gap-5 max-[820px]:grid-cols-1">
           {STEPS.map((s) => (
             <div key={s.n} className="reveal bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-[20px] p-[32px_26px] transition hover:-translate-y-2 hover:border-[rgb(var(--c-primary2)/.5)]">
-              <div className="latin text-[1.05rem] leading-none font-bold text-accent w-10 h-10 rounded-xl bg-[rgb(var(--c-accent)/.12)] flex items-center justify-center mb-5">{s.n}</div>
+              <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl border border-[rgb(var(--c-accent)/.35)] bg-[linear-gradient(135deg,rgb(var(--c-accent)/.22),rgb(var(--c-accent)/.06))] shadow-[0_10px_30px_-14px_rgb(var(--c-accent))]">
+                <span aria-hidden className="font-display text-[1.25rem] font-extrabold leading-none text-accent [font-variant-numeric:tabular-nums]">{toPersianDigits(s.n)}</span>
+                <span className="sr-only">مرحله‌ی {toPersianDigits(s.n)}</span>
+              </div>
               <h3 className="font-display text-[1.25rem] mb-2">{s.title}</h3>
               <p className="text-dim text-[.95rem]">{s.desc}</p>
               {s.highlight && (
