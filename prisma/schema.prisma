@@ -427,6 +427,8 @@ model BlogPost {
   tags            String[]  @default([])
   // کلیدواژه‌ی کانونی: باید در عنوان، متا، خلاصه، پاراگراف اول و یکی از h2ها بیاید (lib/seoCheck.ts)
   focusKeyword    String?
+  // شمارنده‌ی بازدید (بدون کوکی/ردیابی؛ فقط یک عدد، با محدودیت نرخ سمت سرور) برای مرتب‌سازی «پربازدیدترین»
+  views           Int       @default(0)
   published       Boolean   @default(false)
   publishedAt     DateTime?
   metaTitle       String?
@@ -439,6 +441,7 @@ model BlogPost {
 
   @@index([published, publishedAt])
   @@index([category, published, publishedAt])
+  @@index([published, views])
 }
 
 // ---------------------------------------------------------------------------

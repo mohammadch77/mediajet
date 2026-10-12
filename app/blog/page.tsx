@@ -6,7 +6,7 @@ import BlogListView from "@/components/blog/BlogListView";
 import JsonLd from "@/components/JsonLd";
 import { getAllContent } from "@/lib/content";
 import { headerNavItems } from "@/lib/legal";
-import { listPublishedBlogPosts, countPublishedByCategory, BLOG_PAGE_SIZE } from "@/lib/blogPosts";
+import { listPublishedBlogPosts, countPublishedByCategory, parseBlogQuery, BLOG_PAGE_SIZE } from "@/lib/blogPosts";
 import { SITE_URL, absoluteUrl } from "@/lib/siteUrl";
 
 export const dynamic = "force-dynamic";
@@ -15,17 +15,25 @@ const TITLE = "وبلاگ گت‌استوک | راهنمای خرید فایل �
 const DESCRIPTION =
   "مقاله‌های کاربردی درباره‌ی خرید تک‌فایل از سایت‌های استوک، انتخاب فرمت و لایسنس و ترفندهای طراحی و تولید محتوا؛ بدون اشتراک ماهانه و با پرداخت ریالی.";
 
-export const metadata: Metadata = {
+const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: `${SITE_URL}/blog` },
   openGraph: { type: "website", locale: "fa_IR", url: `${SITE_URL}/blog`, title: TITLE, description: DESCRIPTION },
 };
 
-export default async function BlogListPage({ searchParams }: { searchParams: { page?: string } }) {
+type SP = { page?: string; sort?: string; q?: string };
+
+// صفحه‌های فیلترشده (جست‌وجو/مرتب‌سازی) ایندکس نمی‌شوند تا محتوای تکراری ساخته نشود؛ canonical همان /blog است.
+export async function generateMetadata({ searchParams }: { searchParams: SP }): Promise<Metadata> {
+  const { sort, q } = parseBlogQuery(searchParams);
+  return q || sort !== "new" ? { ...metadata, robots: { index: false, follow: true } } : metadata;
+}
+
+export default async function BlogListPage({ searchParams }: { searchParams: SP }) {
   const content = await getAllContent();
-  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
-  const [{ posts, total }, counts] = await Promise.all([listPublishedBlogPosts(page), countPublishedByCategory()]);
+  const { sort, q, page } = parseBlogQuery(searchParams);
+  const [{ posts, total }, counts] = await Promise.all([listPublishedBlogPosts(page, BLOG_PAGE_SIZE, { sort, q }), countPublishedByCategory()]);
   const totalPages = Math.max(1, Math.ceil(total / BLOG_PAGE_SIZE));
 
   return (
@@ -65,7 +73,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: { p
             ],
           }}
         />
-        <BlogListView posts={posts} counts={counts} page={page} totalPages={totalPages} basePath="/blog" />
+        <BlogListView posts={posts} counts={counts} page={page} totalPages={totalPages} total={total} basePath="/blog" sort={sort} q={q} />
       </main>
       <SiteFooter content={content} />
     </div>

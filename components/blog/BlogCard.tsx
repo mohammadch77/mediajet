@@ -12,6 +12,7 @@ type CardPost = {
   category: string | null;
   contentHtml: string;
   publishedAt: Date | null;
+  views?: number;
 };
 
 /** کارت یک نوشته؛ همه‌ی کارت‌ها یک شکل دارند تا شبکه در همه‌ی عرض‌ها یکدست بماند. */
@@ -53,6 +54,12 @@ export default function BlogCard({ post, priority = false }: { post: CardPost; p
             {post.publishedAt && <time dateTime={post.publishedAt.toISOString()}>{toJalaliDate(post.publishedAt)}</time>}
             <span aria-hidden>•</span>
             <span>{minutes} دقیقه مطالعه</span>
+            {(post.views ?? 0) > 0 && (
+              <>
+                <span aria-hidden>•</span>
+                <span>{toPersianDigits(post.views!)} بازدید</span>
+              </>
+            )}
             <span className="mr-auto text-cyan font-bold transition group-hover:-translate-x-1">بخوان ←</span>
           </div>
         </div>

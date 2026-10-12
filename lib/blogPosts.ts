@@ -23,22 +23,59 @@ export async function getPublishedBlogPostBySlug(slug: string): Promise<BlogPost
   return post;
 }
 
+export type BlogSort = "new" | "popular" | "old";
+export const BLOG_SORTS: { key: BlogSort; label: string; icon: string }[] = [
+  { key: "new", label: "تازه‌ترین", icon: "✨" },
+  { key: "popular", label: "پربازدیدترین", icon: "🔥" },
+  { key: "old", label: "قدیمی‌ترین", icon: "⏳" },
+];
+
+/** ورودی عمومی (query string) را به مقدار امن تبدیل می‌کند: فقط کلیدهای مجاز، متن جست‌وجو حداکثر ۶۰ نویسه. */
+export function parseBlogQuery(sp: { sort?: string; q?: string; page?: string }): { sort: BlogSort; q: string; page: number } {
+  const sort: BlogSort = BLOG_SORTS.some((s) => s.key === sp.sort) ? (sp.sort as BlogSort) : "new";
+  const q = (typeof sp.q === "string" ? sp.q : "").replace(/\s+/g, " ").trim().slice(0, 60);
+  const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
+  return { sort, q, page };
+}
+
+function blogWhere(category?: string, q?: string) {
+  return {
+    published: true,
+    ...(category ? { category } : {}),
+    ...(q
+      ? {
+          OR: [
+            { title: { contains: q, mode: "insensitive" as const } },
+            { excerpt: { contains: q, mode: "insensitive" as const } },
+            { focusKeyword: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+}
+
 export async function listPublishedBlogPosts(
   page: number,
   pageSize: number = BLOG_PAGE_SIZE,
-  category?: string
+  opts: { category?: string; sort?: BlogSort; q?: string } = {}
 ): Promise<{ posts: BlogPost[]; total: number }> {
-  const where = category ? { published: true, category } : { published: true };
+  const where = blogWhere(opts.category, opts.q);
+  const orderBy =
+    opts.sort === "popular"
+      ? [{ views: "desc" as const }, { publishedAt: "desc" as const }]
+      : opts.sort === "old"
+        ? [{ publishedAt: "asc" as const }]
+        : [{ publishedAt: "desc" as const }];
   const [posts, total] = await Promise.all([
-    prisma.blogPost.findMany({
-      where,
-      orderBy: { publishedAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
+    prisma.blogPost.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
     prisma.blogPost.count({ where }),
   ]);
   return { posts, total };
+}
+
+/** یک بازدید به مقاله‌ی منتشرشده اضافه می‌کند (اتمیک). */
+export async function incrementBlogViews(slug: string): Promise<void> {
+  await prisma.blogPost.updateMany({ where: { slug, published: true }, data: { views: { increment: 1 } } });
 }
 
 export async function createBlogPost(

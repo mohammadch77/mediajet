@@ -7,6 +7,7 @@ import LegalToc from "@/components/LegalToc";
 import BlogHero from "@/components/blog/BlogHero";
 import BlogCard from "@/components/blog/BlogCard";
 import BlogCta from "@/components/blog/BlogCta";
+import BlogViewCounter from "@/components/blog/BlogViewCounter";
 import JsonLd from "@/components/JsonLd";
 import { getAllContent } from "@/lib/content";
 import { headerNavItems } from "@/lib/legal";
@@ -100,11 +101,13 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           )}
           {post.publishedAt && <time dateTime={post.publishedAt.toISOString()}>{toJalaliDate(post.publishedAt)}</time>}
           <span>{toPersianDigits(minutes)} دقیقه مطالعه</span>
+          {post.views > 0 && <span>{toPersianDigits(post.views)} بازدید</span>}
           <span>نویسنده: تیم {orgName}</span>
         </div>
       </BlogHero>
 
       <main id="main" className="flex-1">
+        <BlogViewCounter slug={post.slug} />
         <JsonLd
           data={{
             "@context": "https://schema.org",

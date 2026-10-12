@@ -8,12 +8,13 @@ import JsonLd from "@/components/JsonLd";
 import { getAllContent } from "@/lib/content";
 import { headerNavItems } from "@/lib/legal";
 import { blogCategory } from "@/lib/blogCategories";
-import { listPublishedBlogPosts, countPublishedByCategory, BLOG_PAGE_SIZE } from "@/lib/blogPosts";
+import { listPublishedBlogPosts, countPublishedByCategory, parseBlogQuery, BLOG_PAGE_SIZE } from "@/lib/blogPosts";
 import { SITE_URL } from "@/lib/siteUrl";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: { category: string } }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: { params: { category: string }; searchParams: { page?: string; sort?: string; q?: string } }): Promise<Metadata> {
+  const { sort, q } = parseBlogQuery(searchParams);
   const cat = blogCategory(params.category);
   if (!cat) return {};
   const url = `${SITE_URL}/blog/category/${cat.slug}`;
@@ -21,16 +22,17 @@ export async function generateMetadata({ params }: { params: { category: string 
     title: cat.metaTitle,
     description: cat.metaDescription,
     alternates: { canonical: url },
+    ...(q || sort !== "new" ? { robots: { index: false, follow: true } } : {}),
     openGraph: { type: "website", locale: "fa_IR", url, title: cat.metaTitle, description: cat.metaDescription },
   };
 }
 
-export default async function BlogCategoryPage({ params, searchParams }: { params: { category: string }; searchParams: { page?: string } }) {
+export default async function BlogCategoryPage({ params, searchParams }: { params: { category: string }; searchParams: { page?: string; sort?: string; q?: string } }) {
   const cat = blogCategory(params.category);
   if (!cat) notFound();
   const content = await getAllContent();
-  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
-  const [{ posts, total }, counts] = await Promise.all([listPublishedBlogPosts(page, BLOG_PAGE_SIZE, cat.slug), countPublishedByCategory()]);
+  const { sort, q, page } = parseBlogQuery(searchParams);
+  const [{ posts, total }, counts] = await Promise.all([listPublishedBlogPosts(page, BLOG_PAGE_SIZE, { category: cat.slug, sort, q }), countPublishedByCategory()]);
   const totalPages = Math.max(1, Math.ceil(total / BLOG_PAGE_SIZE));
 
   return (
@@ -53,7 +55,7 @@ export default async function BlogCategoryPage({ params, searchParams }: { param
             ],
           }}
         />
-        <BlogListView posts={posts} counts={counts} active={cat.slug} page={page} totalPages={totalPages} basePath={`/blog/category/${cat.slug}`} />
+        <BlogListView posts={posts} counts={counts} active={cat.slug} page={page} totalPages={totalPages} total={total} basePath={`/blog/category/${cat.slug}`} sort={sort} q={q} />
       </main>
       <SiteFooter content={content} />
     </div>
