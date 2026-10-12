@@ -1,21 +1,37 @@
+# robots.txt — getstock.ir
+# نکته: هر گروه User-agent جداگانه‌ی گوگل/بینگ، قوانین گروه * را نادیده می‌گیرد؛ پس قوانین مسیرهای خصوصی در همه‌ی گروه‌ها تکرار شده است.
+# /_next/static/ عمداً بلاک نیست تا گوگل بتواند CSS/JS را برای رندر صفحه بخواند.
+
 User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /admin/
-Disallow: /_next/
-Disallow: /.next/
+Disallow: /dashboard/
+Disallow: /operator/
+Disallow: /cart/
+Disallow: /pay/
+Disallow: /reset-password/
 
-Sitemap: https://getstock.ir/sitemap.xml
-
-# Google
 User-agent: Googlebot
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /operator/
+Disallow: /cart/
+Disallow: /pay/
+Disallow: /reset-password/
 
-# Bing
 User-agent: Bingbot
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /operator/
+Disallow: /cart/
+Disallow: /pay/
+Disallow: /reset-password/
 
-# Block bad bots
 User-agent: AhrefsBot
 Disallow: /
 
@@ -25,5 +41,4 @@ Disallow: /
 User-agent: DotBot
 Disallow: /
 
-# Crawl delay
-Crawl-delay: 1
+Sitemap: https://getstock.ir/sitemap.xml

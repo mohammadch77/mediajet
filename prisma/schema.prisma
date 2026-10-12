@@ -420,6 +420,9 @@ model BlogPost {
   excerpt         String?
   contentHtml     String
   coverImage      String?
+  // دسته‌ی موضوعی (slug از lib/blogCategories.ts) و برچسب‌ها؛ برای صفحه‌ی دسته‌ها، مقاله‌های مرتبط و سئو.
+  category        String?
+  tags            String[]  @default([])
   published       Boolean   @default(false)
   publishedAt     DateTime?
   metaTitle       String?
@@ -431,6 +434,7 @@ model BlogPost {
   author User @relation(fields: [authorId], references: [id])
 
   @@index([published, publishedAt])
+  @@index([category, published, publishedAt])
 }
 
 // ---------------------------------------------------------------------------

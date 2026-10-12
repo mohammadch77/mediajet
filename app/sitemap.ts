@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
+import { BLOG_CATEGORIES } from "@/lib/blogCategories";
 
 const BASE_URL = process.env.APP_BASE_URL || "https://getstock.ir";
 
@@ -21,6 +22,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/affiliate`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
   ];
 
+  const categoryPages: MetadataRoute.Sitemap = BLOG_CATEGORIES.map((c) => ({
+    url: `${BASE_URL}/blog/category/${c.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.5,
+  }));
+
   try {
     const [pages, posts] = await Promise.all([
       prisma.page.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
@@ -29,6 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [
       ...staticPages,
+      ...categoryPages,
       ...pages.map((p) => ({
         url: `${BASE_URL}/p/${p.slug}`,
         lastModified: p.updatedAt,
@@ -44,6 +53,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ];
   } catch (error) {
     console.error("Sitemap generation error:", error);
-    return staticPages;
+    return [...staticPages, ...categoryPages];
   }
 }

@@ -138,3 +138,12 @@ npx tsc --noEmit && npm run build && pm2 restart getstock
 - **قیمت فقط سمت سرور**؛ هر ورودی با zod اعتبارسنجی می‌شود
 - **امنیت:** هویت از session، کنترل نقش، rate limit، رازها فقط از پنل ادمین
 - جزئیات کامل: [RULES.md](./RULES.md)
+
+## وبلاگ، سئو و نقشه‌ی سایت
+
+- دسته‌های وبلاگ: `lib/blogCategories.ts` (منبع واحد؛ لیست، صفحه‌ی دسته، ادمین، sitemap).
+- مقاله‌های اولیه: `data/blog/*.ts` + `data/blogSeed.ts`؛ بارگذاری در دیتابیس: `npx tsx scripts/seed-blog.ts` (idempotent؛ `--force` برای بازنویسی). به یک کاربر ادمین نیاز دارد.
+- عکس‌های شاخص: `public/blog/*.png` (تولید با `scripts/gen-blog-covers.py`).
+- `app/sitemap.ts` (پویا: صفحه‌ها، دسته‌ها و مقاله‌ها) و `public/robots.txt` آدرس `https://getstock.ir/sitemap.xml` را معرفی می‌کنند.
+- پس از استقرار: در Google Search Console دامنه را تأیید کن، sitemap را ثبت کن و برای آدرس مقاله‌ها «Request indexing» بزن.
+- پیش از انتشار، لینک‌های خارجی داخل مقاله‌ها را یک‌بار دستی باز کن.

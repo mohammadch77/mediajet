@@ -28,6 +28,12 @@ const ALLOWED_TAGS = [
   "span",
   "code",
   "pre",
+  "table",
+  "thead",
+  "tbody",
+  "tr",
+  "th",
+  "td",
 ];
 
 const ALLOWED_ATTR = ["href", "target", "rel", "class"];

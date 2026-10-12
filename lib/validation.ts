@@ -1,3 +1,4 @@
+import { BLOG_CATEGORY_SLUGS } from "./blogCategories";
 import { z, ZodError, type ZodSchema } from "zod";
 import { validateProductUrl, MAX_PRODUCT_URL_LENGTH } from "./productUrl";
 import { CONTENT_DEFS, type ContentKey } from "./content";
@@ -72,6 +73,14 @@ function isHttpUrl(value: string): boolean {
 
 const httpUrlField = (invalidMessage: string) =>
   z.string().trim().max(2000, invalidMessage).refine(isHttpUrl, invalidMessage);
+
+/** آدرس تصویر: http/https کامل، یا مسیر داخلی سایت مثل «/blog/cover.png» (نه //host). */
+const imageUrlField = (invalidMessage: string) =>
+  z
+    .string()
+    .trim()
+    .max(1000, invalidMessage)
+    .refine((v) => isHttpUrl(v) || /^\/(?!\/)[A-Za-z0-9\-_./]+$/.test(v), invalidMessage);
 
 export const chargeInput = z.object({
   userId: z
@@ -486,10 +495,18 @@ export const updateBlogPostInput = z.object({
   contentHtml: z
     .string({ error: "محتوای نوشته الزامی است." })
     .max(200000, "محتوا خیلی طولانی است."),
-  coverImage: httpUrlField("آدرس عکس کاور نامعتبر است (فقط http یا https).")
-    .max(1000, "آدرس عکس کاور خیلی طولانی است.")
+  coverImage: imageUrlField("آدرس عکس کاور نامعتبر است (http/https یا مسیر داخلی مثل /blog/cover.png).")
     .optional()
     .or(z.literal("")),
+  category: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || BLOG_CATEGORY_SLUGS.includes(v), "دسته‌ی انتخاب‌شده نامعتبر است.")
+    .optional(),
+  tags: z
+    .array(z.string().trim().min(1).max(40, "هر برچسب حداکثر ۴۰ نویسه است."))
+    .max(10, "حداکثر ۱۰ برچسب مجاز است.")
+    .optional(),
   published: z.boolean({ error: "وضعیت انتشار نامعتبر است." }),
   metaTitle: z
     .string()

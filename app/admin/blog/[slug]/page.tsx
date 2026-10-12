@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { toJalaliDateTime } from "@/lib/jalali";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { BLOG_CATEGORIES } from "@/lib/blogCategories";
 
 const RichTextEditor = dynamic(() => import("@/components/admin/RichTextEditor"), {
   ssr: false,
@@ -21,6 +22,8 @@ type BlogPostData = {
   publishedAt: string | null;
   metaTitle: string | null;
   metaDescription: string | null;
+  category: string | null;
+  tags: string[];
   updatedAt: string;
 };
 
@@ -36,6 +39,8 @@ export default function AdminBlogEditor() {
   const [coverImage, setCoverImage] = useState("");
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [tagsText, setTagsText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -63,6 +68,8 @@ export default function AdminBlogEditor() {
         setCoverImage(p.coverImage ?? "");
         setMetaTitle(p.metaTitle ?? "");
         setMetaDescription(p.metaDescription ?? "");
+        setCategory(p.category ?? "");
+        setTagsText((p.tags ?? []).join("، "));
       } catch (e) {
         setError(e instanceof Error ? e.message : "خطا در دریافت نوشته.");
       }
@@ -85,6 +92,11 @@ export default function AdminBlogEditor() {
           published: publish,
           metaTitle,
           metaDescription,
+          category: category || null,
+          tags: tagsText
+            .split(/[,،\n]/)
+            .map((t) => t.trim())
+            .filter(Boolean),
         }),
       });
       const json = await res.json();
@@ -196,6 +208,30 @@ export default function AdminBlogEditor() {
                 onChange={(e) => setCoverImage(e.target.value)}
                 placeholder="آدرس URL عکس کاور"
                 dir="ltr"
+                className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.82rem] outline-none focus:border-primary transition"
+              />
+            </div>
+
+            <div className="bg-gradient-to-br from-surface to-bg2 border border-[rgb(var(--c-primary2)/.14)] rounded-2xl p-4 sm:p-5">
+              <h2 className="font-display font-bold text-[.95rem] mb-3">دسته و برچسب</h2>
+              <label className="block text-[.78rem] font-bold mb-1.5">دسته‌ی موضوعی</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.82rem] outline-none focus:border-primary transition mb-3"
+              >
+                <option value="">بدون دسته</option>
+                {BLOG_CATEGORIES.map((c) => (
+                  <option key={c.slug} value={c.slug}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+              <label className="block text-[.78rem] font-bold mb-1.5">برچسب‌ها (با ویرگول جدا کن)</label>
+              <input
+                type="text"
+                value={tagsText}
+                onChange={(e) => setTagsText(e.target.value)}
                 className="w-full bg-[rgb(var(--c-sink)/.25)] border border-[rgb(var(--c-primary2)/.2)] rounded-xl px-3.5 py-2.5 text-[.82rem] outline-none focus:border-primary transition"
               />
             </div>

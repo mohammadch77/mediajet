@@ -57,6 +57,8 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
       excerpt: input.excerpt,
       contentHtml: input.contentHtml,
       coverImage: input.coverImage,
+      category: input.category,
+      tags: input.tags,
       published: input.published,
       metaTitle: input.metaTitle,
       metaDescription: input.metaDescription,
