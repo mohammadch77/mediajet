@@ -2,6 +2,9 @@ import { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
 import { BLOG_CATEGORIES } from "@/lib/blogCategories";
 
+// صفحه‌هایی که مسیر اختصاصی دارند (/about، /faq …)؛ نسخه‌ی قدیمی‌شان در /p/:slug (متن پیش‌فرض) محتوای تکراری است و در نقشه‌ی سایت نمی‌آید.
+const DEDICATED_SLUGS = new Set(["about", "faq", "terms", "privacy", "cookies", "refund", "pricing", "affiliate", "blog"]);
+
 const BASE_URL = process.env.APP_BASE_URL || "https://getstock.ir";
 
 // هر بار از دیتابیس خوانده می‌شود تا صفحات و نوشته‌هایی که ادمین منتشر می‌کند
@@ -38,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [
       ...staticPages,
       ...categoryPages,
-      ...pages.map((p) => ({
+      ...pages.filter((p) => !DEDICATED_SLUGS.has(p.slug)).map((p) => ({
         url: `${BASE_URL}/p/${p.slug}`,
         lastModified: p.updatedAt,
         changeFrequency: "monthly" as const,
