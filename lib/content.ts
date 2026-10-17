@@ -50,6 +50,9 @@ export const CONTENT_DEFS = [
   { key: "header.nav5_label", group: "header", label: "منو ۵ - متن", defaultValue: "قیمت‌ها" },
   { key: "header.nav5_href", group: "header", label: "منو ۵ - لینک", defaultValue: "/pricing" },
 
+  // سئو: کد تأیید مالکیت Google Search Console (فقط مقدار content متا تگ؛ رمز نیست)
+  { key: "seo.google_verification", group: "seo", label: "کد تأیید Google Search Console (فقط مقدار content متا تگ، نه کل تگ)", defaultValue: "" },
+
   // معرفی همکاری در فروش در صفحه‌ی اصلی (درصد و حداقل تسویه از تنظیمات مالی خوانده می‌شوند)
   { key: "affiliate.title", group: "affiliate", label: "عنوان بخش", defaultValue: "با معرفی گت‌استوک درآمد داشته باش" },
   { key: "affiliate.subtitle", group: "affiliate", label: "توضیح بخش", defaultValue: "لینک اختصاصی‌ات را با دوستان، شاگردها یا مخاطبانت به اشتراک بگذار؛ از هر سفارشی که ثبت کنند سهم می‌گیری — بدون سرمایه و بدون پشتیبانی از مشتری." },

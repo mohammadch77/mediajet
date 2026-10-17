@@ -19,9 +19,10 @@ const GROUP_LABELS: Record<string, string> = {
   footer: "فوتر",
   header: "هدر (منو)",
   affiliate: "معرفی همکاری در فروش",
+  seo: "سئو و Search Console",
 };
 
-const GROUP_ORDER = ["hero", "contact", "legal", "footer", "header", "affiliate"];
+const GROUP_ORDER = ["hero", "contact", "legal", "footer", "header", "affiliate", "seo"];
 
 const LONG_FIELD_KEYS = new Set([
   "hero.subtitle",

@@ -16,8 +16,9 @@ import { AuthProvider } from "@/lib/AuthContext";
 import { CartProvider } from "@/lib/CartContext";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import ErrorReporter from "@/components/ErrorReporter";
+import { getContent } from "@/lib/content";
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: "گت‌استوک — هر فایلی از هر سایت استوک، فقط با یک لینک",
   description:
     "سرویس دانلود تک‌فایل از پلتفرم‌های استوک خارجی برای کاربران ایرانی، با کیف پول و پرداخت ریالی.",
@@ -53,6 +54,17 @@ export const metadata: Metadata = {
     canonical: process.env.APP_BASE_URL || "https://getstock.ir",
   },
 };
+
+// کد تأیید Search Console از پنل ادمین (محتوای سایت ← سئو) خوانده می‌شود تا برای تأیید مالکیت نیازی به استقرار مجدد نباشد.
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const code = (await getContent("seo.google_verification")).trim();
+    if (/^[A-Za-z0-9_-]{10,100}$/.test(code)) return { ...baseMetadata, verification: { google: code } };
+  } catch {
+    // اگر دیتابیس در دسترس نبود، متادیتای پایه کافی است.
+  }
+  return baseMetadata;
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
